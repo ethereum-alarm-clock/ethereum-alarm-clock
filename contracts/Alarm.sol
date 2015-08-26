@@ -1,6 +1,7 @@
 contract Alarm {
         bytes32 lastCallKey;
         bytes lastData;
+        uint lastDataLength;
         bytes32 lastDataHash;
 
         function getLastCallKey() public returns (bytes32) {
@@ -9,6 +10,10 @@ contract Alarm {
 
         function getLastDataHash() public returns (bytes32) {
                 return lastDataHash;
+        }
+
+        function getLastDataLength() public returns (uint) {
+                return lastDataLength;
         }
 
         function getLastData() public returns (bytes) {
@@ -111,16 +116,19 @@ contract Alarm {
                 bytes trunc;
                 if (msg.data.length > 4) {
                         trunc.length = msg.data.length - 4;
-                        for (uint i = 0; i < trunc.length - 1; i++) {
+                        for (uint i = 0; i < trunc.length; i++) {
                                 trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
                         }
                         hash_to_data[sha3(trunc)] = trunc;
                 }
                 lastDataHash = sha3(trunc);
-                lastData = msg.data;
+                lastDataLength = trunc.length;
+                lastData = trunc;
                 DataRegistered(msg.sender, lastDataHash, lastData);
         }
 
+        // The result of `sha()` so that we can validate that people aren't
+        // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
         function getCallKey(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {

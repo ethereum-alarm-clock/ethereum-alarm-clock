@@ -59,3 +59,20 @@ contract PassesUInt {
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(uint256)")), dataHash, block.number + 100);
         }
 }
+
+
+contract PassesBytes32 {
+        bytes32 public value;
+        bytes32 public dataHash;
+
+        function doIt(bytes32 a) public {
+                value = a;
+        }
+
+        function scheduleIt(address to, bytes32 a) public {
+                dataHash = sha3(a);
+                to.call(bytes4(sha3("registerData()")), a);
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 100);
+        }
+}

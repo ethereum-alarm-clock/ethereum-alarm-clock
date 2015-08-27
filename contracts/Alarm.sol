@@ -145,18 +145,18 @@ contract Alarm {
         event CallScheduled(address to, bytes4 signature, bytes32 dataHash, uint targetBlock);
 
         function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                //var data = hash_to_data[dataHash];
-                //lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
+                var data = hash_to_data[dataHash];
+                lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
 
-                //var call = key_to_calls[lastCallKey];
-                //call.targetAddress = to;
-                //call.scheduledBy = msg.sender;
-                //call.sig = signature;
-                //call.data = data;
-                //call.targetBlock = targetBlock;
-                //call.deposit = msg.value;
+                var call = key_to_calls[lastCallKey];
+                call.targetAddress = to;
+                call.scheduledBy = msg.sender;
+                call.sig = signature;
+                call.data = data;
+                call.targetBlock = targetBlock;
+                call.deposit = msg.value;
 
-                //return lastCallKey;
+                return lastCallKey;
         }
 
         function __throw() internal {

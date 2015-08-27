@@ -1,11 +1,8 @@
-def test_check_if_call_successful(deployed_contracts, eth_coinbase):
+def test_check_if_call_successful(rpc_server, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.NoArgs
 
-    alarm.client.defaults['from'] = eth_coinbase
-    client_contract.client.defaults['from'] = eth_coinbase
-
-    client_contract.scheduleIt.sendTransaction(alarm.address)
+    client_contract.scheduleIt.sendTransaction(alarm._meta.address)
 
     assert client_contract.value.call() is False
 

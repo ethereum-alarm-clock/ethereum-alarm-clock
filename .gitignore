@@ -2,3 +2,4 @@
 .genesis.json
 build/
 dist/
+chains/

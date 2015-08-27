@@ -1,15 +1,12 @@
-import pytest
+deploy_max_wait = 10
+deploy_max_retries = 3
 
 
-@pytest.mark.skipif(True, reason="Doesn't work with test rpc server")
-def test_check_if_call_successful_for_failed_call(deployed_contracts, eth_coinbase):
+def test_check_if_call_successful_for_failed_call(geth_node, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.Fails
 
-    alarm.client.defaults['from'] = eth_coinbase
-    client_contract.client.defaults['from'] = eth_coinbase
-
-    client_contract.scheduleIt.sendTransaction(alarm.address)
+    client_contract.scheduleIt.sendTransaction(alarm._meta.address)
 
     assert client_contract.value.call() is False
 

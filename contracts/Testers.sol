@@ -44,6 +44,23 @@ contract Fails {
 }
 
 
+contract PassesInt {
+        int public value;
+        bytes32 public dataHash;
+
+        function doIt(int a) public {
+                value = a;
+        }
+
+        function scheduleIt(address to, int a) public {
+                dataHash = sha3(a);
+                to.call(bytes4(sha3("registerData()")), a);
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(int256)")), dataHash, block.number + 100);
+        }
+}
+
+
 contract PassesUInt {
         uint public value;
         bytes32 public dataHash;
@@ -74,5 +91,24 @@ contract PassesBytes32 {
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 100);
+        }
+}
+
+
+contract PassesAddress {
+        address public value;
+        bytes32 public dataHash;
+        bytes public data;
+
+        function doIt(address a) public {
+                value = a;
+                data = msg.data;
+        }
+
+        function scheduleIt(address to, address a) public {
+                dataHash = sha3(bytes32(a));
+                to.call(bytes4(sha3("registerData()")), a);
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 100);
         }
 }

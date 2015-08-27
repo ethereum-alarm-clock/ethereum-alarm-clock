@@ -1,4 +1,12 @@
 contract Alarm {
+        //function Alarm() {
+        //        owner = tx.origin;
+        //}
+
+        //address owner;
+
+        //modifier onlyowner { if (msg.sender == owner) _ }
+
         bytes32 lastCallKey;
         bytes lastData;
         uint lastDataLength;
@@ -20,10 +28,6 @@ contract Alarm {
                 return lastData;
         }
 
-        // Fallback function so that contract can receive direct deposits.
-        function() {
-        }
-
         struct Call {
                 address targetAddress;
                 address scheduledBy;
@@ -40,7 +44,6 @@ contract Alarm {
         }
 
         mapping (bytes32 => Call) key_to_calls;
-        mapping (uint => Call[]) block_to_calls;
         mapping (bytes32 => bytes) hash_to_data;
 
         /*
@@ -142,18 +145,18 @@ contract Alarm {
         event CallScheduled(address to, bytes4 signature, bytes32 dataHash, uint targetBlock);
 
         function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                var data = hash_to_data[dataHash];
-                lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
+                //var data = hash_to_data[dataHash];
+                //lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
 
-                var call = key_to_calls[lastCallKey];
-                call.targetAddress = to;
-                call.scheduledBy = msg.sender;
-                call.sig = signature;
-                call.data = data;
-                call.targetBlock = targetBlock;
-                call.deposit = msg.value;
+                //var call = key_to_calls[lastCallKey];
+                //call.targetAddress = to;
+                //call.scheduledBy = msg.sender;
+                //call.sig = signature;
+                //call.data = data;
+                //call.targetBlock = targetBlock;
+                //call.deposit = msg.value;
 
-                return lastCallKey;
+                //return lastCallKey;
         }
 
         function __throw() internal {

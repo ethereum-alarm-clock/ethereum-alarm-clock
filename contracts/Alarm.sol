@@ -1,31 +1,18 @@
-contract Alarm {
-        //function Alarm() {
-        //        owner = tx.origin;
-        //}
+import "owned";
 
-        //address owner;
 
-        //modifier onlyowner { if (msg.sender == owner) _ }
+contract DataRegistryAPI {
+        function getCallData(bytes32 dataHash) public returns (bytes) {}
+}
+
+
+contract Alarm is owned {
+        address dataRegistryAddress;
 
         bytes32 lastCallKey;
-        bytes lastData;
-        uint lastDataLength;
-        bytes32 lastDataHash;
 
         function getLastCallKey() public returns (bytes32) {
                 return lastCallKey;
-        }
-
-        function getLastDataHash() public returns (bytes32) {
-                return lastDataHash;
-        }
-
-        function getLastDataLength() public returns (uint) {
-                return lastDataLength;
-        }
-
-        function getLastData() public returns (bytes) {
-                return lastData;
         }
 
         struct Call {
@@ -40,11 +27,10 @@ contract Alarm {
                 bytes4 sig;
                 bool wasCalled;
                 bool wasSuccessful;
-                bytes data;
+                bytes32 dataHash;
         }
 
         mapping (bytes32 => Call) key_to_calls;
-        mapping (bytes32 => bytes) hash_to_data;
 
         /*
          *  Getter methods for `Call` information
@@ -90,7 +76,8 @@ contract Alarm {
         }
 
         function getCallData(bytes32 callKey) public returns (bytes) {
-                return key_to_calls[callKey].data;
+                DataRegistryAPI dataRegistry = DataRegistryAPI(dataRegistryAddress);
+                return dataRegistry.getCallData(key_to_calls[callKey].dataHash);
         }
 
         /*
@@ -113,46 +100,24 @@ contract Alarm {
                 return call.wasSuccessful;
         }
 
-        event DataRegistered(address registeredBy, bytes32 dataHash, bytes data);
-
-        function registerData() public {
-                bytes trunc;
-                if (msg.data.length > 4) {
-                        trunc.length = msg.data.length - 4;
-                        for (uint i = 0; i < trunc.length; i++) {
-                                trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
-                        }
-                        hash_to_data[sha3(trunc)] = trunc;
-                }
-                lastDataHash = sha3(trunc);
-                lastDataLength = trunc.length;
-                lastData = trunc;
-                DataRegistered(msg.sender, lastDataHash, lastData);
-        }
-
         // The result of `sha()` so that we can validate that people aren't
         // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
         function getCallKey(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                var data = hash_to_data[dataHash];
-                if (data.length == 0 && dataHash != emptyDataHash) {
-                        __throw();
-                }
-                return sha3(to, signature, data, targetBlock);
+                return sha3(to, signature, dataHash, targetBlock);
         }
 
         event CallScheduled(address to, bytes4 signature, bytes32 dataHash, uint targetBlock);
 
         function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                var data = hash_to_data[dataHash];
                 lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
 
                 var call = key_to_calls[lastCallKey];
                 call.targetAddress = to;
                 call.scheduledBy = msg.sender;
                 call.sig = signature;
-                call.data = data;
+                call.dataHash = dataHash;
                 call.targetBlock = targetBlock;
                 call.deposit = msg.value;
 

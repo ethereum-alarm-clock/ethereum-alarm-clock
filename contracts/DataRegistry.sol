@@ -1,4 +1,7 @@
-contract DataRegistry {
+import "owned";
+
+
+contract DataRegistry is owned {
         bytes lastData;
         uint lastDataLength;
         bytes32 lastDataHash;

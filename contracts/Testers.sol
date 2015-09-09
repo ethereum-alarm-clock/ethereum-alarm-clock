@@ -3,6 +3,21 @@ contract AlarmAPI {
 }
 
 
+contract TestDataRegistry {
+        uint8 public wasSuccessful = 0;
+
+        function registerUInt(address to, uint v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+}
+
+
 contract NoArgs {
         bool public value;
         bytes32 public dataHash;

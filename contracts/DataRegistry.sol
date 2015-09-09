@@ -1,7 +1,4 @@
-import "owned";
-
-
-contract DataRegistry is owned {
+contract DataRegistry {
         bytes lastData;
         uint lastDataLength;
         bytes32 lastDataHash;
@@ -27,17 +24,16 @@ contract DataRegistry is owned {
 
         function registerData() public {
                 bytes trunc;
-                //if (msg.data.length > 4) {
-                //        trunc.length = msg.data.length - 4;
-                //        for (uint i = 0; i < trunc.length; i++) {
-                //                trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
-                //        }
-                //}
-                //hash_to_data[sha3(trunc)] = trunc;
-                //lastDataHash = sha3(trunc);
+                if (msg.data.length > 4) {
+                        trunc.length = msg.data.length - 4;
+                        for (uint i = 0; i < trunc.length; i++) {
+                                trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
+                        }
+                }
+                hash_to_data[sha3(trunc)] = trunc;
+                lastDataHash = sha3(trunc);
                 lastDataLength = trunc.length;
-                //lastData = trunc;
-                //DataRegistered(msg.sender, lastDataHash, lastData);
+                lastData = trunc;
+                DataRegistered(msg.sender, lastDataHash, lastData);
         }
 }
-

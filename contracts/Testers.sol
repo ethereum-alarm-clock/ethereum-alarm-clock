@@ -1,5 +1,5 @@
 contract AlarmAPI {
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {}
+        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32);
 }
 
 
@@ -7,6 +7,36 @@ contract TestDataRegistry {
         uint8 public wasSuccessful = 0;
 
         function registerUInt(address to, uint v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerInt(address to, int v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerBytes(address to, bytes32 v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerAddress(address to, address v) public {
             bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
                 wasSuccessful = 1;

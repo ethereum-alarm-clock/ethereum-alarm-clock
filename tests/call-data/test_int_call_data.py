@@ -8,13 +8,13 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_registering_uint(geth_node, deployed_contracts):
+def test_registering_int(geth_node, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.TestDataRegistry
 
     assert client_contract.wasSuccessful.call() == 0
 
-    txn_hash = client_contract.registerUInt.sendTransaction(alarm._meta.address, 3)
+    txn_hash = client_contract.registerInt.sendTransaction(alarm._meta.address, 3)
     wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
 
     assert client_contract.wasSuccessful.call() == 1

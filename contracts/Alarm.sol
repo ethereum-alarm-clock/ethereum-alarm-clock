@@ -1,14 +1,4 @@
-import "owned";
-
-
-contract DataRegistryAPI {
-        function getCallData(bytes32 dataHash) public returns (bytes) {}
-}
-
-
-contract Alarm is owned {
-        address dataRegistryAddress;
-
+contract Alarm {
         bytes32 lastCallKey;
 
         function getLastCallKey() public returns (bytes32) {
@@ -75,9 +65,53 @@ contract Alarm is owned {
                 return key_to_calls[callKey].wasSuccessful;
         }
 
-        function getCallData(bytes32 callKey) public returns (bytes) {
-                DataRegistryAPI dataRegistry = DataRegistryAPI(dataRegistryAddress);
-                return dataRegistry.getCallData(key_to_calls[callKey].dataHash);
+        function getDataHash(bytes32 callKey) public returns (bytes32) {
+                return key_to_calls[callKey].dataHash;
+        }
+
+        /*
+         *  Data Registry API
+         */
+        bytes lastData;
+        uint lastDataLength;
+        bytes32 lastDataHash;
+
+        function getLastDataHash() public returns (bytes32) {
+                return lastDataHash;
+        }
+
+        function getLastDataLength() public returns (uint) {
+                return lastDataLength;
+        }
+
+        function getLastData() public returns (bytes) {
+                return lastData;
+        }
+
+        function getCallData(bytes32 dataHash) public returns (bytes) {
+                return hash_to_data[dataHash];
+        }
+
+        mapping (bytes32 => bytes) hash_to_data;
+
+        /*
+         *  Main Alarm API
+         */
+        event DataRegistered(address registeredBy, bytes32 dataHash, bytes data);
+
+        function registerData() public {
+                bytes trunc;
+                if (msg.data.length > 4) {
+                        trunc.length = msg.data.length - 4;
+                        for (uint i = 0; i < trunc.length; i++) {
+                                trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
+                        }
+                }
+                hash_to_data[sha3(trunc)] = trunc;
+                lastDataHash = sha3(trunc);
+                lastDataLength = trunc.length;
+                lastData = trunc;
+                DataRegistered(msg.sender, lastDataHash, lastData);
         }
 
         /*
@@ -91,7 +125,9 @@ contract Alarm is owned {
                 call.triggeredBy = tx.origin;
                 call.calledAtBlock = block.number;
 
-                call.wasSuccessful = call.targetAddress.call(call.sig, call.data);
+                var data = getCallData(call.dataHash);
+
+                call.wasSuccessful = call.targetAddress.call(call.sig, data);
                 call.wasCalled = true;
 
                 // Log how much gas this call used.

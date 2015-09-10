@@ -1,3 +1,4 @@
+
 from populus.utils import wait_for_transaction
 
 
@@ -8,13 +9,13 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_registering_uint(geth_node, deployed_contracts):
+def test_registering_address(geth_node, deployed_contracts, geth_coinbase):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.TestDataRegistry
 
     assert client_contract.wasSuccessful.call() == 0
 
-    txn_hash = client_contract.registerUInt.sendTransaction(alarm._meta.address, 3)
+    txn_hash = client_contract.registerBytes.sendTransaction(alarm._meta.address, geth_coinbase)
     wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
 
     assert client_contract.wasSuccessful.call() == 1
@@ -23,4 +24,4 @@ def test_registering_uint(geth_node, deployed_contracts):
     assert data_hash is not None
 
     data = alarm.getLastData.call()
-    assert data == '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03'
+    assert data == geth_coinbase

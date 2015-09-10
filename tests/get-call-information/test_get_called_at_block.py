@@ -28,4 +28,4 @@ def test_getting_called_at_block(geth_node, deployed_contracts):
     call_txn = alarm._meta.rpc_client.get_transaction_by_hash(call_txn_hash)
 
     assert client_contract.value.call() is True
-    assert alarm.getCallCalledAtBlock.call(callKey) == call_txn['blockNumber']
+    assert alarm.getCallCalledAtBlock.call(callKey) == int(call_txn['blockNumber'], 16)

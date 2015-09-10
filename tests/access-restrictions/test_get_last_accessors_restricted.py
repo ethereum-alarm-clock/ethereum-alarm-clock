@@ -1,4 +1,5 @@
 def test_last_call_data_restrictions(deployed_contracts, eth_coinbase):
+    assert False, "This needs to actually be fleshed out"
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.PassesUInt
 

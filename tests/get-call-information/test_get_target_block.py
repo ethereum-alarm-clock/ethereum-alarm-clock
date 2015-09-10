@@ -1,20 +1,24 @@
-def test_getting_gas_used(deployed_contracts, eth_coinbase):
+from populus.utils import wait_for_transaction
+
+
+deploy_max_wait = 15
+deploy_max_first_block_wait = 180
+deploy_wait_for_block = 1
+
+geth_max_wait = 45
+
+
+def test_getting_target_block(geth_node, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.NoArgs
 
-    alarm.client.defaults['from'] = eth_coinbase
-    client_contract.client.defaults['from'] = eth_coinbase
+    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
+    wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    txn = client_contract._meta.rpc_client.get_transaction_by_hash(txn_hash)
 
-    called_at_block = client_contract.client.get_block_number()
-
-    client_contract.scheduleIt.sendTransaction(alarm.address)
-
-    assert client_contract.value.call() is False
+    created_at_block = int(txn['blockNumber'], 16)
 
     callKey = alarm.getLastCallKey.call()
     assert callKey is not None
 
-    alarm.doCall.sendTransaction(callKey)
-
-    assert client_contract.value.call() is True
-    assert alarm.getCallTargetBlock.call(callKey) == called_at_block + 100
+    assert alarm.getCallTargetBlock.call(callKey) == created_at_block + 100

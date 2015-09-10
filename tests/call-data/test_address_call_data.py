@@ -1,4 +1,3 @@
-
 from populus.utils import wait_for_transaction
 
 

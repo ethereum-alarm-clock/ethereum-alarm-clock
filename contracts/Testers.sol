@@ -75,8 +75,9 @@ contract Fails {
         bytes32 public dataHash;
 
         function doIt() public {
-                uint[] x;
-                x[1];
+                int x = 1;
+                int y = 0;
+                x / y;
         }
 
         function scheduleIt(address to) public {

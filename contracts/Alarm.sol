@@ -88,8 +88,8 @@ contract Alarm {
                 return lastData;
         }
 
-        function getCallData(bytes32 dataHash) public returns (bytes) {
-                return hash_to_data[dataHash];
+        function getCallData(bytes32 callKey) public returns (bytes) {
+                return hash_to_data[key_to_calls[callKey].dataHash];
         }
 
         mapping (bytes32 => bytes) hash_to_data;
@@ -125,7 +125,7 @@ contract Alarm {
                 call.triggeredBy = tx.origin;
                 call.calledAtBlock = block.number;
 
-                var data = getCallData(call.dataHash);
+                var data = getCallData(callKey);
 
                 call.wasSuccessful = call.targetAddress.call(call.sig, data);
                 call.wasCalled = true;

@@ -14,6 +14,7 @@ contract Alarm is owned {
         function withdraw(uint value) {
                 uint accountBalance = accountBalances[msg.sender];
                 if (accountBalance >= value) {
+                        accountBalances[msg.sender] -= value;
                         msg.sender.send(value);
                 }
         }

@@ -1,3 +1,5 @@
+from ethereum.utils import denoms
+
 from populus.utils import wait_for_transaction
 
 
@@ -8,33 +10,44 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
+def get_balance_delta(rpc_client, txn_hash):
+    coinbase = rpc_client.get_coinbase()
+    txn = rpc_client.get_transaction_by_hash(txn_hash)
+    before_txn_balance = rpc_client.get_balance(coinbase, int(txn['blockNumber'], 16) - 1)
+    after_txn_balance = rpc_client.get_balance(coinbase, txn['blockNumber'])
+
+    delta = before_txn_balance - after_txn_balance
+    return delta
+
+
 def test_withdrawing_funds(geth_node, geth_coinbase, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     block_reward = 5000000000000000000
 
     assert alarm.accountBalances.call(geth_coinbase) == 0
 
-    txn_1_hash = alarm.deposit.sendTransaction(geth_coinbase, value=1000)
-    txn_1_receipt = wait_for_transaction(rpc_client, txn_1_hash)
-    txn_1 = rpc_client.get_transaction_by_hash(txn_1_hash)
+    txn_1_hash = alarm.deposit.sendTransaction(geth_coinbase, value=1000 * denoms.ether)
+    wait_for_transaction(rpc_client, txn_1_hash)
 
-    txn_1_gas_cost = int(txn_1['gasPrice'], 16) * int(txn_1_receipt['gasUsed'], 16)
+    txn_1_delta = get_balance_delta(rpc_client, txn_1_hash)
 
-    expected_balance = rpc_client.get_balance(geth_coinbase, int(txn_1['blockNumber'], 16) - 1) - 1000 - txn_1_gas_cost + block_reward
-    assert rpc_client.get_balance(geth_coinbase, txn_1['blockNumber']) == expected_balance
+    assert txn_1_delta == 1000 * denoms.ether - block_reward
+    assert alarm.accountBalances.call(geth_coinbase) == 1000 * denoms.ether
 
-    assert alarm.accountBalances.call(geth_coinbase) == 1000
+    txn_2_hash = alarm.withdraw.sendTransaction(250 * denoms.ether)
+    wait_for_transaction(rpc_client, txn_2_hash)
 
-    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(250))
+    txn_2_delta = get_balance_delta(rpc_client, txn_2_hash)
 
-    expected_balance += 250
-    assert rpc_client.get_balance(geth_coinbase) == expected_balance
+    assert txn_2_delta == -1 * 250 * denoms.ether - block_reward
 
-    assert alarm.accountBalances.call(geth_coinbase) == 750
+    assert alarm.accountBalances.call(geth_coinbase) == 750 * denoms.ether
 
-    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(500))
+    txn_3_hash = alarm.withdraw.sendTransaction(500 * denoms.ether)
+    wait_for_transaction(rpc_client, txn_3_hash)
 
-    expected_balance += 500
-    assert rpc_client.get_balance(geth_coinbase) == expected_balance
+    txn_3_delta = get_balance_delta(rpc_client, txn_3_hash)
 
-    assert alarm.accountBalances.call(geth_coinbase) == 250
+    assert txn_3_delta == -1 * 500 * denoms.ether - block_reward
+
+    assert alarm.accountBalances.call(geth_coinbase) == 250 * denoms.ether

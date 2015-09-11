@@ -1,3 +1,5 @@
+from ethereum.utils import denoms
+
 from populus.utils import wait_for_transaction
 
 
@@ -9,7 +11,6 @@ geth_max_wait = 45
 
 
 def test_withdrawing_with_insufficient_funds(geth_node, geth_coinbase, rpc_client, deployed_contracts):
-    assert False
     alarm = deployed_contracts.Alarm
 
     assert alarm.accountBalances.call(geth_coinbase) == 0
@@ -18,10 +19,10 @@ def test_withdrawing_with_insufficient_funds(geth_node, geth_coinbase, rpc_clien
 
     assert alarm.accountBalances.call(geth_coinbase) == 1000
 
-    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(250))
+    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(1001))
 
-    assert alarm.accountBalances.call(geth_coinbase) == 750
+    assert alarm.accountBalances.call(geth_coinbase) == 1000
 
-    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(500))
+    wait_for_transaction(rpc_client, alarm.withdraw.sendTransaction(1000))
 
-    assert alarm.accountBalances.call(geth_coinbase) == 250
+    assert alarm.accountBalances.call(geth_coinbase) == 0

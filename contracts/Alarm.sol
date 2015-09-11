@@ -24,6 +24,82 @@ contract Alarm {
         }
 
         /*
+         *  Call tracking API
+         */
+        struct Node {
+                bytes32 callKey;
+                bytes32 left;
+                bytes32 right;
+        }
+
+        bytes32 rootNode;
+        mapping (bytes32 => Node) call_to_node;
+
+        function getNextCallKey(uint blockNumber) public returns (bytes32) {
+                if (rootNode == 0x0) {
+                        // No calls registered
+                        return 0x0;
+                }
+                Node currentNode = call_to_node[rootNode];
+
+                while (true) {
+                        // needs to find the next call(Node)
+                        //currentCall = key_to_calls[currentNode.callKey];
+                }
+        }
+
+        function placeCall(bytes32 callKey) internal {
+                /*
+                 * Calls are stored in a tree structure.  Each tree node
+                 * represents a single call.  Nodes have a left and right
+                 * child.  The left child represents a call that should happen
+                 * before the node.  The right child represents a call that
+                 * should happen after the node.
+                 */
+                Call targetCall = key_to_calls[callKey];
+
+                if (callKey == call_to_node[callKey].callKey) {
+                        // This call key is already placed in the tree.
+                        return;
+                }
+
+                if (rootNode.callKey == 0x0) {
+                        // This is the first call placement and thus should be
+                        // set as the root node.
+                        rootNode = callKey;
+                }
+
+                Node currentNode = call_to_node[rootNode];
+
+                while (true) {
+                        if (currentNode.callKey == 0x0) {
+                                // This is a new node and should be mapped 
+                                currentNode.callKey = callKey;
+                                return;
+                        }
+
+                        Call currentCall = key_to_calls[currentNode.callKey];
+
+                        if (targetCall.targetBlock < currentCall.targetBlock) {
+                                // Call should occure before the current node
+                                // and thus should exist in the left subtree.
+                                if (currentNode.left == 0x0) {
+                                        currentNode.left = callKey;
+                                }
+                                currentNode = call_to_node[currentNode.left];
+                                continue;
+                        }
+
+                        // Call should occur after the current node and thus
+                        // should exist in the right subtree.
+                        if (currentNode.right == 0x0) {
+                                currentNode.right = callKey;
+                        }
+                        currentNode = call_to_node[currentNode.right];
+                }
+        }
+
+        /*
          *  Call Information API
          */
         bytes32 lastCallKey;

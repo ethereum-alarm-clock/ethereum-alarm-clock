@@ -1,7 +1,7 @@
 import "owned";
 
 
-contract Alarm is owned {
+contract Alarm {
         /*
          *  Account Management API
          */
@@ -28,7 +28,7 @@ contract Alarm is owned {
          */
         bytes32 lastCallKey;
 
-        function getLastCallKey() onlyowner public returns (bytes32) {
+        function getLastCallKey() public returns (bytes32) {
                 return lastCallKey;
         }
 
@@ -103,15 +103,15 @@ contract Alarm is owned {
         uint lastDataLength;
         bytes32 lastDataHash;
 
-        function getLastDataHash() onlyowner public returns (bytes32) {
+        function getLastDataHash() public returns (bytes32) {
                 return lastDataHash;
         }
 
-        function getLastDataLength() onlyowner public returns (uint) {
+        function getLastDataLength() public returns (uint) {
                 return lastDataLength;
         }
 
-        function getLastData() onlyowner public returns (bytes) {
+        function getLastData() public returns (bytes) {
                 return lastData;
         }
 

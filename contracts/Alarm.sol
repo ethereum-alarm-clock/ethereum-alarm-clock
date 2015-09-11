@@ -1,7 +1,33 @@
-contract Alarm {
+import "owned";
+
+
+contract Alarm is owned {
+        /*
+         *  Account Management API
+         */
+        mapping (address => uint) public accountBalances;
+
+        function deposit(address accountAddress) {
+                accountBalances[accountAddress] += msg.value;
+        }
+
+        function withdraw(uint value) {
+                uint accountBalance = accountBalances[msg.sender];
+                if (accountBalance >= value) {
+                        msg.sender.send(value);
+                }
+        }
+
+        function() {
+                accountBalances[msg.sender] += msg.value;
+        }
+
+        /*
+         *  Call Information API
+         */
         bytes32 lastCallKey;
 
-        function getLastCallKey() public returns (bytes32) {
+        function getLastCallKey() onlyowner public returns (bytes32) {
                 return lastCallKey;
         }
 
@@ -76,15 +102,15 @@ contract Alarm {
         uint lastDataLength;
         bytes32 lastDataHash;
 
-        function getLastDataHash() public returns (bytes32) {
+        function getLastDataHash() onlyowner public returns (bytes32) {
                 return lastDataHash;
         }
 
-        function getLastDataLength() public returns (uint) {
+        function getLastDataLength() onlyowner public returns (uint) {
                 return lastDataLength;
         }
 
-        function getLastData() public returns (bytes) {
+        function getLastData() onlyowner public returns (bytes) {
                 return lastData;
         }
 

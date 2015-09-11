@@ -158,3 +158,13 @@ contract PassesAddress {
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 100);
         }
 }
+
+
+contract DepositsFunds {
+        bool public sentSuccessful;
+
+        function doIt(address a, uint value) public {
+                sentSuccessful = a.send(value);
+                sentSuccessful = true;
+        }
+}

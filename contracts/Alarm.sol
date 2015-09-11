@@ -30,25 +30,29 @@ contract Alarm {
                 bytes32 callKey;
                 bytes32 left;
                 bytes32 right;
+                bytes position;
         }
 
-        bytes32 rootNode;
+        bytes32 public rootNode;
         mapping (bytes32 => Node) call_to_node;
 
-        function getNextCallKey(uint blockNumber) public returns (bytes32) {
-                if (rootNode == 0x0) {
-                        // No calls registered
-                        return 0x0;
-                }
-                Node currentNode = call_to_node[rootNode];
+        //function getNextCallKey(uint blockNumber) public returns (bytes32) {
+        //        if (rootNode == 0x0) {
+        //                // No calls registered
+        //                return 0x0;
+        //        }
+        //        Node currentNode = call_to_node[rootNode];
 
-                while (true) {
-                        // needs to find the next call(Node)
-                        //currentCall = key_to_calls[currentNode.callKey];
-                }
+        //        while (true) {
+        //                // needs to find node which represents the next call.
+        //                //currentCall = key_to_calls[currentNode.callKey];
+        //        }
+        //}
+        function getCallTreePosition(bytes32 callKey) public returns (bytes) {
+                return call_to_node[callKey].position;
         }
 
-        function placeCall(bytes32 callKey) internal {
+        function placeCallInTree(bytes32 callKey) internal {
                 /*
                  * Calls are stored in a tree structure.  Each tree node
                  * represents a single call.  Nodes have a left and right
@@ -56,6 +60,9 @@ contract Alarm {
                  * before the node.  The right child represents a call that
                  * should happen after the node.
                  */
+                bytes position;
+                position.length = 1;
+                position[0] = 'b';
                 Call targetCall = key_to_calls[callKey];
 
                 if (callKey == call_to_node[callKey].callKey) {
@@ -63,7 +70,7 @@ contract Alarm {
                         return;
                 }
 
-                if (rootNode.callKey == 0x0) {
+                if (rootNode == 0x0) {
                         // This is the first call placement and thus should be
                         // set as the root node.
                         rootNode = callKey;
@@ -75,10 +82,12 @@ contract Alarm {
                         if (currentNode.callKey == 0x0) {
                                 // This is a new node and should be mapped 
                                 currentNode.callKey = callKey;
+                                currentNode.position = position;
                                 return;
                         }
 
                         Call currentCall = key_to_calls[currentNode.callKey];
+                        position.length += 1;
 
                         if (targetCall.targetBlock < currentCall.targetBlock) {
                                 // Call should occure before the current node
@@ -86,6 +95,7 @@ contract Alarm {
                                 if (currentNode.left == 0x0) {
                                         currentNode.left = callKey;
                                 }
+                                position[position.length - 1] = "l";
                                 currentNode = call_to_node[currentNode.left];
                                 continue;
                         }
@@ -95,6 +105,7 @@ contract Alarm {
                         if (currentNode.right == 0x0) {
                                 currentNode.right = callKey;
                         }
+                        position[position.length - 1] = "r";
                         currentNode = call_to_node[currentNode.right];
                 }
         }
@@ -259,6 +270,8 @@ contract Alarm {
                 call.dataHash = dataHash;
                 call.targetBlock = targetBlock;
                 call.deposit = msg.value;
+
+                placeCallInTree(lastCallKey);
 
                 return lastCallKey;
         }

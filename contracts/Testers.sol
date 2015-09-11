@@ -168,3 +168,19 @@ contract DepositsFunds {
                 sentSuccessful = true;
         }
 }
+
+
+contract SpecifyBlock {
+        bool public value;
+
+        function doIt() public {
+                value = true;
+        }
+
+        function scheduleIt(address to, uint blockNumber) public {
+                to.call(bytes4(sha3("registerData()")));
+
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), blockNumber);
+        }
+}

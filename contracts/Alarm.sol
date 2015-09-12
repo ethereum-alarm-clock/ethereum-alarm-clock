@@ -39,6 +39,12 @@ contract Alarm {
         mapping (bytes32 => Node) call_to_node;
 
         function _shouldGoLeft(bytes32 callKey, uint blockNumber) internal returns (bool) {
+                /*
+                 * not if left is empty
+                 * not if current node is most recent call.
+                 * not if current node is in the past or current block.
+                 * not if left node is in the past.
+                 */
                 Node currentNode = call_to_node[callKey];
 
                 // Nowhere to go.
@@ -69,6 +75,12 @@ contract Alarm {
         }
 
         function _shouldGoRight(bytes32 callKey, uint blockNumber) internal returns (bool) {
+                /*
+                 * not if right is empty.
+                 * not if current node is already in the future.
+                 * not if current node is equal to targetBlock and it isn't already called.
+                 *
+                 */
                 Node currentNode = call_to_node[callKey];
 
                 // Nowhere to go.

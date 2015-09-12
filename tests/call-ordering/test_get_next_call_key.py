@@ -14,11 +14,11 @@ def test_get_next_call_with_no_duplicate_block_numbers(geth_node, rpc_client, de
              / \
             /   \
            /     \
-          7       11
+          7       13
          /       /  \
-        4       9    12
+        4       9    15
        / \       \
-      1   5       10
+      1   5       11
            \
             6
     """
@@ -27,20 +27,42 @@ def test_get_next_call_with_no_duplicate_block_numbers(geth_node, rpc_client, de
 
     anchor_block = rpc_client.get_block_number()
 
-    keys_to_block = {}
+    call_keys = []
 
-    blocks = (8, 7, 11, 4, 5, 1, 9, 6, 10, 12)
+    blocks = [anchor_block + 1000 + n for n in (8, 7, 13, 4, 5, 1, 9, 6, 11, 15)]
 
     for n in blocks:
-        wait_for_transaction(rpc_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 1000 + n))
+        wait_for_transaction(rpc_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, n))
 
         last_call_key = alarm.getLastCallKey.call()
         assert last_call_key is not None
 
-        keys_to_block[last_call_key] = n
+        call_keys.append(last_call_key)
 
-    assert False
+    key_to_block = dict(zip(call_keys, blocks))
 
-    actual_next_blocks = [
-        alarm.getNextCallKey.call(anchor_block + 1000 + n) for i in range(1, 14)
-    ]
+    expected_next_blocks = {
+        anchor_block + 1000 + 1: anchor_block + 1000 + 1,
+        anchor_block + 1000 + 2: anchor_block + 1000 + 4,
+        anchor_block + 1000 + 3: anchor_block + 1000 + 4,
+        anchor_block + 1000 + 4: anchor_block + 1000 + 4,
+        anchor_block + 1000 + 5: anchor_block + 1000 + 5,
+        anchor_block + 1000 + 6: anchor_block + 1000 + 6,
+        anchor_block + 1000 + 7: anchor_block + 1000 + 7,
+        anchor_block + 1000 + 8: anchor_block + 1000 + 8,
+        anchor_block + 1000 + 9: anchor_block + 1000 + 9,
+        anchor_block + 1000 + 10: anchor_block + 1000 + 11,
+        anchor_block + 1000 + 11: anchor_block + 1000 + 11,
+        anchor_block + 1000 + 12: anchor_block + 1000 + 13,
+        anchor_block + 1000 + 13: anchor_block + 1000 + 13,
+        anchor_block + 1000 + 14: anchor_block + 1000 + 15,
+        anchor_block + 1000 + 15: anchor_block + 1000 + 15,
+        anchor_block + 1000 + 16: anchor_block + 1000 + 0,
+    }
+
+    actual_next_blocks = {
+        n: key_to_block[alarm.getNextCallKey.call(n)] for n in expected_next_blocks.keys()
+    }
+
+    assert actual_next_blocks == expected_next_blocks
+    x = 3

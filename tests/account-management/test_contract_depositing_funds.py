@@ -14,19 +14,21 @@ def test_contract_depositing_funds(geth_node, geth_coinbase, rpc_client, deploye
 
     assert alarm.accountBalances.call(depositer._meta.address) == 0
 
-    wait_for_transaction(rpc_client, depositer._meta.rpc_client.send_transaction(
+    wait_for_transaction(rpc_client, rpc_client.send_transaction(
         to=depositer._meta.address,
-        value=1000,
+        value=1000000,
     ))
 
-    assert depositer.sentSuccessful.call() is False
+    assert rpc_client.get_balance(depositer._meta.address) == 1000000
+
+    assert depositer.sentSuccessful.call() == 0
 
     wait_for_transaction(rpc_client, depositer.doIt.sendTransaction(
         alarm._meta.address,
         123,
     ))
 
-    assert depositer.sentSuccessful.call() is True
+    assert depositer.sentSuccessful.call() == 1
 
     assert alarm.accountBalances.call(geth_coinbase) == 0
     assert alarm.accountBalances.call(depositer._meta.address) == 123

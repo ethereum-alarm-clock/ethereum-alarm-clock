@@ -161,11 +161,16 @@ contract PassesAddress {
 
 
 contract DepositsFunds {
-        bool public sentSuccessful;
+        uint public sentSuccessful;
 
         function doIt(address a, uint value) public {
-                sentSuccessful = a.send(value);
-                sentSuccessful = true;
+                bool result = a.call.value(value)(bytes4(sha3("deposit(address)")), address(this));
+                if (result) {
+                        sentSuccessful = 1;
+                }
+                else {
+                        sentSuccessful = 2;
+                }
         }
 }
 

@@ -9,6 +9,19 @@ geth_max_wait = 45
 
 
 def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
+    """
+              8
+             / \
+            /   \
+           /     \
+          7       10
+         /       /  \
+        4       9    10
+       / \       \
+      1   6       9
+           \
+            6
+    """
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.SpecifyBlock
 
@@ -37,6 +50,9 @@ def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
         'brr',
     )
 
-    for call_key, expected_position in zip(call_keys, expected_positions):
-        actual_position = alarm.getCallTreePosition.call(call_key)
+    actual_positions = [
+        alarm.getCallTreePosition.call(call_key) for call_key in call_keys
+    ]
+
+    for actual_position, expected_position in zip(actual_positions, expected_positions):
         assert actual_position == expected_position

@@ -178,9 +178,9 @@ contract SpecifyBlock {
         }
 
         function scheduleIt(address to, uint blockNumber) public {
-                to.call(bytes4(sha3("registerData()")));
+                to.call(bytes4(sha3("registerData()")), block.timestamp);
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), blockNumber);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber);
         }
 }

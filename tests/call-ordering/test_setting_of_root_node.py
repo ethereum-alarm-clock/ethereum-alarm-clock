@@ -12,7 +12,7 @@ def test_first_call_registered_is_set_as_root(geth_node, rpc_client, deployed_co
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.SpecifyBlock
 
-    assert alarm.rootNode.call(raw=True) == "0x0000000000000000000000000000000000000000000000000000000000000000"
+    assert alarm.rootNodeCallKey.call(raw=True) == "0x0000000000000000000000000000000000000000000000000000000000000000"
 
     current_block = rpc_client.get_block_number()
 
@@ -21,4 +21,4 @@ def test_first_call_registered_is_set_as_root(geth_node, rpc_client, deployed_co
     last_call_key = alarm.getLastCallKey.call()
     assert last_call_key is not None
 
-    assert alarm.rootNode.call() == last_call_key
+    assert alarm.rootNodeCallKey.call() == last_call_key

@@ -33,21 +33,94 @@ contract Alarm {
                 bytes position;
         }
 
-        bytes32 public rootNode;
+        bytes32 public rootNodeCallKey;
+        bytes32 public mostRecentCallKey;
+
         mapping (bytes32 => Node) call_to_node;
 
-        //function getNextCallKey(uint blockNumber) public returns (bytes32) {
-        //        if (rootNode == 0x0) {
-        //                // No calls registered
-        //                return 0x0;
-        //        }
-        //        Node currentNode = call_to_node[rootNode];
+        function _shouldGoLeft(bytes32 callKey, uint blockNumber) internal returns (bool) {
+                Node currentNode = call_to_node[callKey];
 
-        //        while (true) {
-        //                // needs to find node which represents the next call.
-        //                //currentCall = key_to_calls[currentNode.callKey];
-        //        }
-        //}
+                // Nowhere to go.
+                if (currentNode.left == 0x0) {
+                        return false;
+                }
+
+                // Already called.
+                if (callKey == mostRecentCallKey) {
+                        return false;
+                }
+
+                Call currentCall = key_to_calls[callKey];
+
+                // Current call is already in the past or is up next.
+                if (currentCall.targetBlock <= blockNumber) {
+                        return false;
+                }
+
+                Call leftCall = key_to_calls[currentNode.left];
+
+                // Left call is in the past
+                if (leftCall.targetBlock < blockNumber) {
+                        return false;
+                }
+
+                return true;
+        }
+
+        function _shouldGoRight(bytes32 callKey, uint blockNumber) internal returns (bool) {
+                Node currentNode = call_to_node[callKey];
+
+                // Nowhere to go.
+                if (currentNode.right == 0x0) {
+                        return false;
+                }
+
+                Call currentCall = key_to_calls[callKey];
+
+                // Current call is already in the future
+                if (currentCall.targetBlock > blockNumber) {
+                        return false;
+                }
+
+                if (callKey != mostRecentCallKey && currentCall.targetBlock == blockNumber) {
+                        return false;
+                }
+
+                return true;
+        }
+
+        function getNextCallKey(uint blockNumber) public returns (bytes32) {
+                if (rootNodeCallKey == 0x0) {
+                        // No calls registered
+                        return bytes32(0x0);
+                }
+
+                Node currentNode = call_to_node[rootNodeCallKey];
+                
+                bool hasLeft;
+                bool hasRight;
+                bool isEqual;
+                bool isBefore;
+                bool isAfter;
+                bool isMostRecent;
+
+                while (true) {
+                        if (_shouldGoLeft(currentNode.callKey, blockNumber)) {
+                                currentNode = call_to_node[currentNode.left];
+                                continue;
+                        }
+                        if (_shouldGoRight(currentNode.callKey, blockNumber)) {
+                                currentNode = call_to_node[currentNode.right];
+                                continue;
+                        }
+                        if (currentNode.callKey == mostRecentCallKey) {
+                                return bytes32(0x0);
+                        }
+                        return currentNode.callKey;
+                }
+        }
+
         function getCallTreePosition(bytes32 callKey) public returns (bytes) {
                 return call_to_node[callKey].position;
         }
@@ -60,9 +133,6 @@ contract Alarm {
                  * before the node.  The right child represents a call that
                  * should happen after the node.
                  */
-                bytes position;
-                position.length = 1;
-                position[0] = 'b';
                 Call targetCall = key_to_calls[callKey];
 
                 if (callKey == call_to_node[callKey].callKey) {
@@ -70,13 +140,17 @@ contract Alarm {
                         return;
                 }
 
-                if (rootNode == 0x0) {
+                if (rootNodeCallKey == 0x0) {
                         // This is the first call placement and thus should be
                         // set as the root node.
-                        rootNode = callKey;
+                        rootNodeCallKey = callKey;
                 }
 
-                Node currentNode = call_to_node[rootNode];
+                Node currentNode = call_to_node[rootNodeCallKey];
+
+                bytes position;
+                position.length = 1;
+                position[0] = "b";
 
                 while (true) {
                         if (currentNode.callKey == 0x0) {

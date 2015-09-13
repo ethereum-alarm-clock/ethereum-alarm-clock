@@ -145,6 +145,10 @@ scheduled call.
 
     Returns the result of `call(...)` when the call was executed.
 
+- `checkIfCancelled(bytes32 callKey) public returns (bool)`
+
+    Returns whether the call was cancelled.
+
 - `getDataHash(bytes32 callKey) public returns (bytes32)`
 
     Returns the `sha3` hash of the data for the scheduled call.
@@ -217,14 +221,20 @@ Anyone operator of an ethereum address that can initiate transactions can do
 this.  A high level overview of the process is as follows:
 
 1. Query the Alarm service for the next scheduled call.
+2. Query whether the call has any siblings (other calls scheduled for the same block).
 2. When the target block number comes up (is the next block that would be
-   mined), submit a transaction to the Alarm service with call key for the
-   scheduled call.
-3. As part of the transaction your Alarm account will receive 100%
-   reiumbursment for the gas cost of executing the transaction as well as an
-   additional 1% of the `gasUsed` value as payment for the service.
+   mined), submit a transaction to the Alarm service for each call key you wish
+   to execute.
 
-The following API is available for operators.
+As part of the transaction your Alarm account will receive 100% reiumbursment
+for the gas cost of executing the transaction as well as an additional 1% of
+the `gasUsed` value as payment for the service.
+
+When executing a scheduled call, you should always provide the maximum possible
+gas for your transaction as you will be reiumbursed for the full gas usage, and
+the more gas the call uses, the more you will get paid.
+
+The following API is available for call execution.
 
 
 - `getNextBlockWithCall(uint afterBlock) returns (uint)`

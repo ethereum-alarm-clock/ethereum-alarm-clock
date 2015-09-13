@@ -1,12 +1,12 @@
 contract Alarm {
         /*
          *  Administration API
+         *
+         *  There is currently no special administrative API beyond the hard
+         *  coded owner address which receives 1% of each executed call.  This
+         *  eliminates any need for trust as nobody has any special access.
          */
-        function Alarm() {
-                uint x = 3;
-        }
-
-        address owner;
+        address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         /*
          *  Account Management API
@@ -40,7 +40,6 @@ contract Alarm {
         }
 
         bytes32 public rootNodeCallKey;
-        bytes32 public mostRecentCallKey;
 
         mapping (bytes32 => Node) call_to_node;
 
@@ -59,7 +58,7 @@ contract Alarm {
         function _shouldGoLeft(bytes32 callKey, uint blockNumber) internal returns (bool) {
                 /*
                  * not if left is empty
-                 * not if current node is most recent call.
+                 * not if current node was already called
                  * not if current node is in the past or current block.
                  * not if left node is in the past.
                  */
@@ -70,12 +69,12 @@ contract Alarm {
                         return false;
                 }
 
+                Call currentCall = key_to_calls[callKey];
+
                 // Already called.
-                if (callKey == mostRecentCallKey) {
+                if (currentCall.wasCalled) {
                         return false;
                 }
-
-                Call currentCall = key_to_calls[callKey];
 
                 // Current call is already in the past or is up next.
                 if (currentCall.targetBlock <= blockNumber) {
@@ -111,7 +110,9 @@ contract Alarm {
                         return false;
                 }
 
-                if (callKey != mostRecentCallKey && currentCall.targetBlock == blockNumber) {
+                // Current call equals the desired block number and has not
+                // been called yet and is not cancelled.
+                if (!currentCall.isCancelled && !currentCall.wasCalled && currentCall.targetBlock == blockNumber) {
                         return false;
                 }
 
@@ -129,7 +130,7 @@ contract Alarm {
         function getNextCallKey(uint blockNumber) public returns (bytes32) {
                 if (rootNodeCallKey == 0x0) {
                         // No calls registered
-                        return bytes32(0x0);
+                        return 0x0;
                 }
 
                 Node currentNode = call_to_node[rootNodeCallKey];
@@ -144,17 +145,32 @@ contract Alarm {
                                 continue;
                         }
                         // Not if it was already called
-                        if (currentNode.callKey == mostRecentCallKey) {
-                                return bytes32(0x0);
+                        if (key_to_calls[currentNode.callKey].wasCalled) {
+                                return 0x0;
                         }
 
                         // Not if it is before the blockNumber
                         if (key_to_calls[currentNode.callKey].targetBlock < blockNumber) {
-                                return bytes32(0x0);
+                                return 0x0;
                         }
 
                         // Then it must be the next one.
                         return currentNode.callKey;
+                }
+        }
+
+        function getNextCallSibling(bytes32 callKey) public returns (bytes32) {
+                var node = call_to_node[callKey];
+                var call = key_to_calls[callKey];
+
+                if (node.right == 0x0) {
+                        return 0x0;
+                }
+
+                var rightCall = key_to_calls[node.right];
+
+                if (!rightCall.isCancelled && rightCall.targetBlock == call.targetBlock) {
+                        return node.right;
                 }
         }
 
@@ -239,9 +255,10 @@ contract Alarm {
                 uint gasUsed;
                 uint gasCost;
                 uint payout;
-                uint profit;
+                uint fee;
                 address triggeredBy;
                 bytes4 sig;
+                bool isCancelled;
                 bool wasCalled;
                 bool wasSuccessful;
                 bytes32 dataHash;
@@ -288,6 +305,10 @@ contract Alarm {
                 return key_to_calls[callKey].wasSuccessful;
         }
 
+        function checkIfCancelled(bytes32 callKey) public returns (bool) {
+                return key_to_calls[callKey].isCancelled;
+        }
+
         function getDataHash(bytes32 callKey) public returns (bytes32) {
                 return key_to_calls[callKey].dataHash;
         }
@@ -296,8 +317,8 @@ contract Alarm {
                 return key_to_calls[callKey].payout;
         }
 
-        function getCallProfit(bytes32 callKey) public returns (uint) {
-                return key_to_calls[callKey].profit;
+        function getCallFee(bytes32 callKey) public returns (uint) {
+                return key_to_calls[callKey].fee;
         }
 
         /*
@@ -374,6 +395,11 @@ contract Alarm {
                         return;
                 }
 
+                if (call.isCancelled) {
+                        // The call was cancelled so don't execute it.
+                        return;
+                }
+
                 if (accountBalances[call.scheduledBy] < getCallMaxCost()) {
                         // The scheduledBy's account balance is less than the
                         // current gasLimit and thus potentiall can't pay for
@@ -394,16 +420,16 @@ contract Alarm {
                 call.gasUsed = (gasBefore - msg.gas + EXTRA_CALL_GAS);
                 call.gasCost = call.gasUsed * call.gasPrice;
 
-                // Now we need to pay the caller as well as keep profit.
+                // Now we need to pay the caller as well as keep fee.
                 // callerPayout -> call cost + 1%
-                // profit -> 1% of callerPayout
+                // fee -> 1% of callerPayout
                 call.payout = call.gasCost * 101 / 100;
-                call.profit = call.gasCost / 100;
+                call.fee = call.gasCost / 100;
 
                 accountBalances[msg.sender] += call.payout;
-                accountBalances[owner] += call.profit;
+                accountBalances[owner] += call.fee;
 
-                accountBalances[call.scheduledBy] -= call.payout + call.profit;
+                accountBalances[call.scheduledBy] -= call.payout + call.fee;
         }
 
         // The result of `sha()` so that we can validate that people aren't
@@ -457,5 +483,18 @@ contract Alarm {
                 call.targetBlock = targetBlock;
 
                 placeCallInTree(lastCallKey);
+        }
+
+        function cancelCall(bytes32 callKey) {
+                var call = key_to_calls[callKey];
+                if (call.scheduledBy != msg.sender) {
+                        // Nobody but the scheduler can cancel a call.
+                        return;
+                }
+                if (call.wasCalled) {
+                        // No need to cancel a call that already was executed.
+                        return;
+                }
+                call.isCancelled = true;
         }
 }

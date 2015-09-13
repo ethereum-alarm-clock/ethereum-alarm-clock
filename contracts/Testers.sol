@@ -1,5 +1,50 @@
 contract AlarmAPI {
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {}
+        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32);
+}
+
+
+contract TestDataRegistry {
+        uint8 public wasSuccessful = 0;
+
+        function registerUInt(address to, uint v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerInt(address to, int v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerBytes(address to, bytes32 v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerAddress(address to, address v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
 }
 
 
@@ -30,8 +75,9 @@ contract Fails {
         bytes32 public dataHash;
 
         function doIt() public {
-                uint[] x;
-                x[1];
+                int x = 1;
+                int y = 0;
+                x / y;
         }
 
         function scheduleIt(address to) public {
@@ -110,5 +156,36 @@ contract PassesAddress {
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 100);
+        }
+}
+
+
+contract DepositsFunds {
+        uint public sentSuccessful;
+
+        function doIt(address a, uint value) public {
+                bool result = a.call.value(value)(bytes4(sha3("deposit(address)")), address(this));
+                if (result) {
+                        sentSuccessful = 1;
+                }
+                else {
+                        sentSuccessful = 2;
+                }
+        }
+}
+
+
+contract SpecifyBlock {
+        bool public value;
+
+        function doIt() public {
+                value = true;
+        }
+
+        function scheduleIt(address to, uint blockNumber) public {
+                to.call(bytes4(sha3("registerData()")), block.timestamp);
+
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber);
         }
 }

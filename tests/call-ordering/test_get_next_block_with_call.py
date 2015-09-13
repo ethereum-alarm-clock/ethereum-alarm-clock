@@ -27,8 +27,6 @@ def test_get_next_call_with_no_duplicate_block_numbers(geth_node, rpc_client, de
 
     anchor_block = rpc_client.get_block_number()
 
-    call_keys = []
-
     blocks = [anchor_block + 1000 + n for n in (8, 7, 13, 4, 5, 1, 9, 6, 11, 15)]
 
     for n in blocks:
@@ -36,11 +34,6 @@ def test_get_next_call_with_no_duplicate_block_numbers(geth_node, rpc_client, de
 
         last_call_key = alarm.getLastCallKey.call()
         assert last_call_key is not None
-
-        call_keys.append(last_call_key)
-
-    key_to_block = dict(zip(call_keys, [b - 1000 - anchor_block for b in blocks]))
-    key_to_block[None] = None
 
     expected_next_blocks = {
         1: 1,
@@ -58,12 +51,13 @@ def test_get_next_call_with_no_duplicate_block_numbers(geth_node, rpc_client, de
         13: 13,
         14: 15,
         15: 15,
-        16: None,
+        16: -1000 - anchor_block,
     }
 
     actual_next_blocks = {
-        n: key_to_block[alarm.getNextCallKey.call(n + 1000 + anchor_block)]
+        n: alarm.getNextBlockWithCall.call(n + 1000 + anchor_block) - 1000 - anchor_block
         for n in expected_next_blocks.keys()
     }
 
     assert actual_next_blocks == expected_next_blocks
+

@@ -1,3 +1,4 @@
+from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction
 
 
@@ -8,9 +9,12 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_executing_scheduled_call_with_address(geth_node, deployed_contracts):
+def test_executing_scheduled_call_with_address(geth_node, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.PassesAddress
+
+    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     address = '0xc948453368e5ddc7bc00bb52b5809138217a068d'
 

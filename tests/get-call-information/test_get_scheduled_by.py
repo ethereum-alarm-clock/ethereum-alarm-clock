@@ -15,7 +15,7 @@ def test_get_scheduled_by(geth_node, geth_coinbase, deployed_contracts):
     alarm = deployed_contracts.Alarm
 
     txn_hash = alarm.scheduleCall.sendTransaction(
-        deployed_contracts.NoArgs._meta.address,
+        geth_coinbase,
         'arst',
         ethereum_utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
         1000,

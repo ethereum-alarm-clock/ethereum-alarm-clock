@@ -237,6 +237,7 @@ contract Alarm {
                 uint targetBlock;
                 uint gasPrice;
                 uint gasUsed;
+                uint gasCost;
                 uint payout;
                 uint profit;
                 address triggeredBy;
@@ -344,7 +345,11 @@ contract Alarm {
                 DataRegistered(msg.sender, lastDataHash, lastData);
         }
 
-        uint constant EXTRA_CALL_GAS = 110225;
+        uint public constant EXTRA_CALL_GAS = 150632;
+
+        function getExtraCallGas() public returns (uint) {
+                return EXTRA_CALL_GAS;
+        }
 
         function getCallMaxCost() public returns (uint) {
                 /*
@@ -353,13 +358,6 @@ contract Alarm {
                  */
                 // call cost + 2%
                 return (tx.gasprice * block.gaslimit) * 102 / 100;
-        }
-
-        function getCallerPayout(bytes32 callKey) public returns (uint) {
-                var call = key_to_calls[callKey];
-
-                // call cost + 1%
-                return (call.gasPrice * (call.gasUsed + EXTRA_CALL_GAS)) * 101 / 100;
         }
 
         /*
@@ -392,13 +390,14 @@ contract Alarm {
                 call.wasCalled = true;
 
                 // Log how much gas this call used.
-                call.gasUsed = gasBefore - msg.gas;
+                call.gasUsed = (gasBefore - msg.gas + EXTRA_CALL_GAS);
+                call.gasCost = call.gasUsed * call.gasPrice;
 
                 // Now we need to pay the caller as well as keep profit.
                 // callerPayout -> call cost + 1%
                 // profit -> 1% of callerPayout
-                call.payout = ((call.gasPrice * call.gasUsed) + EXTRA_CALL_GAS) * 101 / 100;
-                call.profit = call.payout / 100;
+                call.payout = call.gasCost * 101 / 100;
+                call.profit = call.gasCost / 100;
 
                 accountBalances[msg.sender] += call.payout;
                 accountBalances[owner] += call.profit;

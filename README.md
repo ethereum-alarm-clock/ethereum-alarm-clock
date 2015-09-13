@@ -1,6 +1,7 @@
 # Ethereum Alarm Clock
 
-Schedule function calls to occur at a specified block sometime in the future.
+Alarm allows scheduling of function calls on a contract at a specified block in
+the future.
 
 ## QuickStart
 
@@ -160,3 +161,46 @@ scheduled call.
 ## Account Management API
 
 
+Scheduled function calls must be paid for by the caller.  Alarm requires those
+scheduling a call to pay for it in advance.  This is done by maintaining an
+account balance with Alarm.
+
+At the time of execution, the account belonging to the scheduler must have a
+balance of at least the the maximum possible transaction cost plus fees.
+
+Maximum transaction cost is computed from `gasLimit * gasPrice` where
+`gasLimit` is the maximum gas allowed in the block during which the call is
+executed, and `gasPrice` is the cost of gas for the transaction in which the
+call is executed.
+
+The following API is available for managing your account with Alarm.
+
+- `deposit(address accountAddress)`
+
+    Addes the `value` (in wei) of the transaction to the `accountAddress`.
+
+- `withdraw(uint value)`
+
+    Sends the `value` (in wei) to `msg.sender`.  This amount is deducted from
+    the `msg.sender`'s account.  The account must have a sufficient balance for
+    the transaction to go through.
+
+- `accountBalances(address accountAddress) returns (uint)`
+
+    Returns the account balance for the provided `accountAddress`.
+
+
+## Fees
+
+Alarm charges a fee for execution of scheduled function calls.  This fee is 2%
+of total cost of gas for the executing transaction.  This fee is split evenly
+between the executor of the call and the Alarm service.
+
+It should be noted that there is some administrative overhead for scheduled
+calls.  The Alarm service must do things like tracking account balances and
+recording gas usage and meta data about the call.
+
+
+## Executing Calls
+
+Operators of ethereum addresses can earn

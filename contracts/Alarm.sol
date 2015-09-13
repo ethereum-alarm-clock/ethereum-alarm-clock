@@ -323,6 +323,15 @@ contract Alarm {
                 return hash_to_data[key_to_calls[callKey].dataHash];
         }
 
+        function getCallMaxCost() public returns (uint) {
+                /*
+                 *  tx.gasprice * block.gasprice
+                 *  
+                 */
+                // call cost + 2%
+                return (tx.gasprice * block.gaslimit) * 102 / 100;
+        }
+
         mapping (bytes32 => bytes) hash_to_data;
 
         /*
@@ -347,19 +356,6 @@ contract Alarm {
 
         uint public constant EXTRA_CALL_GAS = 150632;
 
-        function getExtraCallGas() public returns (uint) {
-                return EXTRA_CALL_GAS;
-        }
-
-        function getCallMaxCost() public returns (uint) {
-                /*
-                 *  tx.gasprice * block.gasprice
-                 *  
-                 */
-                // call cost + 2%
-                return (tx.gasprice * block.gaslimit) * 102 / 100;
-        }
-
         /*
          *  Main Alarm API
          */
@@ -367,6 +363,11 @@ contract Alarm {
                 uint gasBefore = msg.gas;
 
                 var call = key_to_calls[callKey];
+
+                if (call.targetAddress == 0x0) {
+                        // This call key doesnt map to a registered call.
+                        return;
+                }
 
                 if (call.wasCalled) {
                         // The call has already been executed so don't do it again.

@@ -157,6 +157,15 @@ scheduled call.
 
     Returns the amount (in wei) that was kept as a scheduling fee.
 
+- `getCallMaxCost() public returns (uint)`
+
+    Returns the minimum account balance necessary for a call to be executed.
+    This value is 102% of the maximum total gas cost for a transaction.
+    
+    Note that this function is dependent on values from the current block and
+    transaction.  When scheduling a call you should account for expected
+    changes in the `gasLimit` and `gasCost`.
+
 
 ## Account Management API
 
@@ -203,4 +212,34 @@ recording gas usage and meta data about the call.
 
 ## Executing Calls
 
-Operators of ethereum addresses can earn
+Operators of ethereum addresses can earn ether by executing scheduled calls.
+Anyone operator of an ethereum address that can initiate transactions can do
+this.  A high level overview of the process is as follows:
+
+1. Query the Alarm service for the next scheduled call.
+2. When the target block number comes up (is the next block that would be
+   mined), submit a transaction to the Alarm service with call key for the
+   scheduled call.
+3. As part of the transaction your Alarm account will receive 100%
+   reiumbursment for the gas cost of executing the transaction as well as an
+   additional 1% of the `gasUsed` value as payment for the service.
+
+The following API is available for operators.
+
+
+- `getNextBlockWithCall(uint afterBlock) returns (uint)`
+
+    Returns the block number of the next scheduled call that occurs after the
+    block number specified by the `afterBlock` parameter..
+
+- `getNextCallKey(uint afterBlock) returns (bytes32)`
+
+    Returns the call key of the next scheduled call that occurs after the
+    block number specified by the `afterBlock` parameter.
+
+- `doCall(bytes32 callKey)`
+
+    Executes the call specified by the `callKey` parameter if the call has not
+    already been executed and the scheduler's account balance is sufficient to
+    pay for the call and the current block number is equal to the
+    call's `targetBlock`.

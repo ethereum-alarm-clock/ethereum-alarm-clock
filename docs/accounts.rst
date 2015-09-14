@@ -44,3 +44,57 @@ Here is how you would do this from the geth javascript console.
 
 The above would deposit 100 wei in the account of whatever address you used for
 the ``from`` value in the transaction.
+
+By using the deposit function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Funds can also be deposited in a specific account by calling the ``deposit``
+function and sending the desired deposit value with the transaction.
+
+* **Soldity Function Signature:** ``deposit(address accountAddress)``
+* **ABI Signature:** ``0xf340fa01``
+
+
+Sending from a contract
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Contracts can deposit funds through these mechanisms.
+
+.. code-block::
+
+    contract DepositsFunds {
+        function doTheDeposit(address alarmAddress, uint value) public {
+            alarmAddress.call.value(value)();
+        }
+    }
+
+Or, if you would like your contract to deposit funds in the account of another
+address.
+
+.. code-block::
+
+    contract DepositsFunds {
+        function doTheDeposit(address alarmAddress, uint value, address accountAddress) public {
+            alarmAddress.call.value(value)(bytes4(sha3("deposit(address)")), accountAddress);
+        }
+    }
+
+.. note::
+
+    It should be pointed out that you cannot deposit funds by calling
+    ``alarmAddress.send(value)``.  By default in solidity, this transaction is sent
+    with only enough gas to execute the funds transfer, and the fallback function
+    on the Alarm service requires a bit more gas so that it can record the increase
+    in account balance.
+
+Withdrawing funds
+-----------------
+
+Withdrawing funds is restricted to the address they are associated with.  This
+is done by calling the ``withdraw`` function on the Alarm service.
+
+* **Soldity Function Signature:** ``withdraw(uint value)``
+* **ABI Signature:** ``2e1a7d4d``
+
+If the account has a balance sufficient to fulfill the request, the amount
+specified will be sent to the address who sent the transaction.

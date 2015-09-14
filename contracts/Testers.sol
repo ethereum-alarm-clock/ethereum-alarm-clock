@@ -160,6 +160,23 @@ contract PassesAddress {
 }
 
 
+contract CancelsCall {
+        function doIt() public {
+        }
+
+        function cancelIt(address to, bytes32 callKey) public {
+                to.call(bytes4(sha3("cancelCall(bytes32)")), callKey);
+        }
+
+        function scheduleIt(address to) public {
+                to.call(bytes4(sha3("registerData()")));
+
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100);
+        }
+}
+
+
 contract DepositsFunds {
         uint public sentSuccessful;
 

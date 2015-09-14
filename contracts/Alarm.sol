@@ -251,12 +251,13 @@ contract Alarm {
                 address scheduledBy;
                 uint calledAtBlock;
                 uint targetBlock;
+                uint maxGasPrice;
                 uint gasPrice;
                 uint gasUsed;
                 uint gasCost;
                 uint payout;
                 uint fee;
-                address triggeredBy;
+                address executedBy;
                 bytes4 sig;
                 bool isCancelled;
                 bool wasCalled;
@@ -408,7 +409,7 @@ contract Alarm {
                 }
 
                 call.gasPrice = tx.gasprice;
-                call.triggeredBy = tx.origin;
+                call.executedBy = msg.sender;
                 call.calledAtBlock = block.number;
 
                 var data = getCallData(callKey);
@@ -436,16 +437,16 @@ contract Alarm {
         // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
-        function getCallKey(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                return sha3(to, signature, dataHash, targetBlock);
+        function getCallKey(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
+                return sha3(targetAddress, signature, dataHash, targetBlock);
         }
 
         // Ten minutes into the future.
         uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
-        event CallScheduled(address to, bytes4 signature, bytes32 dataHash, uint targetBlock);
+        event CallScheduled(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock);
 
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public {
+        function scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock) public {
                 /*
                  * Primary API for scheduling a call.  Prior to calling this
                  * the data should already have been registered through the
@@ -464,7 +465,7 @@ contract Alarm {
                         return;
                 }
 
-                if (to != msg.sender) {
+                if (targetAddress != msg.sender) {
                         // For now we won't allow scheduling of calls for
                         // anything but msg.sender.  Contracts should be able
                         // to *trust* the scheduler and potentially setup
@@ -473,10 +474,10 @@ contract Alarm {
                         return;
                 }
 
-                lastCallKey = getCallKey(to, signature, dataHash, targetBlock);
+                lastCallKey = getCallKey(targetAddress, signature, dataHash, targetBlock);
 
                 var call = key_to_calls[lastCallKey];
-                call.targetAddress = to;
+                call.targetAddress = targetAddress;
                 call.scheduledBy = msg.sender;
                 call.sig = signature;
                 call.dataHash = dataHash;

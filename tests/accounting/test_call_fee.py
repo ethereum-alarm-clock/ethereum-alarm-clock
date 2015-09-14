@@ -13,10 +13,8 @@ def test_call_fee(geth_node, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.PassesUInt
 
-    gas_price = rpc_client.get_gas_price()
-
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount, gas_price=gas_price * 10)
+    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, 3)
     wait_for_transaction(client_contract._meta.rpc_client, txn_hash)

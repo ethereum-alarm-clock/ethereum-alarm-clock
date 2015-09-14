@@ -13,20 +13,35 @@ contract Alarm {
          */
         mapping (address => uint) public accountBalances;
 
-        function deposit(address accountAddress) {
-                accountBalances[accountAddress] += msg.value;
+        function _deductFunds(address accountAddress, uint value) internal {
+                if (value > accountBalances[accountAddress]) {
+                        // Prevent Underflow.
+                        __throw();
+                }
+                accountBalances[accountAddress] -= value;
         }
 
-        function withdraw(uint value) {
-                uint accountBalance = accountBalances[msg.sender];
-                if (accountBalance >= value) {
-                        accountBalances[msg.sender] -= value;
+        function _addFunds(address accountAddress, uint value) internal {
+                if (accountBalances[accountAddress] + value < accountBalances[accountAddress]) {
+                        // Prevent Overflow.
+                        __throw();
+                }
+                accountBalances[accountAddress] += value;
+        }
+
+        function deposit(address accountAddress) public {
+                _addFunds(accountAddress, msg.value);
+        }
+
+        function withdraw(uint value) public {
+                if (accountBalances[msg.sender] >= value) {
+                        _deductFunds(msg.sender, value);
                         msg.sender.send(value);
                 }
         }
 
         function() {
-                accountBalances[msg.sender] += msg.value;
+                _addFunds(msg.sender, msg.value);
         }
 
         /*
@@ -36,7 +51,6 @@ contract Alarm {
                 bytes32 callKey;
                 bytes32 left;
                 bytes32 right;
-                bytes position;
         }
 
         bytes32 public rootNodeCallKey;
@@ -70,11 +84,6 @@ contract Alarm {
                 }
 
                 Call currentCall = key_to_calls[callKey];
-
-                // Already called.
-                if (currentCall.wasCalled) {
-                        return false;
-                }
 
                 // Current call is already in the past or is up next.
                 if (currentCall.targetBlock <= blockNumber) {
@@ -112,7 +121,7 @@ contract Alarm {
 
                 // Current call equals the desired block number and has not
                 // been called yet and is not cancelled.
-                if (!currentCall.isCancelled && !currentCall.wasCalled && currentCall.targetBlock == blockNumber) {
+                if (currentCall.targetBlock == blockNumber) {
                         return false;
                 }
 
@@ -144,10 +153,6 @@ contract Alarm {
                                 currentNode = call_to_node[currentNode.right];
                                 continue;
                         }
-                        // Not if it was already called
-                        if (key_to_calls[currentNode.callKey].wasCalled) {
-                                return 0x0;
-                        }
 
                         // Not if it is before the blockNumber
                         if (key_to_calls[currentNode.callKey].targetBlock < blockNumber) {
@@ -159,23 +164,64 @@ contract Alarm {
                 }
         }
 
-        function getNextCallSibling(bytes32 callKey) public returns (bytes32) {
+        function _isBlockNumberInTree(bytes32 callKey, uint blockNumber) returns (bool) {
                 var node = call_to_node[callKey];
-                var call = key_to_calls[callKey];
 
-                if (node.right == 0x0) {
-                        return 0x0;
-                }
+                while (true) {
+                        var call = key_to_calls[node.callKey];
 
-                var rightCall = key_to_calls[node.right];
+                        if (call.targetBlock == blockNumber) {
+                                return true;
+                        }
 
-                if (!rightCall.isCancelled && rightCall.targetBlock == call.targetBlock) {
-                        return node.right;
+                        if (node.left != 0x0 && call.targetBlock > blockNumber) {
+                                node = call_to_node[node.left];
+                                continue;
+                        }
+
+                        if (node.right != 0x0 && call.targetBlock < blockNumber) {
+                                node = call_to_node[node.right];
+                                continue;
+                        }
+
+                        return false;
                 }
         }
 
-        function getCallTreePosition(bytes32 callKey) public returns (bytes) {
-                return call_to_node[callKey].position;
+        function getNextCallSibling(bytes32 callKey) public returns (bytes32) {
+                var node = call_to_node[callKey];
+                var call = key_to_calls[callKey];
+                uint targetBlock = call.targetBlock;
+
+                while (true) {
+                        if (node.right != 0x0 && _isBlockNumberInTree(node.right, targetBlock)) {
+                                node = call_to_node[node.right];
+                                call = key_to_calls[node.callKey];
+                                if (call.targetBlock == targetBlock) {
+                                        return node.callKey;
+                                }
+                                continue;
+                        }
+
+                        if (node.left != 0x0 && _isBlockNumberInTree(node.left, targetBlock)) {
+                                node = call_to_node[node.left];
+                                call = key_to_calls[node.callKey];
+                                if (call.targetBlock == targetBlock) {
+                                        return node.callKey;
+                                }
+                                continue;
+                        }
+
+                        return 0x0;
+                }
+        }
+
+        function getCallLeftChild(bytes32 callKey) public returns (bytes32) {
+                return call_to_node[callKey].left;
+        }
+
+        function getCallRightChild(bytes32 callKey) public returns (bytes32) {
+                return call_to_node[callKey].right;
         }
 
         function placeCallInTree(bytes32 callKey) internal {
@@ -201,20 +247,14 @@ contract Alarm {
 
                 Node currentNode = call_to_node[rootNodeCallKey];
 
-                bytes position;
-                position.length = 1;
-                position[0] = "b";
-
                 while (true) {
                         if (currentNode.callKey == 0x0) {
                                 // This is a new node and should be mapped 
                                 currentNode.callKey = callKey;
-                                currentNode.position = position;
                                 return;
                         }
 
                         Call currentCall = key_to_calls[currentNode.callKey];
-                        position.length += 1;
 
                         if (targetCall.targetBlock < currentCall.targetBlock) {
                                 // Call should occure before the current node
@@ -222,7 +262,6 @@ contract Alarm {
                                 if (currentNode.left == 0x0) {
                                         currentNode.left = callKey;
                                 }
-                                position[position.length - 1] = "l";
                                 currentNode = call_to_node[currentNode.left];
                                 continue;
                         }
@@ -232,7 +271,6 @@ contract Alarm {
                         if (currentNode.right == 0x0) {
                                 currentNode.right = callKey;
                         }
-                        position[position.length - 1] = "r";
                         currentNode = call_to_node[currentNode.right];
                 }
         }
@@ -376,7 +414,7 @@ contract Alarm {
                 DataRegistered(msg.sender, lastDataHash, lastData);
         }
 
-        uint public constant EXTRA_CALL_GAS = 150632;
+        uint public constant EXTRA_CALL_GAS = 151488;
 
         /*
          *  Main Alarm API
@@ -401,23 +439,39 @@ contract Alarm {
                         return;
                 }
 
-                if (accountBalances[call.scheduledBy] < getCallMaxCost()) {
+                uint heldBalance = getCallMaxCost();
+
+                if (accountBalances[call.scheduledBy] < heldBalance) {
                         // The scheduledBy's account balance is less than the
                         // current gasLimit and thus potentiall can't pay for
                         // the call.
                         return;
                 }
 
+                // Log metadata about the call.
                 call.gasPrice = tx.gasprice;
                 call.executedBy = msg.sender;
                 call.calledAtBlock = block.number;
 
+                // Fetch the call data
                 var data = getCallData(callKey);
 
+                // During the call, we need to put enough funds to pay for the
+                // call on hold to ensure they are available to pay the caller.
+                _deductFunds(call.scheduledBy, heldBalance);
+
+                // Mark whether the function call was successful.
                 call.wasSuccessful = call.targetAddress.call(call.sig, data);
+
+                // Add the held funds back into the scheduler's account.
+                _addFunds(call.scheduledBy, heldBalance);
+
+                // Mark the call as having been executed.
                 call.wasCalled = true;
 
-                // Log how much gas this call used.
+                // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
+                // amount that represents the gas usage of the commands that
+                // happen after this line.
                 call.gasUsed = (gasBefore - msg.gas + EXTRA_CALL_GAS);
                 call.gasCost = call.gasUsed * call.gasPrice;
 
@@ -427,10 +481,10 @@ contract Alarm {
                 call.payout = call.gasCost * 101 / 100;
                 call.fee = call.gasCost / 100;
 
-                accountBalances[msg.sender] += call.payout;
-                accountBalances[owner] += call.fee;
+                _deductFunds(call.scheduledBy, call.payout + call.fee);
 
-                accountBalances[call.scheduledBy] -= call.payout + call.fee;
+                _addFunds(msg.sender, call.payout);
+                _addFunds(owner, call.fee);
         }
 
         // The result of `sha()` so that we can validate that people aren't
@@ -497,5 +551,10 @@ contract Alarm {
                         return;
                 }
                 call.isCancelled = true;
+        }
+
+        function __throw() internal {
+                int[] x;
+                x[1];
         }
 }

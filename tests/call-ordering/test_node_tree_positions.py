@@ -27,9 +27,11 @@ def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
 
     anchor_block = rpc_client.get_block_number()
 
+    blocks = (8, 7, 10, 4, 6, 1, 9, 6, 9, 10)
+
     call_keys = []
 
-    for n in (8, 7, 10, 4, 6, 1, 9, 6, 9, 10):
+    for n in blocks:
         wait_for_transaction(rpc_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 100 + n))
 
         last_call_key = alarm.getLastCallKey.call()
@@ -37,22 +39,27 @@ def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
 
         call_keys.append(last_call_key)
 
-    expected_positions = (
-        'b',
-        'bl',
-        'br',
-        'bll',
-        'bllr',
-        'blll',
-        'brl',
-        'bllrr',
-        'brlr',
-        'brr',
-    )
+    calls_to_blocks = dict(zip(call_keys, blocks))
+    calls_to_blocks[None] = None
 
-    actual_positions = [
-        alarm.getCallTreePosition.call(call_key) for call_key in call_keys
+    actual_positions = []
+
+    expected_positions = [
+        (8, (7, 10)),
+        (7, (4, None)),
+        (10, (9, 10)),
+        (4, (1, 6)),
+        (6, (None, 6)),
+        (1, (None, None)),
+        (9, (None, 9)),
+        (6, (None, None)),
+        (9, (None, None)),
+        (10, (None, None)),
     ]
 
-    for actual_position, expected_position in zip(actual_positions, expected_positions):
-        assert actual_position == expected_position
+    for n, callKey in zip(blocks, call_keys):
+        left = calls_to_blocks[alarm.getCallLeftChild.call(callKey)]
+        right = calls_to_blocks[alarm.getCallRightChild.call(callKey)]
+        actual_positions.append((n, (left, right)))
+
+    assert expected_positions == actual_positions

@@ -1,4 +1,6 @@
 contract AlarmAPI {
+        function withdraw(uint value) public;
+        function accountBalances(address account) public returns (uint);
         function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32);
 }
 
@@ -172,6 +174,38 @@ contract CancelsCall {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100);
+        }
+}
+
+
+contract WithdrawsDuringCall {
+        /*
+         *  Used to test that the funds of an account are locked during the
+         *  function call to prevent withdrawing funds that are about to be
+         *  used to pay the caller.
+         */
+        AlarmAPI alarm;
+        uint public withdrawAmount;
+
+        function setAlarm(address alarmAddress) public {
+                alarm = AlarmAPI(alarmAddress);
+        }
+
+        function getAlarmBalance() returns (uint) {
+                return alarm.accountBalances(address(this));
+        }
+
+        bool public wasCalled;
+
+        function doIt() public {
+                wasCalled = true;
+                withdrawAmount = getAlarmBalance();
+                alarm.withdraw(withdrawAmount);
+        }
+
+        function scheduleIt() public {
+                address(alarm).call(bytes4(sha3("registerData()")));
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100);
         }
 }

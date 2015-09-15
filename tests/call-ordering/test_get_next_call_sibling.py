@@ -8,7 +8,7 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
+def test_get_call_next_sibling(geth_node, rpc_client, deployed_contracts):
     """
               8
              / \

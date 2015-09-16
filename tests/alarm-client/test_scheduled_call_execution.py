@@ -30,5 +30,10 @@ def test_scheduled_call_execution(geth_node, geth_coinbase, rpc_client, deployed
 
     scheduled_call.execute()
 
-    import ipdb; ipdb.set_trace()
-    x = 3
+    assert scheduled_call.txn_hash
+    assert scheduled_call.txn_receipt
+    assert scheduled_call.txn
+
+    assert scheduled_call.was_called
+    assert scheduled_call.target_block <= scheduled_call.called_at_block
+    assert scheduled_call.called_at_block <= scheduled_call.target_block + scheduled_call.grace_period

@@ -76,8 +76,8 @@ Scheduling the Call
 Function calls are scheduled with the ``scheduleCall`` function on the Alarm
 service.
 
-* **Soldity Function Signature:** ``scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32);``
-* **ABI Signature:** ``0xf828c3fa``
+* **Soldity Function Signature:** ``scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public returns (bytes32);``
+* **ABI Signature:** ``0x1145a20f``
 
 The ``scheduleCall`` function takes the following parameters:
 
@@ -85,5 +85,7 @@ The ``scheduleCall`` function takes the following parameters:
 * **bytes4 signature:** The 4 byte ABI function signature for the call.
 * **bytes32 dataHash:** The ``sha3`` hash of the call data for the call.
 * **uint targetBlock:** The block number the call should be executed on.
+* **uint8 gracePeriod:** The number of blocks after ``targetBlock`` that it is
+  ok to still execute this call.
 
 TODO

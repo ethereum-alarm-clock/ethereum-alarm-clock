@@ -27,15 +27,19 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
     Before left rotation
     ====================
 
-              8
+          1
+           \
+            4
+             \
+              7
              / \
-            /   \
-           /     \
-          7       1900
-         /       /  \
-        4       9    2000
-       / \     / \
-      1   4   8   15
+            4   8
+                 \
+                  16
+                 /  \
+                9    1900
+               / \     \
+              8   15   2000
                  /
                 13
                /  \
@@ -44,11 +48,11 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
     After left rotation
     ===================
 
-               1900
-              /   \
-             8     2000
-            / \
-           /   \
+               16
+              /  \
+             8    1900
+            / \     \
+           /   \    2000
           7     9
          /     / \
         4     8   15
@@ -59,12 +63,28 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
 
 
     """
+    initial_state = {
+        (4, (None, None)),
+        (16, (9, 1900)),
+        (1900, (None, 2000)),
+        (2000, (None, None)),
+        (9, (8, 15)),
+        (8, (None, None)),
+        (15, (13, None)),
+        (13, (9, 14)),
+        (9, (None, None)),
+        (14, (None, None)),
+        (4, (None, 7)),
+        (1, (None, 4)),
+        (7, (4, 8)),
+        (8, (None, 16)),
+    }
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.SpecifyBlock
 
     anchor_block = rpc_client.get_block_number()
 
-    blocks = (8, 7, 1900, 2000, 4, 1, 4, 9, 15, 8, 13, 14, 9)
+    blocks = (8, 7, 16, 1900, 2000, 4, 1, 4, 9, 15, 8, 13, 14, 9)
 
     call_keys = []
 
@@ -82,12 +102,9 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
     calls_to_blocks[None] = None
 
     initial_state = {
-        (1, (None, None)),
-        (4, (1, 4)),
         (4, (None, None)),
-        (8, (7, 1900)),
-        (7, (4, None)),
-        (1900, (9, 2000)),
+        (16, (9, 1900)),
+        (1900, (None, 2000)),
         (2000, (None, None)),
         (9, (8, 15)),
         (8, (None, None)),
@@ -95,11 +112,15 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
         (13, (9, 14)),
         (9, (None, None)),
         (14, (None, None)),
+        (4, (None, 7)),
+        (1, (None, 4)),
+        (7, (4, 8)),
+        (8, (None, 16)),
     }
 
     assert get_tree_state(alarm, calls_to_blocks) == initial_state
 
-    wait_for_block(rpc_client, anchor_block + 65 + 16, max_wait=120)
+    wait_for_block(rpc_client, anchor_block + 65 + 17, max_wait=120)
 
     wait_for_transaction(rpc_client, alarm.rotateTree.sendTransaction())
 
@@ -109,7 +130,8 @@ def test_rotating_tree_left(geth_node, rpc_client, deployed_contracts):
         (4, (None, None)),
         (8, (7, 9)),
         (7, (4, None)),
-        (1900, (8, 2000)),
+        (16, (8, 1900)),
+        (1900, (None, 2000)),
         (2000, (None, None)),
         (9, (8, 15)),
         (8, (None, None)),

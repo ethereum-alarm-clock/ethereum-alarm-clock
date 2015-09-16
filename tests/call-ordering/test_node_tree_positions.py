@@ -8,19 +8,35 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
+def get_tree_state(alarm, calls_to_blocks):
+    state = set()
+    for call_key, block_number in calls_to_blocks.items():
+        if call_key is None:
+            continue
+        left = calls_to_blocks[alarm.getCallLeftChild.call(call_key)]
+        right = calls_to_blocks[alarm.getCallRightChild.call(call_key)]
+        state.add((block_number, (left, right)))
+    return state
+
+
 def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
     """
-              8
-             / \
-            /   \
-           /     \
-          7       10
-         /       /  \
-        4       9    10
-       / \       \
-      1   6       9
-           \
-            6
+            1
+             \
+              4
+               \
+                7
+               / \
+              /   \
+             /     \
+            /       \
+           6         8
+            \         \
+             6         10
+                      /  \
+                     9    10
+                      \
+                       9
     """
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.SpecifyBlock
@@ -42,24 +58,19 @@ def test_node_tree_positions(geth_node, rpc_client, deployed_contracts):
     calls_to_blocks = dict(zip(call_keys, blocks))
     calls_to_blocks[None] = None
 
-    actual_positions = []
-
-    expected_positions = [
-        (8, (7, 10)),
-        (7, (4, None)),
+    expected_positions = {
+        (8, (None, 10)),
+        (7, (6, 8)),
         (10, (9, 10)),
-        (4, (1, 6)),
+        (4, (None, 7)),
         (6, (None, 6)),
-        (1, (None, None)),
+        (1, (None, 4)),
         (9, (None, 9)),
         (6, (None, None)),
         (9, (None, None)),
-        (10, (None, None)),
-    ]
+        (10, (None, None))
+    }
 
-    for n, callKey in zip(blocks, call_keys):
-        left = calls_to_blocks[alarm.getCallLeftChild.call(callKey)]
-        right = calls_to_blocks[alarm.getCallRightChild.call(callKey)]
-        actual_positions.append((n, (left, right)))
+    actual_positions = get_tree_state(alarm, calls_to_blocks)
 
     assert expected_positions == actual_positions

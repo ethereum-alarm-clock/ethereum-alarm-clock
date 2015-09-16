@@ -14,6 +14,11 @@ contract Alarm {
         mapping (address => uint) public accountBalances;
 
         function _deductFunds(address accountAddress, uint value) internal {
+                /*
+                 *  Helper function that should be used for any reduction of
+                 *  account funds.  It has error checking to prevent
+                 *  underflowing the account balance which would be REALLY bad.
+                 */
                 if (value > accountBalances[accountAddress]) {
                         // Prevent Underflow.
                         __throw();
@@ -22,6 +27,11 @@ contract Alarm {
         }
 
         function _addFunds(address accountAddress, uint value) internal {
+                /*
+                 *  Helper function that should be used for any addition of
+                 *  account funds.  It has error checking to prevent
+                 *  overflowing the account balance.
+                 */
                 if (accountBalances[accountAddress] + value < accountBalances[accountAddress]) {
                         // Prevent Overflow.
                         __throw();
@@ -29,19 +39,36 @@ contract Alarm {
                 accountBalances[accountAddress] += value;
         }
 
+        event Deposit(address indexed _from, address indexed accountAddress, uint value);
+
         function deposit(address accountAddress) public {
+                /*
+                 *  Public API for depositing funds in a specified account.
+                 */
                 _addFunds(accountAddress, msg.value);
+                Deposit(msg.sender, accountAddress, msg.value);
         }
 
+        event Withdraw(address indexed accountAddress, uint value);
+
         function withdraw(uint value) public {
+                /*
+                 *  Public API for withdrawing funds.
+                 */
                 if (accountBalances[msg.sender] >= value) {
                         _deductFunds(msg.sender, value);
                         msg.sender.send(value);
+                        Withdraw(msg.sender, value);
                 }
         }
 
         function() {
+                /*
+                 *  Fallback function that allows depositing funds just by
+                 *  sending a transaction.
+                 */
                 _addFunds(msg.sender, msg.value);
+                Deposit(msg.sender, msg.sender, msg.value);
         }
 
         /*
@@ -58,6 +85,10 @@ contract Alarm {
         mapping (bytes32 => Node) call_to_node;
 
         function _getTreeMaxBlock(bytes32 callKey) internal returns (uint) {
+                /*
+                 *  Returns the greatest block number for all calls in the
+                 *  section of the call tree denoted by callKey.
+                 */
                 Node currentNode = call_to_node[callKey];
 
                 while (true) {
@@ -229,6 +260,8 @@ contract Alarm {
                 return call_to_node[callKey].right;
         }
 
+        event CallPlacedInTree(bytes32 indexed callKey);
+
         function placeCallInTree(bytes32 callKey) internal {
                 /*
                  * Calls are stored in a tree structure.  Each tree node
@@ -256,6 +289,7 @@ contract Alarm {
                         if (currentNode.callKey == 0x0) {
                                 // This is a new node and should be mapped 
                                 currentNode.callKey = callKey;
+                                CallPlacedInTree(callKey);
                                 return;
                         }
 
@@ -280,6 +314,8 @@ contract Alarm {
                 }
         }
 
+        event TreeRotatedRight(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
+
         function _rotateRight() internal {
                 /*
                  *  1. Detatch the left child of the root node.  This is the
@@ -303,7 +339,17 @@ contract Alarm {
                 newRootNode.right = oldRootNode.callKey;
 
                 // #4
-                placeCallInTree(detatchedChildCallKey);
+                if (detatchedChildCallKey != 0x0) {
+                        // First reset the node to not have a callKey,
+                        // otherwise the call to `placeCallInTree` will exit
+                        // early thinking this node is already placed.
+                        var detatchedChildNode = call_to_node[detatchedChildCallKey];
+                        detatchedChildNode.callKey = 0x0;
+                        // Now place it at it's new location in the tree.
+                        placeCallInTree(detatchedChildCallKey);
+                }
+
+                TreeRotatedRight(oldRootNode.callKey, newRootNode.callKey);
         }
 
         function _shouldRotateRight() internal returns (bool) {
@@ -329,6 +375,8 @@ contract Alarm {
 
                 return true;
         }
+
+        event TreeRotatedLeft(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
 
         function _rotateLeft() internal {
                 /*
@@ -361,12 +409,13 @@ contract Alarm {
                         // Now place it at it's new location in the tree.
                         placeCallInTree(detatchedChildCallKey);
                 }
+                TreeRotatedLeft(oldRootNode.callKey, newRootNode.callKey);
         }
 
         function _shouldRotateLeft() internal returns (bool) {
                 /*
-                 *  Is the right child of the rootNode in the future of the
-                 *  current block number.
+                 *  We should rotate left if both the current root node, and
+                 *  its right child are both in the past.
                  */
                 // Empty call tree.
                 if (rootNodeCallKey == 0x0) {
@@ -382,6 +431,10 @@ contract Alarm {
 
                 // Current root already in the future.
                 if (key_to_calls[rootNodeCallKey].targetBlock >= block.number) {
+                        return false;
+                }
+
+                if (key_to_calls[currentRoot.right].targetBlock >= block.number) {
                         return false;
                 }
 
@@ -421,6 +474,23 @@ contract Alarm {
         }
 
         /*
+         *  Scheduling Authorization API
+         */
+        mapping (bytes32 => bool) public accountAuthorizations;
+
+        function getAuthorizationKey(address schedulerAccount, address contractAccount) public returns (bytes32) {
+                return sha3(schedulerAccount, contractAccount);
+        }
+
+        function addAuthorization(address schedulerAccount) public {
+                accountAuthorizations[getAuthorizationKey(schedulerAccount, msg.sender)] = true;
+        }
+
+        function removeAuthorization(address schedulerAccount) public {
+                accountAuthorizations[getAuthorizationKey(schedulerAccount, msg.sender)] = false;
+        }
+
+        /*
          *  Call Information API
          */
         bytes32 lastCallKey;
@@ -434,7 +504,8 @@ contract Alarm {
                 address scheduledBy;
                 uint calledAtBlock;
                 uint targetBlock;
-                uint maxGasPrice;
+                uint8 gracePeriod;
+                uint baseGasPrice;
                 uint gasPrice;
                 uint gasUsed;
                 uint gasCost;
@@ -465,8 +536,16 @@ contract Alarm {
                 return key_to_calls[callKey].calledAtBlock;
         }
 
+        function getCallGracePeriod(bytes32 callKey) public returns (uint) {
+                return key_to_calls[callKey].gracePeriod;
+        }
+
         function getCallTargetBlock(bytes32 callKey) public returns (uint) {
                 return key_to_calls[callKey].targetBlock;
+        }
+
+        function getCallBaseGasPrice(bytes32 callKey) public returns (uint) {
+                return key_to_calls[callKey].baseGasPrice;
         }
 
         function getCallGasPrice(bytes32 callKey) public returns (uint) {
@@ -530,19 +609,19 @@ contract Alarm {
 
         function getCallMaxCost() public returns (uint) {
                 /*
-                 *  tx.gasprice * block.gasprice
+                 *  tx.gasprice * block.gaslimit
                  *  
                  */
                 // call cost + 2%
                 return (tx.gasprice * block.gaslimit) * 102 / 100;
         }
 
-        mapping (bytes32 => bytes) hash_to_data;
+        mapping (bytes32 => bytes) public hash_to_data;
 
         /*
          *  Main Alarm API
          */
-        event DataRegistered(address registeredBy, bytes32 dataHash, bytes data);
+        event DataRegistered(bytes32 indexed dataHash);
 
         function registerData() public {
                 bytes trunc;
@@ -556,14 +635,20 @@ contract Alarm {
                 lastDataHash = sha3(trunc);
                 lastDataLength = trunc.length;
                 lastData = trunc;
-                DataRegistered(msg.sender, lastDataHash, lastData);
+                DataRegistered(lastDataHash);
         }
 
-        uint public constant EXTRA_CALL_GAS = 151488;
+        // This number represents the constant gas cost of the addition
+        // operations that occur in `doCall` that cannot be tracked with
+        // msg.gas.
+        uint public constant EXTRA_CALL_GAS = 151619;  // Lower
 
         /*
          *  Main Alarm API
          */
+        event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
+        event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
+
         function doCall(bytes32 callKey) public {
                 uint gasBefore = msg.gas;
 
@@ -571,16 +656,26 @@ contract Alarm {
 
                 if (call.targetAddress == 0x0) {
                         // This call key doesnt map to a registered call.
+                        CallAborted(msg.sender, callKey, "UNKNOWN");
                         return;
                 }
 
                 if (call.wasCalled) {
                         // The call has already been executed so don't do it again.
+                        CallAborted(msg.sender, callKey, "ALREADY CALLED");
                         return;
                 }
 
                 if (call.isCancelled) {
                         // The call was cancelled so don't execute it.
+                        CallAborted(msg.sender, callKey, "CANCELLED");
+                        return;
+                }
+
+                if (block.number > call.targetBlock + call.gracePeriod) {
+                        // The blockchain has advanced passed the period where
+                        // it was allowed to be called.
+                        CallAborted(msg.sender, callKey, "TOO LATE");
                         return;
                 }
 
@@ -590,6 +685,7 @@ contract Alarm {
                         // The scheduledBy's account balance is less than the
                         // current gasLimit and thus potentiall can't pay for
                         // the call.
+                        CallAborted(msg.sender, callKey, "INSUFFICIENT_FUNDS");
                         return;
                 }
 
@@ -614,6 +710,12 @@ contract Alarm {
                 // Mark the call as having been executed.
                 call.wasCalled = true;
 
+                // Log the call execution.
+                CallExecuted(msg.sender, callKey);
+
+                // Compute the scalar (0 - 200) for the fee.
+                uint feeScalar = getCallFeeScalar(call.baseGasPrice, call.gasPrice);
+
                 // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
                 // amount that represents the gas usage of the commands that
                 // happen after this line.
@@ -623,13 +725,37 @@ contract Alarm {
                 // Now we need to pay the caller as well as keep fee.
                 // callerPayout -> call cost + 1%
                 // fee -> 1% of callerPayout
-                call.payout = call.gasCost * 101 / 100;
-                call.fee = call.gasCost / 100;
+                call.payout = call.gasCost * feeScalar * 101 / 10000;
+                call.fee = call.gasCost * feeScalar / 10000;
 
                 _deductFunds(call.scheduledBy, call.payout + call.fee);
 
                 _addFunds(msg.sender, call.payout);
                 _addFunds(owner, call.fee);
+        }
+
+        function getCallFeeScalar(uint baseGasPrice, uint gasPrice) public returns (uint) {
+                /*
+                 *  Return a number between 0 - 200 to scale the fee based on
+                 *  the gas price set for the calling transaction as compared
+                 *  to the gas price of the scheduling transaction.
+                 *
+                 *  - number approaches zero as the transaction gas price goes
+                 *  above the gas price recorded when the call was scheduled.
+                 *
+                 *  - the number approaches 200 as the transaction gas price
+                 *  drops under the price recorded when the call was scheduled.
+                 *
+                 *  This encourages lower gas costs as the lower the gas price
+                 *  for the executing transaction, the higher the payout to the
+                 *  caller.
+                 */
+                if (gasPrice > baseGasPrice) {
+                        return 100 * baseGasPrice / gasPrice;
+                }
+                else {
+                        return 200 - 100 * baseGasPrice / (2 * baseGasPrice - gasPrice);
+                }
         }
 
         // The result of `sha()` so that we can validate that people aren't
@@ -643,37 +769,43 @@ contract Alarm {
         // Ten minutes into the future.
         uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
-        event CallScheduled(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock);
+        event CallScheduled(bytes32 indexed callKey);
+        event CallRejected(bytes32 indexed callKey, bytes12 reason);
 
-        function scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock) public {
+        function scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public {
                 /*
                  * Primary API for scheduling a call.  Prior to calling this
                  * the data should already have been registered through the
                  * `registerData` API.
                  */
+                bytes32 callKey = getCallKey(targetAddress, signature, dataHash, targetBlock);
+
                 if (dataHash != emptyDataHash && hash_to_data[dataHash].length == 0) {
                         // Don't allow registering calls if the data hash has
                         // not actually been registered.  The only exception is
                         // the *emptyDataHash*.
+                        CallRejected(callKey, "NO_DATA");
                         return;
                 }
 
                 if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
                         // Don't allow scheduling further than
                         // MAX_BLOCKS_IN_FUTURE
+                        CallRejected(callKey, "TOO_SOON");
                         return;
                 }
 
                 if (targetAddress != msg.sender) {
-                        // For now we won't allow scheduling of calls for
-                        // anything but msg.sender.  Contracts should be able
-                        // to *trust* the scheduler and potentially setup
-                        // specific rules that whitelists calls that need to be
-                        // protected to allow the scheduler to call them.
-                        return;
+                        // Check if the scheduling account is authorized to
+                        // schedule calls for the targetAddress
+                        bytes32 authorizationKey = getAuthorizationKey(msg.sender, targetAddress);
+                        if (!accountAuthorizations[authorizationKey]) {
+                                CallRejected(callKey, "UNAUTHORIZED");
+                                return;
+                        }
                 }
 
-                lastCallKey = getCallKey(targetAddress, signature, dataHash, targetBlock);
+                lastCallKey = callKey;
 
                 var call = key_to_calls[lastCallKey];
                 call.targetAddress = targetAddress;
@@ -681,9 +813,16 @@ contract Alarm {
                 call.sig = signature;
                 call.dataHash = dataHash;
                 call.targetBlock = targetBlock;
+                call.gracePeriod = gracePeriod;
+                call.baseGasPrice = tx.gasprice;
 
                 placeCallInTree(lastCallKey);
+                rotateTree();
+
+                CallScheduled(lastCallKey);
         }
+
+        event CallCancelled(bytes32 indexed callKey);
 
         function cancelCall(bytes32 callKey) {
                 var call = key_to_calls[callKey];
@@ -696,6 +835,7 @@ contract Alarm {
                         return;
                 }
                 call.isCancelled = true;
+                CallCancelled(callKey);
         }
 
         function __throw() internal {

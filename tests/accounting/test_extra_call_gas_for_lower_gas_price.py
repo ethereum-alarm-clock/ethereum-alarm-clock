@@ -8,7 +8,7 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_extra_call_gas_constant(geth_node, rpc_client, deployed_contracts):
+def test_extra_call_gas_constant_when_gas_price_lower(geth_node, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.PassesInt
 
@@ -20,7 +20,11 @@ def test_extra_call_gas_constant(geth_node, rpc_client, deployed_contracts):
 
     callKey = alarm.getLastCallKey.call()
     assert callKey is not None
-    call_txn_hash = alarm.doCall.sendTransaction(callKey)
+
+    base_gas_price = alarm.getCallBaseGasPrice.call(callKey)
+
+    call_txn_hash = alarm.doCall.sendTransaction(callKey, gas_price=base_gas_price - 10)
+
     call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
 
     assert alarm.checkIfCalled.call(callKey) is True

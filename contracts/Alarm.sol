@@ -1,3 +1,24 @@
+contract Relay {
+        address operator;
+
+        function Relay() {
+                operator = msg.sender;
+        }
+
+        function relayCall(address contractAddress, bytes4 sig, bytes data) public returns (bool) {
+                if (msg.sender != operator) {
+                        __throw();
+                }
+                return contractAddress.call(sig, data);
+        }
+
+        function __throw() internal {
+                int[] x;
+                x[1];
+        }
+}
+
+
 contract Alarm {
         /*
          *  Administration API
@@ -6,6 +27,11 @@ contract Alarm {
          *  coded owner address which receives 1% of each executed call.  This
          *  eliminates any need for trust as nobody has any special access.
          */
+        function Alarm() {
+                unauthorizedRelay = new Relay();
+                authorizedRelay = new Relay();
+        }
+
         address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         /*
@@ -476,18 +502,29 @@ contract Alarm {
         /*
          *  Scheduling Authorization API
          */
-        mapping (bytes32 => bool) public accountAuthorizations;
+        Relay unauthorizedRelay;
+        Relay authorizedRelay;
 
-        function getAuthorizationKey(address schedulerAccount, address contractAccount) public returns (bytes32) {
-                return sha3(schedulerAccount, contractAccount);
+        function unauthorizedAddress() public returns (address) {
+                return address(unauthorizedRelay);
         }
 
-        function addAuthorization(address schedulerAccount) public {
-                accountAuthorizations[getAuthorizationKey(schedulerAccount, msg.sender)] = true;
+        function authorizedAddress() public returns (address) {
+                return address(authorizedRelay);
         }
 
-        function removeAuthorization(address schedulerAccount) public {
-                accountAuthorizations[getAuthorizationKey(schedulerAccount, msg.sender)] = false;
+        mapping (bytes32 => bool) accountAuthorizations;
+
+        function addAuthorization(address schedulerAddress) public {
+                accountAuthorizations[sha3(schedulerAddress, msg.sender)] = true;
+        }
+
+        function removeAuthorization(address schedulerAddress) public {
+                accountAuthorizations[sha3(schedulerAddress, msg.sender)] = false;
+        }
+
+        function checkAuthorization(address schedulerAddress, address contractAddress) public returns (bool) {
+                return accountAuthorizations[sha3(schedulerAddress, contractAddress)];
         }
 
         /*
@@ -500,11 +537,12 @@ contract Alarm {
         }
 
         struct Call {
-                address targetAddress;
+                address contractAddress;
                 address scheduledBy;
                 uint calledAtBlock;
                 uint targetBlock;
                 uint8 gracePeriod;
+                uint nonce;
                 uint baseGasPrice;
                 uint gasPrice;
                 uint gasUsed;
@@ -524,8 +562,8 @@ contract Alarm {
         /*
          *  Getter methods for `Call` information
          */
-        function getCallTargetAddress(bytes32 callKey) public returns (address) {
-                return key_to_calls[callKey].targetAddress;
+        function getCallContractAddress(bytes32 callKey) public returns (address) {
+                return key_to_calls[callKey].contractAddress;
         }
 
         function getCallScheduledBy(bytes32 callKey) public returns (address) {
@@ -654,7 +692,7 @@ contract Alarm {
 
                 var call = key_to_calls[callKey];
 
-                if (call.targetAddress == 0x0) {
+                if (call.contractAddress == 0x0) {
                         // This call key doesnt map to a registered call.
                         CallAborted(msg.sender, callKey, "UNKNOWN");
                         return;
@@ -708,7 +746,12 @@ contract Alarm {
                 _deductFunds(call.scheduledBy, heldBalance);
 
                 // Mark whether the function call was successful.
-                call.wasSuccessful = call.targetAddress.call(call.sig, data);
+                if (checkAuthorization(call.scheduledBy, call.contractAddress)) {
+                        call.wasSuccessful = authorizedRelay.relayCall(call.contractAddress, call.sig, data);
+                }
+                else {
+                        call.wasSuccessful = unauthorizedRelay.relayCall(call.contractAddress, call.sig, data);
+                }
 
                 // Add the held funds back into the scheduler's account.
                 _addFunds(call.scheduledBy, heldBalance);
@@ -768,8 +811,8 @@ contract Alarm {
         // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
-        function getCallKey(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock) public returns (bytes32) {
-                return sha3(targetAddress, signature, dataHash, targetBlock);
+        function getCallKey(address scheduledBy, address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32) {
+                return sha3(scheduledBy, contractAddress, signature, dataHash, targetBlock, gracePeriod, nonce);
         }
 
         // Ten minutes into the future.
@@ -778,13 +821,13 @@ contract Alarm {
         event CallScheduled(bytes32 indexed callKey);
         event CallRejected(bytes32 indexed callKey, bytes12 reason);
 
-        function scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public {
+        function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
                 /*
                  * Primary API for scheduling a call.  Prior to calling this
                  * the data should already have been registered through the
                  * `registerData` API.
                  */
-                bytes32 callKey = getCallKey(targetAddress, signature, dataHash, targetBlock);
+                bytes32 callKey = getCallKey(msg.sender, contractAddress, signature, dataHash, targetBlock, gracePeriod, nonce);
 
                 if (dataHash != emptyDataHash && hash_to_data[dataHash].length == 0) {
                         // Don't allow registering calls if the data hash has
@@ -801,21 +844,12 @@ contract Alarm {
                         return;
                 }
 
-                if (targetAddress != msg.sender) {
-                        // Check if the scheduling account is authorized to
-                        // schedule calls for the targetAddress
-                        bytes32 authorizationKey = getAuthorizationKey(msg.sender, targetAddress);
-                        if (!accountAuthorizations[authorizationKey]) {
-                                CallRejected(callKey, "UNAUTHORIZED");
-                                return;
-                        }
-                }
-
                 lastCallKey = callKey;
 
                 var call = key_to_calls[lastCallKey];
-                call.targetAddress = targetAddress;
+                call.contractAddress = contractAddress;
                 call.scheduledBy = msg.sender;
+                call.nonce = nonce;
                 call.sig = signature;
                 call.dataHash = dataHash;
                 call.targetBlock = targetBlock;

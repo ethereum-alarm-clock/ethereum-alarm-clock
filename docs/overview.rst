@@ -47,14 +47,7 @@ re-used for subsequent function calls.
 Call Scheduling
 ^^^^^^^^^^^^^^^
 
-.. note::
-
-    Currently function calls can only be scheduled by the contract address that
-    the function is to be called on.  The intent behind this limitation is to
-    allow contracts to *trust* function calls originating from the Alarm
-    service.
-
-Function calls can be scheduled on any block at least 40 blocks *(~10 minutes)*
+Function calls can be scheduled for any block at least 40 blocks *(~10 minutes)*
 in the future.  Scheduling is done by providing the Alarm service with the
 following information:
 

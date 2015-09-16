@@ -8,7 +8,7 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_getting_target_address(geth_node, deployed_contracts):
+def test_getting_contract_address(geth_node, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.NoArgs
 
@@ -20,4 +20,4 @@ def test_getting_target_address(geth_node, deployed_contracts):
     callKey = alarm.getLastCallKey.call()
     assert callKey is not None
 
-    assert alarm.getCallTargetAddress.call(callKey) == client_contract._meta.address
+    assert alarm.getCallContractAddress.call(callKey) == client_contract._meta.address

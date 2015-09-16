@@ -4,35 +4,6 @@ Scheduling
 Call scheduling is the core of the Ethereum Alarm Service.  Calls can be
 scheduled on any block at least 40 blocks *(~10 minutes)* in the future.
 
-Properties of a Scheduled Call
-------------------------------
-
-* **address targetAddress:** the address of the contract the function should be called on.
-* **address scheduledBy:** the address who scheduled the call.
-* **uint calledAtBlock:** the block number on which the function was called.
-  (``0`` if the call has not yet been executed.)
-* **uint targetBlock:** the block that the function should be called on.
-* **uint8 gracePeriod:** the number of blocks after the ``targetBlock`` during
-  which it is stll ok to execute the call.
-* **uint baseGasPrice:** the gas price that was used when the call was
-  scheduled.
-* **uint gasPrice:** the gas price that was used when the call was executed.
-  (``0`` if the call has not yet been executed.)
-* **uint gasUsed:** the amount of gas that was used to execute the function
-  call (``0`` if the call has not yet been executed.)
-* **uint payout:** the amount in wei that was paid to the address that executed
-  the function call. (``0`` if the call has not yet been executed.)
-* **uint fee:** the amount in wei that was kept to pay the creator of the Alarm
-  service. (``0`` if the call has not yet been executed.)
-* **bytes4 sig:** the 4 byte ABI function signature of the function on the
-  ``targetAddress`` for this call.
-* **bool isCancelled:** whether the call was cancelled.
-* **bool wasCalled:** whether the call was called.
-* **bool wasSuccessful:** whether the call was successful.
-* **bytes32 dataHash:** the ``sha3`` hash of the data that should be used for
-  this call.
-
-
 Registering Call Data
 ---------------------
 
@@ -80,8 +51,8 @@ Scheduling the Call
 Function calls are scheduled with the ``scheduleCall`` function on the Alarm
 service.
 
-* **Soldity Function Signature:** ``scheduleCall(address targetAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public returns (bytes32);``
-* **ABI Signature:** ``0x1145a20f``
+* **Soldity Function Signature:** ``scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32);``
+* **ABI Signature:** ``0x52afbc33``
 
 The ``scheduleCall`` function takes the following parameters:
 
@@ -91,6 +62,8 @@ The ``scheduleCall`` function takes the following parameters:
 * **uint targetBlock:** The block number the call should be executed on.
 * **uint8 gracePeriod:** The number of blocks after ``targetBlock`` that it is
   ok to still execute this call.
+* **uint nonce:** Number to allow for differentiating a call from another one
+  which has the exact same information for all other user specified fields.
 
 Contract scheduling its own call
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,7 +83,7 @@ Contracts can take care of their own call scheduling.
             uint targetBlock = block.number + 5760;
             // allow for the maximum grace period of 255 blocks.
             uint8 gracePeriod = 255;
-            // 0x1145a20f is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
+            // 0x52afbc33 is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
             alarm.call(0x1145a20f, address(this), sig, dataHash, targetBlock, gracePeriod)
         }
 
@@ -126,3 +99,73 @@ is called, a call to the ``pickWinner`` function is scheduled for approximately
 
 Scheduling a call for a contract
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively, calls can be scheduled by one address to be executed on another
+address.
+
+.. note::
+
+    The Alarm service operates under a *scheduler pays* model meaning that
+    payment for all executed calls is taken from the scheduler's account.
+
+Lets look at an example where we want to schedule a funds transfer for a wallet
+contract of some sort.
+
+.. note::
+
+    This example assuming that you have the Alarm contract ABI loaded into a
+    web3 contract object.
+
+.. code-block:: javascript
+
+    // First register the call data
+    // 0xb0f07e44 is the ABI signature for the `registerData` function.
+    > callData = ...  // the full ABI encoded call data for the call we want to schedule.
+    > web3.sendTransaction({to: alarm.address, data: 'b0f07e44' + callData, from: eth.coinbase})
+    // Now schedule the call
+    > dataHash = eth.sha3(callData)
+    > sig = ... // the 4-byte ABI function signature for the wallet function that transfers funds.
+    > targetBlock = eth.getBlock('latest') + 100  // 100 blocks in the future.
+    > alarm.scheduleCall.sendTransaction(walletAddress, sig, dataHash, targetBlock, 255, 0, {from: eth.coinbase})
+
+There is a lot going on in this example so lets look at it line by line.
+
+1. ``callData = ...``
+
+    Our wallet contract will likely take some function arguments when
+    transferring funds, such as the amount to be transferred.  This variable
+    would need to be populated with the ABI encoded call data for this
+    function.
+
+2. ``web3.sendTransaction({to: alarm.address, data: 'b0f07e44' + callData, from: eth.coinbase})``
+
+    Here we are registering the call data with the Alarm service.  ``b0f07e44``
+    is the ABI encoded call signature for the ``registerData`` function on the
+    alarm service.
+
+3. ``dataHash = eth.sha3(callData)``
+
+    Here we compute the ``sha3`` hash of the call data we will want sent with
+    the scheduled call.
+
+4. ``sig = ...``
+
+    We also need to tell the Alarm service the 4 byte function signature it
+    should use for the scheduled call.  Assuming our wallet's transfer function
+    had a call signature of ``transferFunds(address to, uint value)`` then this
+    value would be the result of
+    ``bytes4(sha3(transferFunds(address,uint256))``.
+
+5. ``targetBlock = eth.getBlock('latest') + 100``
+
+6. ``alarm.scheduleCall.sendTransaction(walletAddress, sig, dataHash, targetBlock, 255, {from: eth.coinbase})``
+
+    This is the actual line that schedules the function call.  We send a
+    transaction using the ``scheduleCall`` function on the Alarm contract
+    telling the Alarm service to schedule the call for 100 blocks in the future
+    with the maximum grace period of 255 blocks, and a nonce of 0.
+
+It should be noted that this example does not take into account any of the
+authorization issues that would likely need to be in place such as restricting
+the tranfer funds function to only accept authorized calls as well as
+authorizing the desired addresses to make calls to the wallet address.

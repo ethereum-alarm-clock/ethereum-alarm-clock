@@ -1,7 +1,7 @@
 contract AlarmAPI {
         function withdraw(uint value) public;
         function accountBalances(address account) public returns (uint);
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public returns (bytes32);
+        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32);
 }
 
 
@@ -67,7 +67,7 @@ contract NoArgs {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -87,7 +87,7 @@ contract Fails {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -104,7 +104,7 @@ contract PassesInt {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(int256)")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(int256)")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -121,7 +121,7 @@ contract PassesUInt {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(uint256)")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(uint256)")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -138,7 +138,7 @@ contract PassesBytes32 {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -157,7 +157,7 @@ contract PassesAddress {
                 dataHash = sha3(bytes32(a));
                 to.call(bytes4(sha3("registerData()")), a);
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 40, 255, 0);
         }
 }
 
@@ -174,7 +174,7 @@ contract CancelsCall {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
 
@@ -206,7 +206,7 @@ contract WithdrawsDuringCall {
 
         function scheduleIt() public {
                 address(alarm).call(bytes4(sha3("registerData()")));
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
 
@@ -237,7 +237,7 @@ contract SpecifyBlock {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber, 255, 0);
         }
 }
 
@@ -258,6 +258,6 @@ contract AuthorizesOthers {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
                 AlarmAPI alarm = AlarmAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 100, 255);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }

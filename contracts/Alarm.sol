@@ -572,7 +572,7 @@ contract Alarm {
                 return key_to_calls[callKey].isCancelled;
         }
 
-        function getDataHash(bytes32 callKey) public returns (bytes32) {
+        function getCallDataHash(bytes32 callKey) public returns (bytes32) {
                 return key_to_calls[callKey].dataHash;
         }
 
@@ -641,7 +641,7 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint public constant EXTRA_CALL_GAS = 151619;  // Lower
+        uint public constant EXTRA_CALL_GAS = 151751;  // Lower
 
         /*
          *  Main Alarm API
@@ -669,6 +669,12 @@ contract Alarm {
                 if (call.isCancelled) {
                         // The call was cancelled so don't execute it.
                         CallAborted(msg.sender, callKey, "CANCELLED");
+                        return;
+                }
+
+                if (block.number < call.targetBlock) {
+                        // Target block hasnt happened yet.
+                        CallAborted(msg.sender, callKey, "TOO EARLY");
                         return;
                 }
 

@@ -12,6 +12,10 @@ Properties of a Scheduled Call
 * **uint calledAtBlock:** the block number on which the function was called.
   (``0`` if the call has not yet been executed.)
 * **uint targetBlock:** the block that the function should be called on.
+* **uint8 gracePeriod:** the number of blocks after the ``targetBlock`` during
+  which it is stll ok to execute the call.
+* **uint baseGasPrice:** the gas price that was used when the call was
+  scheduled.
 * **uint gasPrice:** the gas price that was used when the call was executed.
   (``0`` if the call has not yet been executed.)
 * **uint gasUsed:** the amount of gas that was used to execute the function
@@ -88,4 +92,37 @@ The ``scheduleCall`` function takes the following parameters:
 * **uint8 gracePeriod:** The number of blocks after ``targetBlock`` that it is
   ok to still execute this call.
 
-TODO
+Contract scheduling its own call
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Contracts can take care of their own call scheduling.
+
+.. code-block::
+
+    contract Lottery {
+        address alarm; // set by some other mechanism.
+
+        function beginLottery() public {
+            bytes4 sig = bytes4(sha3("pickWinner()"));
+            // `pickWinner()` takes no arguments so we send an empty sha3 hash.
+            bytes32 dataHash = sha3();
+            // approximately 24 hours from now
+            uint targetBlock = block.number + 5760;
+            // allow for the maximum grace period of 255 blocks.
+            uint8 gracePeriod = 255;
+            // 0x1145a20f is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
+            alarm.call(0x1145a20f, address(this), sig, dataHash, targetBlock, gracePeriod)
+        }
+
+        function pickWinner() public {
+            ...
+        }
+    }
+
+In this example ``Lottery`` contract, every time the ``beginLottery`` function
+is called, a call to the ``pickWinner`` function is scheduled for approximately
+24 hours later (5760 blocks).
+
+
+Scheduling a call for a contract
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

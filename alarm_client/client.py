@@ -154,8 +154,6 @@ class ScheduledCall(object):
         if self.block_sage.current_block_number > self.target_block + self.grace_period:
             raise ValueError("Already passed call execution window")
 
-        print "Waiting for block #{0}".format(self.target_block)
-
         while self.block_sage.current_block_number < self.target_block - buffer:
             time.sleep(0.1)
 
@@ -253,6 +251,9 @@ class Scheduler(object):
         self._thread = threading.Thread(target=self.monitor)
         self._thread.daemon = True
         self._thread.start()
+
+    def stop(self):
+        self._run = False
 
     def monitor(self):
         while getattr(self, '_run', True):

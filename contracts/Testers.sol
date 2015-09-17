@@ -1,7 +1,7 @@
 contract AlarmAPI {
         function withdraw(uint value) public;
         function accountBalances(address account) public returns (uint);
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32);
+        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
 }
 
 
@@ -257,6 +257,20 @@ contract AuthorizesOthers {
         function scheduleIt(address to, uint blockNumber) public {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
+                AlarmAPI alarm = AlarmAPI(to);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
+        }
+}
+
+
+contract InfiniteLoop {
+        function doIt() public {
+                while (true) {
+                        tx.origin.send(1);
+                }
+        }
+
+        function scheduleIt(address to) public {
                 AlarmAPI alarm = AlarmAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }

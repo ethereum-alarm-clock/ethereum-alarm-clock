@@ -679,7 +679,10 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint public constant EXTRA_CALL_GAS = 151751;  // Lower
+        uint public constant EXTRA_CALL_GAS = 151751;
+        // This number represents the overall overhead involved in executing a
+        // scheduled call.
+        uint public constant CALL_OVERHEAD = 145601;
 
         /*
          *  Main Alarm API
@@ -747,10 +750,10 @@ contract Alarm {
 
                 // Mark whether the function call was successful.
                 if (checkAuthorization(call.scheduledBy, call.contractAddress)) {
-                        call.wasSuccessful = authorizedRelay.relayCall(call.contractAddress, call.sig, data);
+                        call.wasSuccessful = authorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.sig, data);
                 }
                 else {
-                        call.wasSuccessful = unauthorizedRelay.relayCall(call.contractAddress, call.sig, data);
+                        call.wasSuccessful = unauthorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.sig, data);
                 }
 
                 // Add the held funds back into the scheduler's account.
@@ -843,10 +846,15 @@ contract Alarm {
                         CallRejected(callKey, "TOO_SOON");
                         return;
                 }
+                var call = key_to_calls[callKey];
+
+                if (call.contractAddress != 0x0) {
+                        CallRejected(callKey, "DUPLICATE");
+                        return;
+                }
 
                 lastCallKey = callKey;
 
-                var call = key_to_calls[lastCallKey];
                 call.contractAddress = contractAddress;
                 call.scheduledBy = msg.sender;
                 call.nonce = nonce;
@@ -864,6 +872,9 @@ contract Alarm {
 
         event CallCancelled(bytes32 indexed callKey);
 
+        // Two minutes
+        uint constant MIN_CANCEL_WINDOW = 8;
+
         function cancelCall(bytes32 callKey) {
                 var call = key_to_calls[callKey];
                 if (call.scheduledBy != msg.sender) {
@@ -872,6 +883,10 @@ contract Alarm {
                 }
                 if (call.wasCalled) {
                         // No need to cancel a call that already was executed.
+                        return;
+                }
+                if (call.targetBlock - MIN_CANCEL_WINDOW <= block.number) {
+                        // Call cannot be cancelled this close to execution.
                         return;
                 }
                 call.isCancelled = true;

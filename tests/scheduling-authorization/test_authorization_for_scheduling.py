@@ -1,6 +1,7 @@
 from ethereum import utils
 
-from populus.utils import wait_for_transaction
+from populus.contracts import get_max_gas
+from populus.utils import wait_for_transaction, wait_for_block
 
 
 deploy_max_wait = 15
@@ -14,41 +15,54 @@ def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deploye
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.AuthorizesOthers
 
-    auth_key = alarm.getAuthorizationKey.call(geth_coinbase, client_contract._meta.address)
+    authed_addr = alarm.authorizedAddress.call()
+    unauthed_addr = alarm.unauthorizedAddress.call()
 
-    assert alarm.accountAuthorizations.call(auth_key) is False
-    assert alarm.getLastCallKey.call() is None
+    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    alarm.deposit.sendTransaction(geth_coinbase, value=deposit_amount)
 
-    wait_for_transaction(
-        rpc_client,
-        alarm.scheduleCall(
-            client_contract._meta.address,
-            client_contract.doIt.encoded_abi_function_signature,
-            utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
-            rpc_client.get_block_number() + 100,
-            255,
-        )
+    assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is False
+
+    txn_1_hash = alarm.scheduleCall.sendTransaction(
+        client_contract._meta.address,
+        client_contract.doIt.encoded_abi_function_signature,
+        utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
+        rpc_client.get_block_number() + 50,
+        255,
+        0
     )
+    wait_for_transaction(rpc_client, txn_1_hash)
 
-    assert alarm.getLastCallKey.call() is None
+    callKey = alarm.getLastCallKey.call()
+    assert callKey is not None
+    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
+    call_txn_hash = alarm.doCall.sendTransaction(callKey)
+    wait_for_transaction(rpc_client, call_txn_hash)
 
-    wait_for_transaction(rpc_client, client_contract.authorize.sendTransaction(alarm._meta.address))
+    assert alarm.checkIfCalled is True
+    assert alarm.checkIfSuccess is True
+    assert client_contract.calledBy.call() == unauthed_addr
 
-    assert alarm.accountAuthorizations.call(auth_key) is True
+    wait_for_transaction(rpc_client, client_contract.authorize.sendTransaction(geth_coinbase))
+    assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is True
 
-    wait_for_transaction(
-        rpc_client,
-        alarm.scheduleCall(
-            client_contract._meta.address,
-            client_contract.doIt.encoded_abi_function_signature,
-            utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
-            rpc_client.get_block_number() + 100,
-            255,
-        )
+    txn_2_hash = alarm.scheduleCall.sendTransaction(
+        client_contract._meta.address,
+        client_contract.doIt.encoded_abi_function_signature,
+        utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
+        rpc_client.get_block_number() + 50,
+        255,
+        0
     )
+    wait_for_transaction(rpc_client, txn_2_hash)
 
-    call_key = alarm.getLastCallKey.call()
-    assert call_key is not None
+    assert callKey != alarm.getLastCallKey.call()
+    callKey = alarm.getLastCallKey.call()
+    assert callKey is not None
+    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
+    call_txn_hash = alarm.doCall.sendTransaction(callKey)
+    wait_for_transaction(rpc_client, call_txn_hash)
 
-    assert alarm.getCallScheduledBy.call(call_key) == geth_coinbase
-    assert alarm.getCallTargetAddress.call(call_key) == client_contract._meta.address
+    assert alarm.checkIfCalled is True
+    assert alarm.checkIfSuccess is True
+    assert client_contract.calledBy.call() == authed_addr

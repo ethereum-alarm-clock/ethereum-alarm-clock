@@ -12,14 +12,12 @@ def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deploye
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.AuthorizesOthers
 
-    auth_key = alarm.getAuthorizationKey.call(geth_coinbase, client_contract._meta.address)
-
-    assert alarm.accountAuthorizations.call(auth_key) is False
+    assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is False
 
     wait_for_transaction(rpc_client, client_contract.authorize.sendTransaction(alarm._meta.address))
 
-    assert alarm.accountAuthorizations.call(auth_key) is True
+    assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is True
 
     wait_for_transaction(rpc_client, client_contract.unauthorize.sendTransaction(alarm._meta.address))
 
-    assert alarm.accountAuthorizations.call(auth_key) is False
+    assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is False

@@ -62,7 +62,6 @@ contract TestDataRegistry {
 
 contract NoArgs {
         bool public value;
-        bytes32 public dataHash;
 
         function doIt() public {
                 value = true;
@@ -73,11 +72,10 @@ contract NoArgs {
         }
 
         function scheduleIt(address to) public {
-                dataHash = sha3();
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
 
@@ -253,7 +251,10 @@ contract SpecifyBlock {
 
 
 contract AuthorizesOthers {
+        address public calledBy;
+
         function doIt() public {
+                calledBy = msg.sender;
         }
 
         function authorize(address to) public {
@@ -262,13 +263,6 @@ contract AuthorizesOthers {
 
         function unauthorize(address to) public {
                 to.call(bytes4(sha3("removeAuthorization(address)")), msg.sender);
-        }
-
-        function scheduleIt(address to, uint blockNumber) public {
-                to.call(bytes4(sha3("registerData()")), block.timestamp);
-
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
 

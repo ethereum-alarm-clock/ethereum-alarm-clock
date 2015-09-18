@@ -670,7 +670,7 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint constant EXTRA_CALL_GAS = 151751;
+        uint constant EXTRA_CALL_GAS = 151729;
         // This number represents the overall overhead involved in executing a
         // scheduled call.
         uint constant CALL_OVERHEAD = 145601;

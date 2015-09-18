@@ -1,3 +1,4 @@
+from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction
 
 
@@ -8,20 +9,15 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-from ethereum import utils as ethereum_utils
-
-
-def test_get_scheduled_by(geth_node, geth_coinbase, deployed_contracts):
+def test_get_scheduled_by(geth_node, geth_coinbase, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
+    client_contract = deployed_contracts.NoArgs
 
-    txn_hash = alarm.scheduleCall.sendTransaction(
-        geth_coinbase,
-        'arst',
-        ethereum_utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
-        1000,
-        value=12345,
-    )
-    wait_for_transaction(alarm._meta.rpc_client, txn_hash)
+    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
+
+    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
+    wait_for_transaction(rpc_client, txn_hash)
 
     call_key = alarm.getLastCallKey.call()
     assert call_key

@@ -57,6 +57,17 @@ contract TestDataRegistry {
                 wasSuccessful = 2;
             }
         }
+
+        function registerData(address to, int arg1, bytes32 arg2, address arg3) public {
+            // 0xb0f07e44 == bytes4(sha3("registerData()"))
+            bool result = to.call(0xb0f07e44, arg1, arg2, arg3);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
 }
 
 

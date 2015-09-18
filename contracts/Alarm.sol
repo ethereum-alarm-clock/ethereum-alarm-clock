@@ -686,12 +686,6 @@ contract Alarm {
 
                 var call = key_to_calls[callKey];
 
-                if (call.contractAddress == 0x0) {
-                        // This call key doesnt map to a registered call.
-                        CallAborted(msg.sender, callKey, "UNKNOWN");
-                        return;
-                }
-
                 if (call.wasCalled) {
                         // The call has already been executed so don't do it again.
                         CallAborted(msg.sender, callKey, "ALREADY CALLED");
@@ -701,6 +695,12 @@ contract Alarm {
                 if (call.isCancelled) {
                         // The call was cancelled so don't execute it.
                         CallAborted(msg.sender, callKey, "CANCELLED");
+                        return;
+                }
+
+                if (call.contractAddress == 0x0) {
+                        // This call key doesnt map to a registered call.
+                        CallAborted(msg.sender, callKey, "UNKNOWN");
                         return;
                 }
 

@@ -43,7 +43,7 @@ def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deploye
     assert alarm.checkIfSuccess.call(callKey) is True
     assert client_contract.calledBy.call() == unauthed_addr
 
-    wait_for_transaction(rpc_client, client_contract.authorize.sendTransaction(geth_coinbase))
+    wait_for_transaction(rpc_client, client_contract.authorize.sendTransaction(alarm._meta.address))
     assert alarm.checkAuthorization.call(geth_coinbase, client_contract._meta.address) is True
 
     txn_2_hash = alarm.scheduleCall.sendTransaction(

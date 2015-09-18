@@ -34,5 +34,4 @@ def test_cost_of_duplicate_call(geth_node, rpc_client, deployed_contracts):
     call_txn_hash = alarm.doCall.sendTransaction(callKey)
     call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
 
-    assert call_txn_receipt['gasUsed'] == '0x12345'
-    x = 3
+    assert call_txn_receipt['gasUsed'] == '0x67f0'

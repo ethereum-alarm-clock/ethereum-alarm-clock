@@ -83,7 +83,16 @@ contract Alarm {
                  */
                 if (accountBalances[msg.sender] >= value) {
                         _deductFunds(msg.sender, value);
-                        msg.sender.send(value);
+                        if (!msg.sender.send(value)) {
+                                // Potentially sending money to a contract that
+                                // has a fallback function.  So instead, try
+                                // tranferring the funds with the call api.
+                                if (!msg.sender.call.gas(msg.gas).value(value)()) {
+                                        // Revert the entire transaction.  No
+                                        // need to destroy the funds.
+                                        __throw();
+                                }
+                        }
                         Withdraw(msg.sender, value);
                 }
         }
@@ -648,7 +657,7 @@ contract Alarm {
         mapping (bytes32 => bytes) hash_to_data;
 
         /*
-         *  Main Alarm API
+         *  Data registration API
          */
         event DataRegistered(bytes32 indexed dataHash);
 
@@ -676,8 +685,240 @@ contract Alarm {
         uint constant CALL_OVERHEAD = 145601;
 
         /*
-         *  Main Alarm API
+         *  Caller bonding
          */
+        uint public currentPool;
+        uint public nextPool;
+        mapping (uint => address[]) callerPools;
+        mapping (address => uint) public callerBonds;
+
+        function getMinimumBond() public returns (uint) {
+                return tx.gasprice * block.gaslimit;
+        }
+
+        function _deductFromBond(address callerAddress, uint value) internal {
+                /*
+                 *  deduct funds from a bond value without risk of an
+                 *  underflow.
+                 */
+                if (value > callerBonds[callerAddress]) {
+                        // Prevent Underflow.
+                        __throw();
+                }
+                callerBonds[callerAddress] -= value;
+        }
+
+        function _addToBond(address callerAddress, uint value) {
+                /*
+                 *  Add funds to a bond value without risk of an
+                 *  overflow.
+                 */
+                if (callerBonds[callerAddress] + value < callerBonds[callerAddress]) {
+                        // Prevent Overflow
+                        __throw();
+                }
+                callerBonds[callerAddress] += value;
+        }
+
+        function depositBond() public {
+                _addToBond(msg.sender, msg.value);
+        }
+
+        function withdrawBond(uint value) public {
+                /*
+                 *  Only if you are not in either of the current call pools.
+                 */
+                if ((currentPool != 0 && isInPool(currentPool)) || (nextPool != 0 && isInPool(nextPool))) {
+                        return;
+                }
+                _deductFromBond(msg.sender, value);
+                if (!msg.sender.send(value)) {
+                        // Potentially sending money to a contract that
+                        // has a fallback function.  So instead, try
+                        // tranferring the funds with the call api.
+                        if (!msg.sender.call.gas(msg.gas).value(value)()) {
+                                // Revert the entire transaction.  No
+                                // need to destroy the funds.
+                                __throw();
+                        }
+                }
+        }
+
+        function getCurrentPoolKey(uint blockNumber) public returns (uint) {
+                if (blockNumber < block.number) {
+                        // It can't be known with any accuracy what pool was
+                        // active in the past.
+                        __throw();
+                }
+
+                if (nextPool == 0 || nextPool >= block.number) {
+                        // Either there is no next pool or the current pool has
+                        // not expired yet.
+                        return currentPool;
+                }
+                // Current pool has expired.
+                return nextPool;
+        }
+
+        event CallerPoolChanged(uint oldPool, uint newPool);
+
+        function _maybeCyclePools() internal {
+                if (nextPool != 0 && nextPool <= block.number) {
+                        // Log the change
+                        CallerPoolChanged(currentPool, nextPool);
+                        
+                        // Cycle the next pool into the slot of the current pool.
+                        currentPool = nextPool;
+                        nextPool = 0;
+                }
+        }
+
+        function isInPool(uint poolKey) public returns (bool) {
+                if (poolKey == 0 ) {
+                        // This shouldn't be called with 0;
+                        __throw();
+                }
+
+                var pool = callerPools[poolKey];
+
+                // Nobody is in the pool.
+                if (pool.length == 0) {
+                        return false;
+                }
+
+                for (uint i = 0; i < pool.length; i++) {
+                        // Address is in the pool and thus is allowed to exit.
+                        if (pool[i] == msg.sender) {
+                                return true;
+                        }
+                }
+
+                return false;
+        }
+
+        function canEnterPool() public returns (bool) {
+                // Pool rotation is happening too soon to allow new members to
+                // enter the pool.
+                if (nextPool != 0 && block.number >= (nextPool - MAX_BLOCKS_IN_FUTURE)) {
+                        return false;
+                }
+
+                // Bond balance is below the minimum bond balance.
+                if (callerBonds[msg.sender] < getMinimumBond()) {
+                        return false;
+                }
+
+                if (nextPool == 0) {
+                        return true;
+                }
+
+                return !isInPool(nextPool);
+        }
+
+        function canExitPool() public returns (bool) {
+                // No active pool.
+                if (currentPool == 0) {
+                        return false;
+                }
+                // Current pool is set to expire and the expiration is too soon
+                // to allow exiting the pool.
+                if (nextPool != 0 && block.number >= (nextPool - MAX_BLOCKS_IN_FUTURE)) {
+                        return false;
+                }
+
+                // Can exit if they are in the pool.
+                return isInPool(getCurrentPoolKey(block.number));
+        }
+
+        function _setupNextPool() internal {
+                if (nextPool != 0) {
+                        // We shouldn't be overwriting an existing pool.
+                        __throw();
+                }
+                nextPool = block.number + 2 * MAX_BLOCKS_IN_FUTURE;
+                callerPools[nextPool] = callerPools[currentPool];
+        }
+
+        event AddedToPool(address indexed callerAddress, uint indexed pool);
+        event RemovedFromPool(address indexed callerAddress, uint indexed pool);
+
+        function _addToPool(uint poolKey) internal {
+                if (poolKey == 0 ) {
+                        // This shouldn't be called with 0;
+                        __throw();
+                }
+
+                // already in the pool.
+                if (isInPool(poolKey)) {
+                        return;
+                }
+                var pool = callerPools[poolKey];
+                pool.length += 1;
+                pool[pool.length - 1] = msg.sender;
+                AddedToPool(msg.sender, poolKey);
+        }
+
+        function _removeFromPool(uint poolKey) internal {
+                // nothing to remove.
+                if (!isInPool(poolKey)) {
+                        return;
+                }
+                var pool = callerPools[poolKey];
+                // special case length == 1
+                if (pool.length == 1) {
+                        pool.length = 0;
+                }
+                for (uint i = 0; i < pool.length; i++) {
+                        // When we find the index of the address to remove we
+                        // shift the last person to that location and then we
+                        // truncate the last member off of the end.
+                        if (pool[i] == msg.sender) {
+                                pool[i] = pool[pool.length - 1];
+                                pool.length -= 1;
+                                break;
+                        }
+                }
+                RemovedFromPool(msg.sender, poolKey);
+        }
+
+        function enterPool() public {
+                /*
+                 *  Request to be added to the call pool.
+                 */
+                _maybeCyclePools();
+                if (canEnterPool()) {
+                        if (nextPool == 0) {
+                                // This is the first address to modify the
+                                // current pool so we need to setup the next
+                                // pool.
+                                _setupNextPool();
+                        }
+                        _addToPool(nextPool);
+                }
+        }
+
+        function exitPool() public {
+                /*
+                 *  Request to be removed from the call pool.
+                 */
+                _maybeCyclePools();
+                if (canExitPool()) {
+                        if (nextPool == 0) {
+                                // This is the first address to modify the
+                                // current pool so we need to setup the next
+                                // pool.
+                                _setupNextPool();
+                        }
+                        _removeFromPool(nextPool);
+                }
+        }
+
+        /*
+         *  Call execution API
+         */
+        function getCallerForBlock(bytes32 callKey, uint blockNumber) {
+        }
+
         event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
         event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
 
@@ -814,6 +1055,10 @@ contract Alarm {
                         return 200 - 100 * baseGasPrice / (2 * baseGasPrice - gasPrice);
                 }
         }
+
+        /*
+         *  Call Scheduling API
+         */
 
         // The result of `sha()` so that we can validate that people aren't
         // looking up call data that failed to register.

@@ -22,7 +22,5 @@ def test_registering_address(geth_node, deployed_contracts):
     data_hash = alarm.getLastDataHash.call()
     assert data_hash is not None
 
-    import ipdb; ipdb.set_trace()
-
     data = alarm.getLastData.call()
     assert data == '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc9HE3h\xe5\xdd\xc7\xbc\x00\xbbR\xb5\x80\x918!z\x06\x8d'

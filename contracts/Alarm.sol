@@ -5,11 +5,11 @@ contract Relay {
                 operator = msg.sender;
         }
 
-        function relayCall(address contractAddress, bytes4 sig, bytes data) public returns (bool) {
+        function relayCall(address contractAddress, bytes4 abiSignature, bytes data) public returns (bool) {
                 if (msg.sender != operator) {
                         __throw();
                 }
-                return contractAddress.call(sig, data);
+                return contractAddress.call(abiSignature, data);
         }
 
         function __throw() internal {
@@ -221,7 +221,7 @@ contract Alarm {
                 }
         }
 
-        function _isBlockNumberInTree(bytes32 callKey, uint blockNumber) returns (bool) {
+        function _isBlockNumberInTree(bytes32 callKey, uint blockNumber) internal returns (bool) {
                 var node = call_to_node[callKey];
 
                 while (true) {
@@ -550,7 +550,7 @@ contract Alarm {
                 uint payout;
                 uint fee;
                 address executedBy;
-                bytes4 sig;
+                bytes4 abiSignature;
                 bool isCancelled;
                 bool wasCalled;
                 bool wasSuccessful;
@@ -594,8 +594,8 @@ contract Alarm {
                 return key_to_calls[callKey].gasUsed;
         }
 
-        function getCallSignature(bytes32 callKey) public returns (bytes4) {
-                return key_to_calls[callKey].sig;
+        function getCallABISignature(bytes32 callKey) public returns (bytes4) {
+                return key_to_calls[callKey].abiSignature;
         }
 
         function checkIfCalled(bytes32 callKey) public returns (bool) {
@@ -645,16 +645,7 @@ contract Alarm {
                 return hash_to_data[key_to_calls[callKey].dataHash];
         }
 
-        function getCallMaxCost() public returns (uint) {
-                /*
-                 *  tx.gasprice * block.gaslimit
-                 *  
-                 */
-                // call cost + 2%
-                return (tx.gasprice * block.gaslimit) * 102 / 100;
-        }
-
-        mapping (bytes32 => bytes) public hash_to_data;
+        mapping (bytes32 => bytes) hash_to_data;
 
         /*
          *  Main Alarm API
@@ -679,10 +670,10 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint public constant EXTRA_CALL_GAS = 151751;
+        uint constant EXTRA_CALL_GAS = 151751;
         // This number represents the overall overhead involved in executing a
         // scheduled call.
-        uint public constant CALL_OVERHEAD = 145601;
+        uint constant CALL_OVERHEAD = 145601;
 
         /*
          *  Main Alarm API
@@ -726,7 +717,7 @@ contract Alarm {
                         return;
                 }
 
-                uint heldBalance = getCallMaxCost();
+                uint heldBalance = getCallMaxCost(callKey);
 
                 if (accountBalances[call.scheduledBy] < heldBalance) {
                         // The scheduledBy's account balance is less than the
@@ -750,10 +741,10 @@ contract Alarm {
 
                 // Mark whether the function call was successful.
                 if (checkAuthorization(call.scheduledBy, call.contractAddress)) {
-                        call.wasSuccessful = authorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.sig, data);
+                        call.wasSuccessful = authorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
                 }
                 else {
-                        call.wasSuccessful = unauthorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.sig, data);
+                        call.wasSuccessful = unauthorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
                 }
 
                 // Add the held funds back into the scheduler's account.
@@ -786,6 +777,20 @@ contract Alarm {
                 _addFunds(owner, call.fee);
         }
 
+        function getCallMaxCost(bytes32 callKey) public returns (uint) {
+                /*
+                 *  tx.gasprice * block.gaslimit
+                 *  
+                 */
+                // call cost + 2%
+                var call = key_to_calls[callKey];
+
+                uint gasCost = tx.gasprice * block.gaslimit;
+                uint feeScalar = getCallFeeScalar(call.baseGasPrice, tx.gasprice);
+
+                return gasCost * feeScalar * 102 / 10000;
+        }
+
         function getCallFeeScalar(uint baseGasPrice, uint gasPrice) public returns (uint) {
                 /*
                  *  Return a number between 0 - 200 to scale the fee based on
@@ -814,8 +819,8 @@ contract Alarm {
         // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
-        function getCallKey(address scheduledBy, address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32) {
-                return sha3(scheduledBy, contractAddress, signature, dataHash, targetBlock, gracePeriod, nonce);
+        function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32) {
+                return sha3(scheduledBy, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
         }
 
         // Ten minutes into the future.
@@ -824,13 +829,13 @@ contract Alarm {
         event CallScheduled(bytes32 indexed callKey);
         event CallRejected(bytes32 indexed callKey, bytes12 reason);
 
-        function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
+        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
                 /*
                  * Primary API for scheduling a call.  Prior to calling this
                  * the data should already have been registered through the
                  * `registerData` API.
                  */
-                bytes32 callKey = getCallKey(msg.sender, contractAddress, signature, dataHash, targetBlock, gracePeriod, nonce);
+                bytes32 callKey = getCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
 
                 if (dataHash != emptyDataHash && hash_to_data[dataHash].length == 0) {
                         // Don't allow registering calls if the data hash has
@@ -858,7 +863,7 @@ contract Alarm {
                 call.contractAddress = contractAddress;
                 call.scheduledBy = msg.sender;
                 call.nonce = nonce;
-                call.sig = signature;
+                call.abiSignature = abiSignature;
                 call.dataHash = dataHash;
                 call.targetBlock = targetBlock;
                 call.gracePeriod = gracePeriod;
@@ -875,7 +880,7 @@ contract Alarm {
         // Two minutes
         uint constant MIN_CANCEL_WINDOW = 8;
 
-        function cancelCall(bytes32 callKey) {
+        function cancelCall(bytes32 callKey) public {
                 var call = key_to_calls[callKey];
                 if (call.scheduledBy != msg.sender) {
                         // Nobody but the scheduler can cancel a call.

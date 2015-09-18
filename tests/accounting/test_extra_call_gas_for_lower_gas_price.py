@@ -1,5 +1,5 @@
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
+from populus.utils import wait_for_transaction, wait_for_block
 
 deploy_max_wait = 15
 deploy_max_first_block_wait = 180
@@ -23,6 +23,7 @@ def test_extra_call_gas_constant_when_gas_price_lower(geth_node, rpc_client, dep
 
     base_gas_price = alarm.getCallBaseGasPrice.call(callKey)
 
+    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
     call_txn_hash = alarm.doCall.sendTransaction(callKey, gas_price=base_gas_price - 10)
 
     call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)

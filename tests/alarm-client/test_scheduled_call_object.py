@@ -1,7 +1,7 @@
 from ethereum import utils
 
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
+from populus.utils import wait_for_transaction, wait_for_block
 
 from alarm_client.client import ScheduledCall
 
@@ -29,8 +29,9 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     callKey = alarm.getLastCallKey.call()
     assert callKey is not None
 
-    owner = '0xd3cda913deb6f67967b99d67acdfa1712c293601';
+    owner = '0xd3cda913deb6f67967b99d67acdfa1712c293601'
 
+    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
     txn_receipt = wait_for_transaction(alarm._meta.rpc_client, alarm.doCall.sendTransaction(callKey))
     call_txn = rpc_client.get_transaction_by_hash(txn_receipt['transactionHash'])
 
@@ -40,7 +41,7 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     assert scheduled_call.target_block == alarm.getCallTargetBlock.call(callKey)
     assert scheduled_call.scheduled_by == client_contract._meta.address
     assert scheduled_call.called_at_block == int(txn_receipt['blockNumber'], 16)
-    assert scheduled_call.target_address == client_contract._meta.address
+    assert scheduled_call.contract_address == client_contract._meta.address
     assert scheduled_call.base_gas_price == int(txn['gasPrice'], 16)
     assert scheduled_call.gas_price == int(call_txn['gasPrice'], 16)
     assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)

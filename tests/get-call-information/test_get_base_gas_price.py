@@ -8,18 +8,18 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_executing_scheduled_call(geth_node, rpc_client, deployed_contracts):
+def test_getting_base_gas_used(geth_node, rpc_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.PassesUInt
+    client_contract = deployed_contracts.NoArgs
 
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
     alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
-    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, 3)
+    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
     wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    txn = rpc_client.get_transaction_by_hash(txn_hash)
 
     callKey = alarm.getLastCallKey.call()
     assert callKey is not None
 
-    call_data = alarm.getCallData.call(callKey)
-    assert call_data == '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03'
+    assert alarm.getCallBaseGasPrice.call(callKey) == int(txn['gasPrice'], 16)

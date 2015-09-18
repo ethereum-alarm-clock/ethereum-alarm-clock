@@ -26,7 +26,7 @@ def test_getting_gas_used(geth_node, rpc_client, deployed_contracts):
     assert alarm.getCallGasUsed.call(callKey) == 0
 
     call_txn_hash = alarm.doCall.sendTransaction(callKey)
-    wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
 
     assert client_contract.value.call() is True
-    assert alarm.getCallGasUsed.call(callKey) > 10000
+    assert alarm.getCallGasUsed.call(callKey) == int(call_txn_receipt['gasUsed'], 16)

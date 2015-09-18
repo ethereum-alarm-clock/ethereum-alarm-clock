@@ -1,7 +1,7 @@
-contract AlarmAPI {
+contract AlarmTestAPI {
         function withdraw(uint value) public;
         function accountBalances(address account) public returns (uint);
-        function scheduleCall(address to, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
+        function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
 }
 
 
@@ -47,6 +47,16 @@ contract TestDataRegistry {
                 wasSuccessful = 2;
             }
         }
+
+        function registerMany(address to, uint a, int b, uint c, bytes20 d, address e, bytes f) public {
+            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
 }
 
 
@@ -66,7 +76,7 @@ contract NoArgs {
                 dataHash = sha3();
                 to.call(bytes4(sha3("registerData()")));
 
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -86,7 +96,7 @@ contract Fails {
                 dataHash = sha3();
                 to.call(bytes4(sha3("registerData()")));
 
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -103,7 +113,7 @@ contract PassesInt {
         function scheduleIt(address to, int a) public {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(int256)")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -120,7 +130,7 @@ contract PassesUInt {
         function scheduleIt(address to, uint a) public {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(uint256)")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -137,7 +147,7 @@ contract PassesBytes32 {
         function scheduleIt(address to, bytes32 a) public {
                 dataHash = sha3(a);
                 to.call(bytes4(sha3("registerData()")), a);
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -156,7 +166,7 @@ contract PassesAddress {
         function scheduleIt(address to, address a) public {
                 dataHash = sha3(bytes32(a));
                 to.call(bytes4(sha3("registerData()")), a);
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 40, 255, 0);
         }
 }
@@ -173,7 +183,7 @@ contract CancelsCall {
         function scheduleIt(address to) public {
                 to.call(bytes4(sha3("registerData()")));
 
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
@@ -185,14 +195,14 @@ contract WithdrawsDuringCall {
          *  function call to prevent withdrawing funds that are about to be
          *  used to pay the caller.
          */
-        AlarmAPI alarm;
+        AlarmTestAPI alarm;
         uint public withdrawAmount;
 
         function setAlarm(address alarmAddress) public {
-                alarm = AlarmAPI(alarmAddress);
+                alarm = AlarmTestAPI(alarmAddress);
         }
 
-        function getAlarmBalance() returns (uint) {
+        function getAlarmBalance() public returns (uint) {
                 return alarm.accountBalances(address(this));
         }
 
@@ -236,7 +246,7 @@ contract SpecifyBlock {
         function scheduleIt(address to, uint blockNumber) public {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber, 255, 0);
         }
 }
@@ -257,7 +267,7 @@ contract AuthorizesOthers {
         function scheduleIt(address to, uint blockNumber) public {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
@@ -271,7 +281,7 @@ contract InfiniteLoop {
         }
 
         function scheduleIt(address to) public {
-                AlarmAPI alarm = AlarmAPI(to);
+                AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }

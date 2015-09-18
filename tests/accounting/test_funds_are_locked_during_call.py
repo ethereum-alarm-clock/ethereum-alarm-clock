@@ -1,5 +1,5 @@
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
+from populus.utils import wait_for_transaction, wait_for_block
 
 
 deploy_max_wait = 15
@@ -29,12 +29,15 @@ def test_funds_are_locked_during_execution(geth_node, rpc_client, deployed_contr
     pre_balance = client_contract.getAlarmBalance.call()
     assert pre_balance == deposit_amount
 
+    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
     call_txn_hash = alarm.doCall.sendTransaction(callKey)
     wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
 
     fee = alarm.getCallFee.call(callKey)
     payout = alarm.getCallPayout.call(callKey)
     withdrawn_amount = client_contract.withdrawAmount.call()
+
+    assert all(v > 0 for v in (fee, payout, withdrawn_amount))
 
     post_balance = client_contract.getAlarmBalance.call()
     # Sanity check that an underflow error didn't occur

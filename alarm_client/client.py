@@ -18,6 +18,9 @@ def load_alarm_contract(src_path, contract_name='AlarmAPI'):
 
 
 class BlockSage(object):
+    """
+    A single entity that can be queried for information on the latest block.
+    """
     current_block_number = None
     current_block = None
     current_block_timestamp = None
@@ -43,20 +46,42 @@ class BlockSage(object):
 
     @block_time.setter
     def block_time(self, value):
-        self._block_time = (
+        self._sleep_time = self._block_time = (
             ((self._block_sample_window - 1) * self._block_time + value) / self._block_sample_window
         )
 
+    @property
+    def expected_next_block_time(self):
+        return self.current_block_timestamp + self.block_time
+
+    _sleep_time = _block_time
+
+    @property
+    def sleep_time(self):
+        self._sleep_time /= 2.0
+        return max(self._sleep_time, 0.5)
+
+    @sleep_time.setter
+    def sleep_time(self, value):
+        self._sleep_time = value
+
     def stop(self):
+        """
+        Signal to the monitor_block_times function that it can exit it's run
+        loop.
+        """
         self._run = False
 
     def monitor_block_times(self):
+        """
+        Monitor the latest block number as well as the time between blocks.
+        """
         self.current_block_number = self.rpc_client.get_block_number()
         self.current_block = self.rpc_client.get_block_by_number(self.current_block_number, False)
         self.current_block_timestamp = int(self.current_block['timestamp'], 16)
 
         while self._run:
-            time.sleep(1)
+            time.sleep(self.sleep_time)
             if self.rpc_client.get_block_number() > self.current_block_number:
                 # Update block time.
                 next_block_timestamp = int(self.rpc_client.get_block_by_number(self.current_block_number + 1)['timestamp'], 16)
@@ -69,6 +94,9 @@ class BlockSage(object):
 
 
 class ScheduledCall(object):
+    """
+    Abstraction to represent an upcoming function call.  Can monitor for
+    """
     txn_hash = None
     txn_receipt = None
     txn = None
@@ -93,16 +121,17 @@ class ScheduledCall(object):
         - scheduler has sufficient balance.
         """
         if self.was_called:
+            # TODO: this check only needs to occur after self.target_block
             return False
 
         if self.is_cancelled:
+            # TODO: this check only needs to occur once after self.target_block - 8
             return False
 
         if self.rpc_client.get_block_number() > self.target_block + self.grace_period:
             return False
 
-        latest_block = self.block_sage.current_block
-        gas_limit = int(latest_block['gasLimit'], 16)
+        gas_limit = int(self.block_sage.current_block['gasLimit'], 16)
         gas_price = self.rpc_client.get_gas_price()
 
         # Require 110% of max gas to be sure.
@@ -145,6 +174,9 @@ class ScheduledCall(object):
             break
 
     def send_execute_transaction(self):
+        """
+        Send the transaction that will execute this scheduled call.
+        """
         return self.alarm.doCall.sendTransaction(self.call_key)
 
     def wait_for_call_window(self, buffer=2):
@@ -155,7 +187,7 @@ class ScheduledCall(object):
             raise ValueError("Already passed call execution window")
 
         while self.block_sage.current_block_number < self.target_block - buffer:
-            time.sleep(0.1)
+            time.sleep(0.25)
 
     #
     #  Meta Properties
@@ -172,8 +204,8 @@ class ScheduledCall(object):
     #  Call properties.
     #
     @property
-    def target_address(self):
-        return self.alarm.getCallTargetAddress.call(self.call_key)
+    def contract_address(self):
+        return self.alarm.getCallContractAddress.call(self.call_key)
 
     @property
     def scheduled_by(self):
@@ -212,8 +244,8 @@ class ScheduledCall(object):
         return self.alarm.getCallFee.call(self.call_key)
 
     @property
-    def sig(self):
-        return self.alarm.getCallSignature.call(self.call_key)
+    def abi_signature(self):
+        return self.alarm.getCallABISignature.call(self.call_key)
 
     @property
     def is_cancelled(self):

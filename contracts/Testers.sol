@@ -290,3 +290,31 @@ contract InfiniteLoop {
                 alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
+
+
+contract CallerPoolAPI {
+        function depositBond() public;
+        function enterPool() public;
+        function exitPool() public;
+}
+
+
+contract JoinsPool {
+        CallerPoolAPI callerPool;
+
+        function setCallerPool(address to) {
+                callerPool = CallerPoolAPI(to);
+        }
+
+        function deposit(uint value) {
+                callerPool.depositBond.value(value)();
+        }
+
+        function enter() {
+                callerPool.enterPool();
+        }
+
+        function exit() {
+                callerPool.exitPool();
+        }
+}

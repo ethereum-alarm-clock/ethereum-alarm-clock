@@ -9,16 +9,16 @@ geth_max_wait = 45
 
 
 def test_depositing_bond(geth_node, geth_coinbase, deployed_contracts):
-    alarm = deployed_contracts.Alarm
+    caller_pool = deployed_contracts.CallerPool
 
-    assert alarm.callerBonds.call(geth_coinbase) == 0
+    assert caller_pool.callerBonds.call(geth_coinbase) == 0
 
-    txn_1_hash = alarm.depositBond.sendTransaction(value=123)
-    wait_for_transaction(alarm._meta.rpc_client, txn_1_hash)
+    txn_1_hash = caller_pool.depositBond.sendTransaction(value=123)
+    wait_for_transaction(caller_pool._meta.rpc_client, txn_1_hash)
 
-    assert alarm.callerBonds.call(geth_coinbase) == 123
+    assert caller_pool.callerBonds.call(geth_coinbase) == 123
 
-    txn_2_hash = alarm.depositBond.sendTransaction(value=456)
-    wait_for_transaction(alarm._meta.rpc_client, txn_2_hash)
+    txn_2_hash = caller_pool.depositBond.sendTransaction(value=456)
+    wait_for_transaction(caller_pool._meta.rpc_client, txn_2_hash)
 
-    assert alarm.callerBonds.call(geth_coinbase) == 579
+    assert caller_pool.callerBonds.call(geth_coinbase) == 579

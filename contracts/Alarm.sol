@@ -59,7 +59,7 @@ contract CallerPool {
                 callerBonds[callerAddress] -= value;
         }
 
-        function _addToBond(address callerAddress, uint value) {
+        function _addToBond(address callerAddress, uint value) internal {
                 /*
                  *  Add funds to a bond value without risk of an
                  *  overflow.
@@ -95,10 +95,18 @@ contract CallerPool {
                 }
         }
 
+        function() {
+                /*
+                 *  Fallback function that allows depositing bond funds just by
+                 *  sending a transaction.
+                 */
+                _addToBond(msg.sender, msg.value);
+        }
+
         /*
          *  API used by Alarm service
          */
-        function getCallerFromPool(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address) {
+        function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address) {
                 /*
                  *  Returns the caller from the current call pool who is
                  *  designated as the executor of this call.
@@ -131,12 +139,15 @@ contract CallerPool {
                 return pool[(offset + blockWindow) % pool.length];
         }
 
-        function awardMissedBlockBonus(address to) public {
+        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
+
+        function awardMissedBlockBonus(address toCaller, bytes32 callKey, uint targetBlock) public {
                 if (msg.sender != operator) {
                         return;
                 }
 
-                var pool = callerPools[getPoolKeyForBlock(block.number)];
+                uint poolNumber = getPoolKeyForBlock(targetBlock);
+                var pool = callerPools[poolNumber];
 
                 // Special case for single member and empty pools
                 if (pool.length < 2) {
@@ -146,15 +157,33 @@ contract CallerPool {
                 for (uint i = 0; i < pool.length; i++) {
                         // Find where the member is in the pool and
                         // award from the previous pool members bond.
-                        if (pool[i] == to) {
+                        if (pool[i] == toCaller) {
                                 uint bonusAmount = getMinimumBond();
-                                address callerAddress = pool[(i + pool.length - 1) % pool.length];
-                                uint callerBondBalance = callerBonds[callerAddress];
-                                if (bonusAmount > callerBondBalance) {
-                                        bonusAmount = callerBondBalance;
+                                address fromCaller = pool[(i + pool.length - 1) % pool.length];
+                                uint bondBalance = callerBonds[fromCaller];
+
+                                // If the bond balance is lower than the award
+                                // balance, then adjust the reward amount to
+                                // match the bond balance.
+                                if (bonusAmount > bondBalance) {
+                                        bonusAmount = bondBalance;
                                 }
-                                _deductFromBond(callerAddress, bonusAmount);
-                                _addToBond(to, bonusAmount);
+
+                                // Transfer the funds fromCaller => toCaller
+                                _deductFromBond(fromCaller, bonusAmount);
+                                _addToBond(toCaller, bonusAmount);
+
+                                // Log the bonus was awarded.
+                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
+
+                                // Remove the caller from the next pool.
+                                if (getNextPoolKey() == 0) {
+                                        // This is the first address to modify the
+                                        // current pool so we need to setup the next
+                                        // pool.
+                                        _initiateNextPool();
+                                }
+                                _removeFromPool(fromCaller, getNextPoolKey());
                                 return;
                         }
                 }
@@ -230,8 +259,7 @@ contract CallerPool {
         }
 
         // Ten minutes into the future.
-        //uint constant POOL_FREEZE_NUM_BLOCKS = 256;
-        uint constant POOL_FREEZE_NUM_BLOCKS = 40;
+        uint constant POOL_FREEZE_NUM_BLOCKS = 256;
 
         function canEnterPool(address callerAddress) public returns (bool) {
                 /*
@@ -296,10 +324,36 @@ contract CallerPool {
                         // initiate a new one until it has become active.
                         __throw();
                 }
+                // Set the next pool to start at double the freeze block number
+                // in the future.
                 uint nextPool = block.number + 2 * POOL_FREEZE_NUM_BLOCKS;
+
+                // Copy the current pool into the next pool.
                 callerPools[nextPool] = callerPools[getActivePoolKey()];
+
+                // Randomize the pool order
+                _shufflePool(nextPool);
+
+                // Push the next pool into the pool history.
                 poolHistory.length += 1;
                 poolHistory[poolHistory.length - 1] = nextPool;
+        }
+
+        function _shufflePool(uint poolNumber) internal {
+                var pool = callerPools[poolNumber];
+
+                uint swapIndex;
+                address buffer;
+
+                for (uint i = 0; i < pool.length; i++) {
+                        swapIndex = uint(sha3(block.blockhash(block.number), i)) % pool.length;
+                        if (swapIndex == i) {
+                                continue;
+                        }
+                        buffer = pool[i];
+                        pool[i] = pool[swapIndex];
+                        pool[swapIndex] = buffer;
+                }
         }
 
         event AddedToPool(address indexed callerAddress, uint indexed pool);
@@ -1115,7 +1169,7 @@ contract Alarm {
                 }
 
                 // Check if this caller is allowed to execute the call.
-                address poolCaller = callerPool.getCallerFromPool(callKey, call.targetBlock, call.gracePeriod, block.number);
+                address poolCaller = callerPool.getDesignatedCaller(callKey, call.targetBlock, call.gracePeriod, block.number);
                 if (poolCaller != 0x0) {
                         if (poolCaller != msg.sender) {
                                 // This call was reserved for someone from the
@@ -1130,7 +1184,7 @@ contract Alarm {
                                 // Someone missed their call so this caller
                                 // gets to claim their bond for picking up
                                 // their slack.
-                                callerPool.awardMissedBlockBonus(msg.sender);
+                                callerPool.awardMissedBlockBonus(msg.sender, callKey, call.targetBlock);
                         }
                 }
 
@@ -1238,7 +1292,7 @@ contract Alarm {
         uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
         event CallScheduled(bytes32 indexed callKey);
-        event CallRejected(bytes32 indexed callKey, bytes12 reason);
+        event CallRejected(bytes32 indexed callKey, bytes15 reason);
 
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
                 /*
@@ -1266,6 +1320,11 @@ contract Alarm {
 
                 if (call.contractAddress != 0x0) {
                         CallRejected(callKey, "DUPLICATE");
+                        return;
+                }
+
+                if (gracePeriod < 16) {
+                        CallRejected(callKey, "GRACE_TOO_SHORT");
                         return;
                 }
 

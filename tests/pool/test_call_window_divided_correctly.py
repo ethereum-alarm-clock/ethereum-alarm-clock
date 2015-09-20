@@ -92,16 +92,20 @@ def test_call_window_divided_between_callers(geth_node, geth_coinbase, rpc_clien
     assert alarm.checkIfCalled.call(callKey) is False
 
     call_txn_hash = alarm.doCall.sendTransaction(callKey)
-    wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    call_txn = rpc_client.get_transaction_by_hash(call_txn_hash)
+    call_block = rpc_client.get_block_by_hash(call_txn_receipt['blockHash'])
 
     after_balance = caller_pool.callerBonds.call(joiner._meta.address)
     assert alarm.checkIfCalled.call(callKey) is True
 
     assert after_balance < before_balance
-    assert after_balance == before_balance - caller_pool.getMinimumBond.call()
+
+    minimum_bond = int(call_block['gasLimit'], 16) * int(call_txn['gasPrice'], 16)
+    assert after_balance == before_balance - minimum_bond
 
     next_pool_key = caller_pool.getNextPoolKey.call()
     assert next_pool_key > 0
 
-    assert caller_pool.isInPool.call(joiner._meta.next_pool_key, first_pool_key) is False
-    assert caller_pool.isInPool.call(joiner._meta.next_pool_key, next_pool_key) is False
+    assert caller_pool.isInPool.call(joiner._meta.address, first_pool_key) is True
+    assert caller_pool.isInPool.call(joiner._meta.address, next_pool_key) is False

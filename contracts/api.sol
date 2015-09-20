@@ -1,3 +1,44 @@
+contract CallerPoolAPI {
+        /*
+         *  Bond managment API.
+         */
+        function callerBonds(address callerAddress) public returns (uint);
+        function getMinimumBond() public returns (uint);
+        function depositBond() public;
+        function withdrawBond(uint value) public;
+        
+        /*
+         *  CallerPool <=> Alarm api.
+         */
+        function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address);
+
+        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
+
+
+        /*
+         *  Pool querying
+         */
+        function poolHistory(uint index) returns (uint);
+        function getPoolKeyForBlock(uint blockNumber) public returns (uint);
+        function getActivePoolKey() public returns (uint);
+        function getNextPoolKey() public returns (uint);
+
+        /*
+         *  Pool membership API
+         */
+        function isInAnyPool(address callerAddress) public returns (bool);
+        function isInPool(address callerAddress, uint poolNumber) public returns (bool);
+
+        /*
+         *  Enter/Exit pool API
+         */
+        function canEnterPool(address callerAddress) public returns (bool);
+        function canExitPool(address callerAddress) public returns (bool);
+        function enterPool() public;
+        function exitPool() public;
+}
+
+
 contract AlarmAPI {
         /*
          *  Account Management API
@@ -63,7 +104,6 @@ contract AlarmAPI {
          *  Call Data Registration API
          */
         event DataRegistered(bytes32 indexed dataHash);
-        function registerData() public;
 
         /*
          *  Call Scheduling API
@@ -86,4 +126,5 @@ contract AlarmAPI {
         function getCallMaxCost(bytes32 callKey) public returns (uint);
         function getCallFeeScalar(uint baseGasPrice, uint gasPrice) public returns (uint);
 
+        function getCallerPoolAddress() public returns (address);
 }

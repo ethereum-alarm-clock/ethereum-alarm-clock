@@ -73,6 +73,11 @@ contract TestDataRegistry {
 
 contract NoArgs {
         bool public value;
+        uint8 gracePeriod = 255;
+
+        function setGracePeriod(uint8 v) public {
+            gracePeriod = v;
+        }
 
         function doIt() public {
                 value = true;
@@ -86,7 +91,7 @@ contract NoArgs {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, gracePeriod, 0);
         }
 }
 
@@ -252,6 +257,10 @@ contract SpecifyBlock {
                 value = true;
         }
 
+        function scheduleDelta(address to, uint delta) public {
+                scheduleIt(to, block.number + delta);
+        }
+
         function scheduleIt(address to, uint blockNumber) public {
                 to.call(bytes4(sha3("registerData()")), block.timestamp);
 
@@ -292,7 +301,7 @@ contract InfiniteLoop {
 }
 
 
-contract CallerPoolAPI {
+contract TestCallerPoolAPI {
         function depositBond() public;
         function enterPool() public;
         function exitPool() public;
@@ -300,10 +309,10 @@ contract CallerPoolAPI {
 
 
 contract JoinsPool {
-        CallerPoolAPI callerPool;
+        TestCallerPoolAPI callerPool;
 
         function setCallerPool(address to) public {
-                callerPool = CallerPoolAPI(to);
+                callerPool = TestCallerPoolAPI(to);
         }
 
         function deposit(uint value) public {

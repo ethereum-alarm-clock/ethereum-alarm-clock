@@ -40,14 +40,11 @@ def test_pool_membership_frozen_during_transition_period(geth_node, geth_coinbas
     assert caller_pool.isInPool.call(joiner._meta.address, first_pool_key) is True
     assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is False
 
-    # Now we join the pool
-    wait_for_transaction(rpc_client, caller_pool.enterPool.sendTransaction())
-
     # Both are in the pool but it isn't active yet
     assert caller_pool.getActivePoolKey.call() == 0
     assert caller_pool.getNextPoolKey.call() == first_pool_key
     assert caller_pool.isInPool.call(joiner._meta.address, first_pool_key) is True
-    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
+    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is False
 
     # Wait for it to become active
     wait_for_block(rpc_client, first_pool_key, 180)
@@ -64,21 +61,21 @@ def test_pool_membership_frozen_during_transition_period(geth_node, geth_coinbas
     # joiner should not be in next pool.
     assert caller_pool.isInPool.call(joiner._meta.address, second_pool_key) is False
 
-    # should still be in the pool until it becomes active
+    # should not be in the pool until it becomes active
     assert caller_pool.isInPool.call(joiner._meta.address, first_pool_key) is True
-    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
+    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is False
 
-    # should still be allowed to leave
-    assert caller_pool.canExitPool.call(geth_coinbase) is True
+    # should still be allowed to enter
+    assert caller_pool.canEnterPool.call(geth_coinbase) is True
 
     # wait for the pool to become active
     wait_for_block(rpc_client, second_pool_key - 20, 180)
 
     # should no longer be allowed to leave (within freeze window)
-    assert caller_pool.canExitPool.call(geth_coinbase) is False
+    assert caller_pool.canEnterPool.call(geth_coinbase) is False
 
     # wait for the pool to become active
     wait_for_block(rpc_client, second_pool_key, 180)
 
     # should now be allowed to leave.
-    assert caller_pool.canExitPool.call(geth_coinbase) is True
+    assert caller_pool.canEnterPool.call(geth_coinbase) is True

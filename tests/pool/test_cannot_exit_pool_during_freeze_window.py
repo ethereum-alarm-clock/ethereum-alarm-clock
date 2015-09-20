@@ -8,7 +8,7 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_pool_membership_is_carried_over(geth_node, geth_coinbase, rpc_client, deployed_contracts):
+def test_pool_membership_frozen_during_transition_period(geth_node, geth_coinbase, rpc_client, deployed_contracts):
     caller_pool = deployed_contracts.CallerPool
     joiner = deployed_contracts.JoinsPool
 
@@ -65,11 +65,17 @@ def test_pool_membership_is_carried_over(geth_node, geth_coinbase, rpc_client, d
     assert caller_pool.isInPool.call(joiner._meta.address, first_pool_key) is True
     assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
 
+    # should still be allowed to leave
+    assert caller_pool.canExitPool.call(geth_coinbase)
+
+    # wait for the pool to become active
+    wait_for_block(rpc_client, second_pool_key - 20, 180)
+
+    # should no longer be allowed to leave (within freeze window)
+    assert caller_pool.canExitPool.call(geth_coinbase)
+
     # wait for the pool to become active
     wait_for_block(rpc_client, second_pool_key, 180)
 
-    # contract shouldn't be in the pool anymore but we should.
-    assert caller_pool.getActivePoolKey.call() == second_pool_key
-    assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInPool.call(joiner._meta.address, second_pool_key) is False
-    assert caller_pool.isInPool.call(geth_coinbase, second_pool_key) is True
+    # should now be allowed to leave.
+    assert caller_pool.canExitPool.call(geth_coinbase)

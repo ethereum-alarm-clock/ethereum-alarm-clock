@@ -19,11 +19,23 @@ contract Relay {
 }
 
 
+contract CallerPoolAlarmAPI {
+        /*
+         *  Abstract contract for the caller pool to be able to access the
+         *  Alarm api.
+         */
+        function getCallGracePeriod(bytes32 callKey) public returns (uint);
+        function getCallTargetBlock(bytes32 callKey) public returns (uint);
+}
+
+
 contract CallerPool {
         address operator;
+        CallerPoolAlarmAPI alarm;
 
         function CallerPool() {
                 operator = msg.sender;
+                alarm = CallerPoolAlarmAPI(operator);
         }
 
         /*
@@ -67,7 +79,7 @@ contract CallerPool {
                 /*
                  *  Only if you are not in either of the current call pools.
                  */
-                if (isInPool(currentPool) || isInPool(nextPool)) {
+                if (isInAnyPool(msg.sender)) {
                         return;
                 }
                 _deductFromBond(msg.sender, value);
@@ -83,33 +95,38 @@ contract CallerPool {
                 }
         }
 
-        // Ten minutes into the future.
-        uint constant MAX_BLOCKS_IN_FUTURE = 40;
-
+        /*
+         *  API used by Alarm service
+         */
         function getCallerFromPool(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address) {
                 /*
                  *  Returns the caller from the current call pool who is
                  *  designated as the executor of this call.
-                 *  TODO: split into two functions.
                  */
                 if (blockNumber < targetBlock || blockNumber > targetBlock + gracePeriod) {
                         // blockNumber not within call window.
                         return 0x0;
                 }
 
-                uint poolNumber = getCurrentPoolKey(blockNumber);
+                // Pool used is based on the starting block for the call.  This
+                // allows us to know that the pool cannot change for at least
+                // POOL_FREEZE_NUM_BLOCKS which is kept greater than the max
+                // grace period.
+                uint poolNumber = getPoolKeyForBlock(targetBlock);
                 if (poolNumber == 0) {
                         // No pool currently in operation.
                         return 0x0;
                 }
                 var pool = callerPools[poolNumber];
 
-                if (blockNumber + 8 > targetBlock + gracePeriod) {
+                uint numWindows = gracePeriod / 4;
+                uint blockWindow = (blockNumber - targetBlock) / 4;
+
+                if (blockWindow + 1 > numWindows) {
                         // We are within the free-for-all period.
                         return 0x0;
                 }
 
-                uint blockWindow = (blockNumber - targetBlock) / 4;
                 uint offset = uint(callKey) % pool.length;
                 return pool[(offset + blockWindow) % pool.length];
         }
@@ -119,7 +136,7 @@ contract CallerPool {
                         return;
                 }
 
-                var pool = callerPools[getCurrentPoolKey(block.number)];
+                var pool = callerPools[getPoolKeyForBlock(block.number)];
 
                 // Special case for single member and empty pools
                 if (pool.length < 2) {
@@ -136,8 +153,8 @@ contract CallerPool {
                                 if (bonusAmount > callerBondBalance) {
                                         bonusAmount = callerBondBalance;
                                 }
-                                _deductFromBond(callerAddress, callerBondBalance);
-                                _addToBond(to, callerBondBalance);
+                                _deductFromBond(callerAddress, bonusAmount);
+                                _addToBond(to, bonusAmount);
                                 return;
                         }
                 }
@@ -146,63 +163,52 @@ contract CallerPool {
         /*
          *  Caller Pool Management
          */
-        uint public currentPool;
-        uint public nextPool;
+        uint[] public poolHistory;
         mapping (uint => address[]) callerPools;
 
-        function getActivePoolKey() public returns (uint) {
-                return getCurrentPoolKey(block.number);
-        }
-
-        function getCurrentPoolKey(uint blockNumber) public returns (uint) {
-                if (blockNumber < block.number) {
-                        // It can't be known with any accuracy what pool was
-                        // active in the past.
-                        __throw();
+        function getPoolKeyForBlock(uint blockNumber) public returns (uint) {
+                if (poolHistory.length == 0) {
+                        return 0;
                 }
-
-                if (blockNumber >= nextPool) {
-                        return nextPool;
+                for (uint i = 0; i < poolHistory.length; i++) {
+                        uint poolStartBlock = poolHistory[poolHistory.length - i - 1];
+                        if (poolStartBlock <= blockNumber) {
+                                return poolStartBlock;
+                        }
                 }
-                
-                return currentPool;
-        }
-
-        function getNextPoolKey() public returns (uint) {
-                if (nextPool != 0 && nextPool > block.number) {
-                        // Hasn't rotated in yet
-                        return nextPool;
-                }
-                // The next pool hasn't been setup yet.
                 return 0;
         }
 
-        event CallerPoolChanged(uint oldPool, uint newPool);
-
-        function cyclePools() public {
-                if (nextPool != 0 && nextPool <= block.number) {
-                        // Log the change
-                        CallerPoolChanged(currentPool, nextPool);
-                        
-                        // Cycle the next pool into the slot of the current pool.
-                        currentPool = nextPool;
-                        nextPool = 0;
-                }
+        function getActivePoolKey() public returns (uint) {
+                return getPoolKeyForBlock(block.number);
         }
 
-        function isInAnyPool() public returns (bool) {
-                if (nextPool <= block.number) {
-                        return isInPool(nextPool);
+        function getNextPoolKey() public returns (uint) {
+                if (poolHistory.length == 0) {
+                        return 0;
                 }
-                if (currentPool <= block.number) {
-                        return isInPool(currentPool);
+                uint latestPool = poolHistory[poolHistory.length - 1];
+                if (latestPool > block.number) {
+                        return latestPool;
                 }
-                return false;
+                return 0;
         }
 
-        function isInPool(uint poolNumber) public returns (bool) {
+        function isInAnyPool(address callerAddress) public returns (bool) {
+                /*
+                 *  Returns boolean whether the `callerAddress` is in either
+                 *  the current active pool or the next pool.
+                 */
+                return isInPool(msg.sender, getActivePoolKey()) || isInPool(msg.sender, getNextPoolKey());
+        }
+
+        function isInPool(address callerAddress, uint poolNumber) public returns (bool) {
+                /*
+                 *  Returns boolean whether the `callerAddress` is in the
+                 *  poolNumber.
+                 */
                 if (poolNumber == 0 ) {
-                        // This shouldn't be called with 0;
+                        // Nobody can be in pool 0
                         return false;
                 }
 
@@ -215,7 +221,7 @@ contract CallerPool {
 
                 for (uint i = 0; i < pool.length; i++) {
                         // Address is in the pool and thus is allowed to exit.
-                        if (pool[i] == msg.sender) {
+                        if (pool[i] == callerAddress) {
                                 return true;
                         }
                 }
@@ -223,77 +229,108 @@ contract CallerPool {
                 return false;
         }
 
-        function canEnterPool() public returns (bool) {
-                // Next pool has not been formed.
-                if (nextPool == 0) {
-                        return true;
-                }
+        // Ten minutes into the future.
+        //uint constant POOL_FREEZE_NUM_BLOCKS = 256;
+        uint constant POOL_FREEZE_NUM_BLOCKS = 40;
 
-                // Pool rotation is happening too soon to allow new members to
-                // enter the pool.
-                if (nextPool > block.number && block.number >= (nextPool - MAX_BLOCKS_IN_FUTURE)) {
+        function canEnterPool(address callerAddress) public returns (bool) {
+                /*
+                 *  Returns boolean whether `callerAddress` is allowed to enter
+                 *  the next pool (which may or may not already have been
+                 *  created.
+                 */
+                // Not allowed to join if you are in either the current
+                // active pool or the next pool.
+                if (isInAnyPool(callerAddress)) {
                         return false;
                 }
 
-                // Bond balance is below the minimum bond balance.
-                if (callerBonds[msg.sender] < getMinimumBond()) {
+                // Next pool begins within the POOL_FREEZE_NUM_BLOCKS grace
+                // period so no changes are allowed.
+                if (getNextPoolKey() != 0 && block.number >= (getNextPoolKey() - POOL_FREEZE_NUM_BLOCKS)) {
                         return false;
                 }
 
-                return !isInPool(nextPool);
+                // Account bond balance is too low.
+                if (callerBonds[callerAddress] < getMinimumBond()) {
+                        return false;
+                }
+                
+                return true;
         }
 
-        function canExitPool() public returns (bool) {
-                // No active pool.
-                if (currentPool == 0 && nextPool == 0) {
-                        return false;
-                }
-                // Current pool is set to expire and the expiration is too soon
-                // to allow exiting the pool.
-                if (nextPool > block.number && block.number >= (nextPool - MAX_BLOCKS_IN_FUTURE)) {
-                        return false;
-                }
-
-                // Already left the next pool.
-                if (nextPool > block.number && !isInPool(nextPool)) {
+        function canExitPool(address callerAddress) public returns (bool) {
+                /*
+                 *  Returns boolean whether `callerAddress` is allowed to exit
+                 *  the current active pool.
+                 */
+                // Can't exit if we aren't in the current active pool.
+                if (!isInPool(callerAddress, getActivePoolKey())) {
                         return false;
                 }
 
-                // Can exit if they are in the pool.
-                return isInPool(getCurrentPoolKey(block.number));
+                // There is a next pool coming up.
+                if (getNextPoolKey() != 0) {
+                        // Next pool begins within the POOL_FREEZE_NUM_BLOCKS
+                        // window and thus can't be modified.
+                        if (block.number >= (getNextPoolKey() - POOL_FREEZE_NUM_BLOCKS)) {
+                                return false;
+                        }
+
+                        // Next pool was already setup and callerAddress isn't
+                        // in it which indicates that they already left.
+                        if (!isInPool(callerAddress, getNextPoolKey())) {
+                                return false;
+                        }
+                }
+
+                // They must be in the current pool and either the next pool
+                // hasn't been initiated or it has but this user hasn't left
+                // yet.
+                return true;
         }
 
-        function _setupNextPool() internal {
-                if (nextPool != 0) {
-                        // We shouldn't be overwriting an existing pool.
+        function _initiateNextPool() internal {
+                if (getNextPoolKey() != 0) {
+                        // If there is already a next pool, we shouldn't
+                        // initiate a new one until it has become active.
                         __throw();
                 }
-                nextPool = block.number + 2 * MAX_BLOCKS_IN_FUTURE;
-                callerPools[nextPool] = callerPools[currentPool];
+                uint nextPool = block.number + 2 * POOL_FREEZE_NUM_BLOCKS;
+                callerPools[nextPool] = callerPools[getActivePoolKey()];
+                poolHistory.length += 1;
+                poolHistory[poolHistory.length - 1] = nextPool;
         }
 
         event AddedToPool(address indexed callerAddress, uint indexed pool);
         event RemovedFromPool(address indexed callerAddress, uint indexed pool);
 
-        function _addToPool(uint poolNumber) internal {
+        function _addToPool(address callerAddress, uint poolNumber) internal {
                 if (poolNumber == 0 ) {
                         // This shouldn't be called with 0;
                         __throw();
                 }
 
                 // already in the pool.
-                if (isInPool(poolNumber)) {
+                if (isInPool(callerAddress, poolNumber)) {
                         return;
                 }
                 var pool = callerPools[poolNumber];
                 pool.length += 1;
-                pool[pool.length - 1] = msg.sender;
-                AddedToPool(msg.sender, poolNumber);
+                pool[pool.length - 1] = callerAddress;
+                
+                // Log the addition.
+                AddedToPool(callerAddress, poolNumber);
         }
 
-        function _removeFromPool(uint poolNumber) internal {
+        function _removeFromPool(address callerAddress, uint poolNumber) internal {
+                if (poolNumber == 0 ) {
+                        // This shouldn't be called with 0;
+                        __throw();
+                }
+
                 // nothing to remove.
-                if (!isInPool(poolNumber)) {
+                if (!isInPool(callerAddress, poolNumber)) {
                         return;
                 }
                 var pool = callerPools[poolNumber];
@@ -305,28 +342,29 @@ contract CallerPool {
                         // When we find the index of the address to remove we
                         // shift the last person to that location and then we
                         // truncate the last member off of the end.
-                        if (pool[i] == msg.sender) {
+                        if (pool[i] == callerAddress) {
                                 pool[i] = pool[pool.length - 1];
                                 pool.length -= 1;
                                 break;
                         }
                 }
-                RemovedFromPool(msg.sender, poolNumber);
+
+                // Log the addition.
+                RemovedFromPool(callerAddress, poolNumber);
         }
 
         function enterPool() public {
                 /*
                  *  Request to be added to the call pool.
                  */
-                cyclePools();
-                if (canEnterPool()) {
-                        if (nextPool == 0) {
+                if (canEnterPool(msg.sender)) {
+                        if (getNextPoolKey() == 0) {
                                 // This is the first address to modify the
                                 // current pool so we need to setup the next
                                 // pool.
-                                _setupNextPool();
+                                _initiateNextPool();
                         }
-                        _addToPool(nextPool);
+                        _addToPool(msg.sender, getNextPoolKey());
                 }
         }
 
@@ -334,15 +372,14 @@ contract CallerPool {
                 /*
                  *  Request to be removed from the call pool.
                  */
-                cyclePools();
-                if (canExitPool()) {
-                        if (nextPool == 0) {
+                if (canExitPool(msg.sender)) {
+                        if (getNextPoolKey() == 0) {
                                 // This is the first address to modify the
                                 // current pool so we need to setup the next
                                 // pool.
-                                _setupNextPool();
+                                _initiateNextPool();
                         }
-                        _removeFromPool(nextPool);
+                        _removeFromPool(msg.sender, getNextPoolKey());
                 }
         }
 
@@ -1014,7 +1051,11 @@ contract Alarm {
         /*
          *  Call execution API
          */
-         CallerPool callerPool;
+        CallerPool callerPool;
+
+        function getCallerPoolAddress() public returns (address) {
+                return address(callerPool);
+        }
 
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
@@ -1023,7 +1064,6 @@ contract Alarm {
         // This number represents the overall overhead involved in executing a
         // scheduled call.
         uint constant CALL_OVERHEAD = 145601;
-
 
         event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
         event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);

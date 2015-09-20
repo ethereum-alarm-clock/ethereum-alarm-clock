@@ -19,9 +19,9 @@ def test_exiting_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts):
 
     assert caller_pool.getActivePoolKey.call() == 0
     assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call() is False
-    assert caller_pool.canEnterPool.call() is True
-    assert caller_pool.canExitPool.call() is False
+    assert caller_pool.isInAnyPool.call(geth_coinbase) is False
+    assert caller_pool.canEnterPool.call(geth_coinbase) is True
+    assert caller_pool.canExitPool.call(geth_coinbase) is False
 
     wait_for_transaction(rpc_client, caller_pool.enterPool.sendTransaction())
     first_pool_key = caller_pool.getNextPoolKey.call()
@@ -29,16 +29,22 @@ def test_exiting_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts):
 
     assert caller_pool.getActivePoolKey.call() == first_pool_key
     assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call() is True
-    assert caller_pool.canEnterPool.call() is False
-    assert caller_pool.canExitPool.call() is True
+    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
+    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
+    assert caller_pool.canEnterPool.call(geth_coinbase) is False
+    assert caller_pool.canExitPool.call(geth_coinbase) is True
 
     wait_for_transaction(rpc_client, caller_pool.exitPool.sendTransaction())
     second_pool_key = caller_pool.getNextPoolKey.call()
+
+    assert second_pool_key > first_pool_key
+    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
+    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
+
     wait_for_block(rpc_client, second_pool_key, 180)
 
     assert caller_pool.getActivePoolKey.call() == second_pool_key
     assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call() is False
-    assert caller_pool.canEnterPool.call() is True
-    assert caller_pool.canExitPool.call() is False
+    assert caller_pool.isInAnyPool.call(geth_coinbase) is False
+    assert caller_pool.canEnterPool.call(geth_coinbase) is True
+    assert caller_pool.canExitPool.call(geth_coinbase) is False

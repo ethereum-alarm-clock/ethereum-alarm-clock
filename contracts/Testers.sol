@@ -302,19 +302,19 @@ contract CallerPoolAPI {
 contract JoinsPool {
         CallerPoolAPI callerPool;
 
-        function setCallerPool(address to) {
+        function setCallerPool(address to) public {
                 callerPool = CallerPoolAPI(to);
         }
 
-        function deposit(uint value) {
+        function deposit(uint value) public {
                 callerPool.depositBond.value(value)();
         }
 
-        function enter() {
+        function enter() public {
                 callerPool.enterPool();
         }
 
-        function exit() {
+        function exit() public {
                 callerPool.exitPool();
         }
 }

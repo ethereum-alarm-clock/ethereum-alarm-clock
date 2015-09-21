@@ -63,7 +63,7 @@ def test_call_window_divided_between_callers(geth_node, geth_coinbase, rpc_clien
 
         target_block = alarm.getCallTargetBlock.call(callKey)
         grace_period = alarm.getCallGracePeriod.call(callKey)
-        first_caller = caller_pool.getCallerFromPool.call(callKey, target_block, grace_period, target_block)
+        first_caller = caller_pool.getDesignatedCaller.call(callKey, target_block, grace_period, target_block)
         if first_caller == geth_coinbase:
             break
     else:

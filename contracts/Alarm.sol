@@ -178,11 +178,11 @@ contract CallerPool {
                 uint bonusAmount;
                 address fromCaller;
 
-                // Check if we are within the free-for-all period.  If so, we
-                // award from all pool members.
                 uint numWindows = gracePeriod / 4;
                 uint blockWindow = (block.number - targetBlock) / 4;
 
+                // Check if we are within the free-for-all period.  If so, we
+                // award from all pool members.
                 if (blockWindow + 2 > numWindows) {
                         for (i = 0; i < pool.length; i++) {
                                 if (pool[i] == toCaller) {
@@ -194,6 +194,7 @@ contract CallerPool {
                                 // Log the bonus was awarded.
                                 AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
                         }
+                        return;
                 }
 
                 // Special case for single member and empty pools
@@ -249,6 +250,10 @@ contract CallerPool {
                 return getPoolKeyForBlock(block.number);
         }
 
+        function getPoolSize(uint poolKey) returns (uint) {
+                return callerPools[poolKey].length;
+        }
+
         function getNextPoolKey() public returns (uint) {
                 if (poolHistory.length == 0) {
                         return 0;
@@ -296,7 +301,8 @@ contract CallerPool {
         }
 
         // Ten minutes into the future.
-        uint constant POOL_FREEZE_NUM_BLOCKS = 256;
+        //uint constant POOL_FREEZE_NUM_BLOCKS = 256;
+        uint constant POOL_FREEZE_NUM_BLOCKS = 40;
 
         function canEnterPool(address callerAddress) public returns (bool) {
                 /*
@@ -1151,7 +1157,7 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint constant EXTRA_CALL_GAS = 151729;
+        uint constant EXTRA_CALL_GAS = 151697;
         // This number represents the overall overhead involved in executing a
         // scheduled call.
         uint constant CALL_OVERHEAD = 145601;
@@ -1206,9 +1212,9 @@ contract Alarm {
                 }
 
                 // Check if this caller is allowed to execute the call.
-                address poolCaller = callerPool.getDesignatedCaller(callKey, call.targetBlock, call.gracePeriod, block.number);
-                if (poolCaller != 0x0) {
-                        if (poolCaller != msg.sender) {
+                if (callerPool.getPoolSize(callerPool.getActivePoolKey()) > 0) {
+                        address poolCaller = callerPool.getDesignatedCaller(callKey, call.targetBlock, call.gracePeriod, block.number);
+                        if (poolCaller != 0x0 && poolCaller != msg.sender) {
                                 // This call was reserved for someone from the
                                 // bonded pool of callers and can only be
                                 // called by them during this block window.

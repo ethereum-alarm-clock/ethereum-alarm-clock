@@ -5,6 +5,7 @@ def test_alarm_function_signatures(contracts):
     """
     Alarm = contracts.Alarm
     AlarmAPI = contracts.AlarmAPI
+    assert False
 
     exclude = {
         'registerData',

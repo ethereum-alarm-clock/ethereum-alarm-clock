@@ -6,6 +6,7 @@ from populus.utils import (
 
 from alarm_client.client import (
     Scheduler,
+    PoolManager,
     BlockSage,
 )
 
@@ -17,8 +18,9 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_scheduler(geth_node, rpc_client, deployed_contracts):
+def test_scheduler(geth_node, rpc_client, deployed_contracts, contracts):
     alarm = deployed_contracts.Alarm
+    caller_pool = contracts.CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
     client_contract = deployed_contracts.SpecifyBlock
 
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
@@ -40,7 +42,8 @@ def test_scheduler(geth_node, rpc_client, deployed_contracts):
 
         call_keys.append(last_call_key)
 
-    scheduler = Scheduler(alarm, block_sage)
+    pool_manager = PoolManager(caller_pool, block_sage)
+    scheduler = Scheduler(alarm, pool_manager, block_sage)
     scheduler.monitor_async()
 
     final_block = anchor_block + 100 + 70

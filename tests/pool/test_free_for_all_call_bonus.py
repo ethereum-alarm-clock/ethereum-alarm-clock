@@ -16,10 +16,10 @@ geth_max_wait = 45
 def test_free_for_all_window_awards_mega_bonus(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):
     alarm = deployed_contracts.Alarm
     caller_pool = contracts.CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
+    client_contract = deployed_contracts.NoArgs
     joiner_a = deployed_contracts.JoinsPool
     deploy_txn = deploy_contract(rpc_client, contracts.JoinsPool, _from=geth_coinbase, gas=get_max_gas(rpc_client))
     joiner_b = contracts.JoinsPool(get_contract_address_from_txn(rpc_client, deploy_txn, 30), rpc_client)
-    client_contract = deployed_contracts.NoArgs
 
     # Put in our deposit with the alarm contract.
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
@@ -71,6 +71,7 @@ def test_free_for_all_window_awards_mega_bonus(geth_node, geth_coinbase, rpc_cli
     assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
 
     # Schedule the function call.
+    txn_hash = client_contract.setGracePeriod.sendTransaction(24)
     txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
     wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
 
@@ -80,7 +81,7 @@ def test_free_for_all_window_awards_mega_bonus(geth_node, geth_coinbase, rpc_cli
     target_block = alarm.getCallTargetBlock.call(callKey)
     grace_period = alarm.getCallGracePeriod.call(callKey)
 
-    wait_for_block(rpc_client, target_block + grace_period - 4, 240)
+    wait_for_block(rpc_client, target_block + grace_period - 4, 300)
 
     my_before_balance = caller_pool.callerBonds.call(geth_coinbase)
     before_balance_a = caller_pool.callerBonds.call(joiner_a._meta.address)
@@ -107,10 +108,4 @@ def test_free_for_all_window_awards_mega_bonus(geth_node, geth_coinbase, rpc_cli
     assert my_after_balance > my_before_balance
     assert my_after_balance == my_before_balance + 2 * minimum_bond
 
-    next_pool_key = caller_pool.getNextPoolKey.call()
-    assert next_pool_key > first_pool_key
-
-    assert caller_pool.isInPool.call(joiner_a._meta.address, first_pool_key) is True
-    assert caller_pool.isInPool.call(joiner_b._meta.address, first_pool_key) is True
-    assert caller_pool.isInPool.call(joiner_a._meta.address, next_pool_key) is False
-    assert caller_pool.isInPool.call(joiner_b._meta.address, next_pool_key) is False
+    assert caller_pool.getNextPoolKey.call() == 0

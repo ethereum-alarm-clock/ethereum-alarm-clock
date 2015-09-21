@@ -75,7 +75,7 @@ def test_call_window_divided_between_callers(geth_node, geth_coinbase, rpc_clien
     call_on_block = None
 
     for i, caller in enumerate(callers):
-        if i / 4 + 1 > len(callers) / 4:
+        if i / 4 + 2 > len(callers) / 4:
             assert caller == '0x0000000000000000000000000000000000000000'
         elif (i / 4) % 2 == 0:
             assert caller == caller_a

@@ -1,6 +1,7 @@
 import threading
 import json
 import time
+import functools
 
 from ethereum import utils as ethereum_utils
 
@@ -15,6 +16,46 @@ def load_alarm_contract(src_path, contract_name='AlarmAPI'):
     alarm_contract_meta = src_data[contract_name]
 
     return Contract(alarm_contract_meta, contract_name)
+
+
+class cached_property(object):
+    """
+    Decorator that converts a method with a single self argument into a
+    property cached on the instance.
+    Optional ``name`` argument allows you to make cached properties of other
+    methods. (e.g.  url = cached_property(get_absolute_url, name='url') )
+    """
+    def __init__(self, func, name=None):
+        self.func = func
+        self.__doc__ = getattr(func, '__doc__')
+        self.name = name or func.__name__
+
+    def __get__(self, instance, type=None):
+        if instance is None:
+            return self
+        res = instance.__dict__[self.name] = self.func(instance)
+        return res
+
+
+class empty(object):
+    pass
+
+
+def cache_once(default_value):
+    def outer(func):
+        _cache = empty
+
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            if _cache is not empty:
+                return _cache
+            value = func(*args, **kwargs)
+
+            if value != default_value:
+                _cache = value
+            return value
+        return inner
+    return outer
 
 
 class BlockSage(object):
@@ -93,6 +134,9 @@ class BlockSage(object):
                 self.current_block_timestamp = int(self.current_block['timestamp'], 16)
 
 
+EMPTY_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+
 class ScheduledCall(object):
     """
     Abstraction to represent an upcoming function call.  Can monitor for
@@ -112,6 +156,9 @@ class ScheduledCall(object):
     @property
     def hex_call_key(self):
         return ethereum_utils.encode_hex(self.call_key)
+
+    def check_was_called(self):
+        if self.block_sage.current_block_number < self.target_block:
 
     def should_execute(self):
         """
@@ -150,17 +197,16 @@ class ScheduledCall(object):
         self._run = False
 
     def execute(self):
+        # Blocks until we are within 3 blocks of the call window.
         self.wait_for_call_window()
+
         if not self.should_execute():
             raise ValueError("Aborting")
 
         while getattr(self, '_run', True):
-            if self.rpc_client.get_block_number() < self.target_block - 1:
-                time.sleep(1)
-            else:
-                break
-
-        while getattr(self, '_run', True):
+            if self.block_sage.current_block_number not in self.callable_blocks:
+                time.sleep(0.1)
+                continue
             txn_hash = self.alarm.doCall.sendTransaction(self.call_key)
             try:
                 txn_receipt = wait_for_transaction(self.rpc_client, txn_hash)
@@ -173,13 +219,7 @@ class ScheduledCall(object):
             self.txn = self.rpc_client.get_transaction_by_hash(txn_hash)
             break
 
-    def send_execute_transaction(self):
-        """
-        Send the transaction that will execute this scheduled call.
-        """
-        return self.alarm.doCall.sendTransaction(self.call_key)
-
-    def wait_for_call_window(self, buffer=2):
+    def wait_for_call_window(self, buffer=3):
         """
         wait for self.target_block - buffer (~30 seconds at 2 blocks)
         """
@@ -196,77 +236,176 @@ class ScheduledCall(object):
     def rpc_client(self):
         return self.alarm._meta.rpc_client
 
+    @cached_property
+    def coinbase(self):
+        return self.rpc_client.get_coinbase()
+
     @property
     def scheduler_account_balance(self):
         return self.alarm.accountBalances.call(self.scheduled_by)
 
+    @cached_property
+    def designated_callers(self):
+        return {
+            block_number: self.alarm.pool_manager.caller_pool.getDesignatedCaller(self.call_key, self.target_block, self.grace_period, block_number)
+            for block_number
+            in range(self.target_block, self.target_block + self.grace_period + 1)
+        }
+
+    def should_call_on_block(self, block_number):
+        if self.target_block - 1 > block_number:
+            return False
+
+        if block_number > self.target_block + self.grace_period - 1:
+            return False
+
+        if self.designated_callers[block_number + 1] == EMPTY_ADDRESS:
+            if self.designated_callers[block_number + 2] == EMPTY_ADDRESS:
+                return True
+
+        if self.designated_callers[block_number + 1] == self.coinbase:
+            if self.designated_callers[block_number + 2] == self.coinbase:
+                return True
+
+        return False
+
+    @cached_property
+    def callable_blocks(self):
+        return {
+            block_number
+            for block_number
+            in range(self.target_block - 1, self.target_block + self.grace_period)
+            if self.should_call_on_block(block_number)
+        }
+
     #
     #  Call properties.
     #
-    @property
+    @cached_property
     def contract_address(self):
         return self.alarm.getCallContractAddress.call(self.call_key)
 
-    @property
+    @cached_property
     def scheduled_by(self):
         return self.alarm.getCallScheduledBy.call(self.call_key)
 
-    @property
+    @cache_once(0)
     def called_at_block(self):
         return self.alarm.getCallCalledAtBlock.call(self.call_key)
 
-    @property
+    @cached_property
     def target_block(self):
         return self.alarm.getCallTargetBlock.call(self.call_key)
 
-    @property
+    @cached_property
     def grace_period(self):
         return self.alarm.getCallGracePeriod.call(self.call_key)
 
-    @property
+    @cached_property
     def base_gas_price(self):
         return self.alarm.getCallBaseGasPrice.call(self.call_key)
 
-    @property
+    @cache_once(0)
     def gas_price(self):
         return self.alarm.getCallGasPrice.call(self.call_key)
 
-    @property
+    @cache_once(0)
     def gas_used(self):
         return self.alarm.getCallGasUsed.call(self.call_key)
 
-    @property
+    @cache_once(0)
     def payout(self):
         return self.alarm.getCallPayout.call(self.call_key)
 
-    @property
+    @cache_once(0)
     def fee(self):
         return self.alarm.getCallFee.call(self.call_key)
 
-    @property
+    @cached_property
     def abi_signature(self):
         return self.alarm.getCallABISignature.call(self.call_key)
 
-    @property
-    def is_cancelled(self):
-        return self.alarm.checkIfCancelled.call(self.call_key)
+    _is_cancelled = None
 
     @property
+    def is_cancelled(self):
+        if self._is_cancelled is not None:
+            return self._is_cancelled
+
+        value = self.alarm.checkIfCancelled.call(self.call_key)
+        if value or self.block_sage.current_block_number > self.target_block - 8:
+            self._is_cancelled = value
+        return value
+
+    @cache_once(True)
     def was_called(self):
         return self.alarm.checkIfCalled.call(self.call_key)
 
-    @property
-    def was_successful(self):
-        return self.alarm.checkIfSuccess.call(self.call_key)
+    _was_successful = None
 
     @property
+    def was_successful(self):
+        if self._was_successful is not None:
+            return self._was_successful
+        value = self.alarm.checkIfSuccess.call(self.call_key)
+        if value or (value is False and self.was_called):
+            self._was_successful = value
+        return value
+
+    @cached_property
     def data_hash(self):
         return self.alarm.getCallDataHash.call(self.call_key)
 
 
+class PoolManager(object):
+    def __init__(self, caller_pool, block_sage=None):
+        self.caller_pool = caller_pool
+
+        if block_sage is None:
+            block_sage = BlockSage(self.rpc_client)
+        self.block_sage = block_sage
+
+    @property
+    def rpc_client(self):
+        return self.caller_pool._meta.rpc_client
+
+    @cached_property
+    def coinbase(self):
+        return self.rpc_client.get_coinbase()
+
+    @property
+    def active_pool(self):
+        return self.caller_pool.getActivePoolKey.call()
+
+    @property
+    def next_pool(self):
+        return self.caller_pool.getNextPoolKey.call()
+
+    @property
+    def in_active_pool(self):
+        return self.caller_pool.isInPool.call(self.coinbase, self.active_pool)
+
+    @property
+    def in_next_pool(self):
+        return self.caller_pool.isInPool.call(self.coinbase, self.next_pool)
+
+    @property
+    def can_enter_pool(self):
+        return self.caller_pool.canEnterPool.call(self.coinbase)
+
+    @property
+    def can_exit_pool(self):
+        return self.caller_pool.canExitPool.call(self.coinbase)
+
+    @property
+    def bond_balance(self):
+        return self.caller_pool.callerBonds.call(self.coinbase)
+
+
 class Scheduler(object):
-    def __init__(self, alarm, block_sage=None):
+    def __init__(self, alarm, pool_manager, block_sage=None):
         self.alarm = alarm
+        self.pool_manager = pool_manager
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -277,6 +416,10 @@ class Scheduler(object):
     @property
     def rpc_client(self):
         return self.alarm._meta.rpc_client
+
+    @cached_property
+    def coinbase(self):
+        return self.rpc_client.get_coinbase()
 
     def monitor_async(self):
         self._run = True
@@ -292,16 +435,6 @@ class Scheduler(object):
             self.schedule_upcoming_calls()
             self.cleanup_finished_calls()
 
-    def cleanup_finished_calls(self):
-        for call_key, scheduled_call in tuple(self.active_calls.items()):
-            if not scheduled_call._thread.is_alive():
-                # TODO: log this?
-                self.active_calls.pop(call_key)
-            elif scheduled_call.txn_hash:
-                self.active_calls.pop(call_key)
-            elif scheduled_call.target_block + scheduled_call.grace_period < self.block_sage.current_block_number:
-                self.active_calls.pop(call_key)
-
     def schedule_upcoming_calls(self):
         upcoming_calls = enumerate_upcoming_calls(self.alarm, self.block_sage.current_block_number)
         for call_key in upcoming_calls:
@@ -315,6 +448,16 @@ class Scheduler(object):
 
             scheduled_call.execute_async()
             self.active_calls[call_key] = scheduled_call
+
+    def cleanup_finished_calls(self):
+        for call_key, scheduled_call in tuple(self.active_calls.items()):
+            if not scheduled_call._thread.is_alive():
+                # TODO: log this?
+                self.active_calls.pop(call_key)
+            elif scheduled_call.txn_hash:
+                self.active_calls.pop(call_key)
+            elif scheduled_call.target_block + scheduled_call.grace_period < self.block_sage.current_block_number:
+                self.active_calls.pop(call_key)
 
 
 def enumerate_upcoming_calls(alarm, anchor_block):

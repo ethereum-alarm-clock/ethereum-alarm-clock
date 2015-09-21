@@ -14,7 +14,6 @@ contract CallerPoolAPI {
 
         event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
 
-
         /*
          *  Pool querying
          */
@@ -22,6 +21,7 @@ contract CallerPoolAPI {
         function getPoolKeyForBlock(uint blockNumber) public returns (uint);
         function getActivePoolKey() public returns (uint);
         function getNextPoolKey() public returns (uint);
+        function getPoolSize(uint poolKey) returns (uint);
 
         /*
          *  Pool membership API

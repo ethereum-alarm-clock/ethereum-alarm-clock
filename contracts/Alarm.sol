@@ -80,7 +80,15 @@ contract CallerPool {
                  *  Only if you are not in either of the current call pools.
                  */
                 if (isInAnyPool(msg.sender)) {
-                        return;
+                        // Prevent underflow
+                        if (value > callerBonds[msg.sender]) {
+                                __throw();
+                        }
+                        // Don't allow withdrawl if this would drop the bond
+                        // balance below the minimum.
+                        if (callerBonds[msg.sender] - value < getMinimumBond()) {
+                                return;
+                        }
                 }
                 _deductFromBond(msg.sender, value);
                 if (!msg.sender.send(value)) {
@@ -130,7 +138,7 @@ contract CallerPool {
                 uint numWindows = gracePeriod / 4;
                 uint blockWindow = (blockNumber - targetBlock) / 4;
 
-                if (blockWindow + 1 > numWindows) {
+                if (blockWindow + 2 > numWindows) {
                         // We are within the free-for-all period.
                         return 0x0;
                 }
@@ -141,37 +149,66 @@ contract CallerPool {
 
         event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
 
-        function awardMissedBlockBonus(address toCaller, bytes32 callKey, uint targetBlock) public {
+        function _doBondBonusTransfer(address fromCaller, address toCaller) internal returns (uint) {
+                uint bonusAmount = getMinimumBond();
+                uint bondBalance = callerBonds[fromCaller];
+
+                // If the bond balance is lower than the award
+                // balance, then adjust the reward amount to
+                // match the bond balance.
+                if (bonusAmount > bondBalance) {
+                        bonusAmount = bondBalance;
+                }
+
+                // Transfer the funds fromCaller => toCaller
+                _deductFromBond(fromCaller, bonusAmount);
+                _addToBond(toCaller, bonusAmount);
+
+                return bonusAmount;
+        }
+
+        function awardMissedBlockBonus(address toCaller, bytes32 callKey, uint targetBlock, uint8 gracePeriod) public {
                 if (msg.sender != operator) {
                         return;
                 }
 
                 uint poolNumber = getPoolKeyForBlock(targetBlock);
                 var pool = callerPools[poolNumber];
+                uint i;
+                uint bonusAmount;
+                address fromCaller;
+
+                // Check if we are within the free-for-all period.  If so, we
+                // award from all pool members.
+                uint numWindows = gracePeriod / 4;
+                uint blockWindow = (block.number - targetBlock) / 4;
+
+                if (blockWindow + 2 > numWindows) {
+                        for (i = 0; i < pool.length; i++) {
+                                if (pool[i] == toCaller) {
+                                        continue;
+                                }
+                                fromCaller = pool[i];
+                                bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
+
+                                // Log the bonus was awarded.
+                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
+                        }
+                }
 
                 // Special case for single member and empty pools
                 if (pool.length < 2) {
                         return;
                 }
 
-                for (uint i = 0; i < pool.length; i++) {
+                // Otherwise the award comes from the previous caller.
+                for (i = 0; i < pool.length; i++) {
                         // Find where the member is in the pool and
                         // award from the previous pool members bond.
                         if (pool[i] == toCaller) {
-                                uint bonusAmount = getMinimumBond();
-                                address fromCaller = pool[(i + pool.length - 1) % pool.length];
-                                uint bondBalance = callerBonds[fromCaller];
+                                fromCaller = pool[(i + pool.length - 1) % pool.length];
 
-                                // If the bond balance is lower than the award
-                                // balance, then adjust the reward amount to
-                                // match the bond balance.
-                                if (bonusAmount > bondBalance) {
-                                        bonusAmount = bondBalance;
-                                }
-
-                                // Transfer the funds fromCaller => toCaller
-                                _deductFromBond(fromCaller, bonusAmount);
-                                _addToBond(toCaller, bonusAmount);
+                                bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
 
                                 // Log the bonus was awarded.
                                 AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
@@ -1184,7 +1221,7 @@ contract Alarm {
                                 // Someone missed their call so this caller
                                 // gets to claim their bond for picking up
                                 // their slack.
-                                callerPool.awardMissedBlockBonus(msg.sender, callKey, call.targetBlock);
+                                callerPool.awardMissedBlockBonus(msg.sender, callKey, call.targetBlock, call.gracePeriod);
                         }
                 }
 

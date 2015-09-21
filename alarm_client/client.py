@@ -2,11 +2,28 @@ import threading
 import json
 import time
 import functools
+import logging
+from logging import handlers
 
 from ethereum import utils as ethereum_utils
 
 from populus.contracts import Contract
 from populus.utils import wait_for_transaction
+
+
+def get_logger(name, level=logging.INFO):
+    logger = logging.getLogger(name)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(level)
+    stream_handler.setFormatter(
+        logging.Formatter(name.upper() + ': %(levelname)s: %(asctime)s %(message)s')
+    )
+    logger.addHandler(stream_handler)
+    file_handler = handlers.RotatingFileHandler('logs/{0}.log'.format(name), maxBytes=10000000)
+    file_handler.setLevel(level)
+    file_handler.setFormatter(logging.Formatter('%(levelname)s: %(asctime)s %(message)s'))
+    logger.addHandler(file_handler)
+    return logger
 
 
 def load_alarm_contract(src_path, contract_name='AlarmAPI'):
@@ -62,6 +79,7 @@ class BlockSage(object):
     """
     A single entity that can be queried for information on the latest block.
     """
+    logger = get_logger('blocksage')
     current_block_number = None
     current_block = None
     current_block_timestamp = None
@@ -90,6 +108,7 @@ class BlockSage(object):
         self._sleep_time = self._block_time = (
             ((self._block_sample_window - 1) * self._block_time + value) / self._block_sample_window
         )
+        self.logger.debug("Block Time: %s", self._block_time)
 
     @property
     def expected_next_block_time(self):
@@ -111,6 +130,7 @@ class BlockSage(object):
         Signal to the monitor_block_times function that it can exit it's run
         loop.
         """
+        self.logger.info("Stopping Block Sage")
         self._run = False
 
     def monitor_block_times(self):
@@ -122,7 +142,9 @@ class BlockSage(object):
         self.current_block_timestamp = int(self.current_block['timestamp'], 16)
 
         while self._run:
-            time.sleep(self.sleep_time)
+            sleep_time = self.sleep_time
+            self.logger.debug("Sleeping for %s seconds", sleep_time)
+            time.sleep(sleep_time)
             if self.rpc_client.get_block_number() > self.current_block_number:
                 # Update block time.
                 next_block_timestamp = int(self.rpc_client.get_block_by_number(self.current_block_number + 1)['timestamp'], 16)
@@ -132,6 +154,7 @@ class BlockSage(object):
                 self.current_block_number = self.rpc_client.get_block_number()
                 self.current_block = self.rpc_client.get_block_by_number(self.current_block_number, False)
                 self.current_block_timestamp = int(self.current_block['timestamp'], 16)
+                self.logger.info("Block Number: %s")
 
 
 EMPTY_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -145,20 +168,19 @@ class ScheduledCall(object):
     txn_receipt = None
     txn = None
 
-    def __init__(self, alarm, call_key, block_sage=None):
+    def __init__(self, alarm, pool_manager, call_key, block_sage=None):
         self.call_key = call_key
         self.alarm = alarm
+        self.pool_manager = pool_manager
+        self.logger = get_logger('call-{0}'.format(self.hex_call_key[:5]))
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
         self.block_sage = block_sage
 
-    @property
+    @cached_property
     def hex_call_key(self):
         return ethereum_utils.encode_hex(self.call_key)
-
-    def check_was_called(self):
-        if self.block_sage.current_block_number < self.target_block:
 
     def should_execute(self):
         """
@@ -167,15 +189,23 @@ class ScheduledCall(object):
         - before target_block + grace_period.
         - scheduler has sufficient balance.
         """
+        if self.coinbase not in self.designated_caller_addresses:
+            if EMPTY_ADDRESS not in self.designated_caller_addresses:
+                self.logger.debug("No blocks where we are designated to call.")
+                return False
+
         if self.was_called:
+            self.logger.debug("Call was already called.")
             # TODO: this check only needs to occur after self.target_block
             return False
 
         if self.is_cancelled:
+            self.logger.debug("Call was cancelled.")
             # TODO: this check only needs to occur once after self.target_block - 8
             return False
 
         if self.rpc_client.get_block_number() > self.target_block + self.grace_period:
+            self.logger.debug("Passed call window")
             return False
 
         gas_limit = int(self.block_sage.current_block['gasLimit'], 16)
@@ -183,6 +213,7 @@ class ScheduledCall(object):
 
         # Require 110% of max gas to be sure.
         if self.scheduler_account_balance < gas_limit * gas_price * 1.1:
+            self.logger.debug("Scheduler account doesn't have enough funds")
             return False
 
         return True
@@ -207,13 +238,16 @@ class ScheduledCall(object):
             if self.block_sage.current_block_number not in self.callable_blocks:
                 time.sleep(0.1)
                 continue
+            logger.info("Attempting to execute call")
             txn_hash = self.alarm.doCall.sendTransaction(self.call_key)
             try:
+                logger.debug("Waiting for transaction: %s", txn_hash)
                 txn_receipt = wait_for_transaction(self.rpc_client, txn_hash)
             except ValueError:
                 if self.should_execute():
                     continue
                 raise
+            logger.infor("Transaction accepted.")
             self.txn_hash = txn_hash
             self.txn_receipt = txn_receipt
             self.txn = self.rpc_client.get_transaction_by_hash(txn_hash)
@@ -226,7 +260,8 @@ class ScheduledCall(object):
         if self.block_sage.current_block_number > self.target_block + self.grace_period:
             raise ValueError("Already passed call execution window")
 
-        while self.block_sage.current_block_number < self.target_block - buffer:
+        self.logger.info("Waiting for block #%s", self.target_block - buffer)
+        while getatter(self, '_run', True) and self.block_sage.current_block_number < self.target_block - buffer:
             time.sleep(0.25)
 
     #
@@ -244,10 +279,18 @@ class ScheduledCall(object):
     def scheduler_account_balance(self):
         return self.alarm.accountBalances.call(self.scheduled_by)
 
+    @property
+    def last_block(self):
+        return self.target_block + self.grace_period
+
+    @cached_property
+    def designated_caller_addresses(self):
+        return set(self.designated_callers.values)
+
     @cached_property
     def designated_callers(self):
         return {
-            block_number: self.alarm.pool_manager.caller_pool.getDesignatedCaller(self.call_key, self.target_block, self.grace_period, block_number)
+            block_number: self.pool_manager.caller_pool.getDesignatedCaller(self.call_key, self.target_block, self.grace_period, block_number)
             for block_number
             in range(self.target_block, self.target_block + self.grace_period + 1)
         }
@@ -441,7 +484,9 @@ class Scheduler(object):
             if call_key in self.active_calls:
                 continue
 
-            scheduled_call = ScheduledCall(self.alarm, call_key, self.block_sage)
+            scheduled_call = ScheduledCall(
+                self.alarm, self.pool_manager, call_key, self.block_sage,
+            )
 
             if scheduled_call.is_cancelled:
                 continue

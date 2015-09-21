@@ -7,6 +7,7 @@ the future.
 ## Pre Release Checklist
 
 * Contract
+    * CallerPool freeze window is set to 256
     * All tests passing
     * Github issues sane.
     * Compiled version is verifyable.

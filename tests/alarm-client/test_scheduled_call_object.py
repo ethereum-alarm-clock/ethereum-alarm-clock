@@ -3,7 +3,10 @@ from ethereum import utils
 from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
-from alarm_client.client import ScheduledCall
+from alarm_client.client import (
+    ScheduledCall,
+    PoolManager,
+)
 
 
 deploy_max_wait = 15
@@ -13,8 +16,9 @@ deploy_wait_for_block = 1
 geth_max_wait = 45
 
 
-def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, deployed_contracts):
+def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):
     alarm = deployed_contracts.Alarm
+    caller_pool = contracts.CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
     client_contract = deployed_contracts.PassesUInt
 
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
@@ -35,7 +39,8 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     txn_receipt = wait_for_transaction(alarm._meta.rpc_client, alarm.doCall.sendTransaction(callKey))
     call_txn = rpc_client.get_transaction_by_hash(txn_receipt['transactionHash'])
 
-    scheduled_call = ScheduledCall(alarm, callKey)
+    pool_manager = PoolManager(caller_pool, block_sage)
+    scheduled_call = ScheduledCall(alarm, pool_manager, callKey)
 
     assert scheduled_call.scheduler_account_balance == alarm.accountBalances.call(client_contract._meta.address)
     assert scheduled_call.target_block == alarm.getCallTargetBlock.call(callKey)

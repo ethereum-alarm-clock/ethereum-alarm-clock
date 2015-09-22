@@ -28,14 +28,3 @@ the future.
     * Update contract addresses
 * Documentation
     * New version created
-
-
-current stuff.
-..............
-test_get_called_at_block.py
-test_get_contract_address.py
-test_get_gas_price.py
-test_get_gas_used.py
-test_get_scheduled_by.py
-test_get_target_block.py
-

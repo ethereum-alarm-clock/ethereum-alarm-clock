@@ -4,23 +4,19 @@ from populus.utils import (
     wait_for_block,
 )
 
-from alarm_client.client import (
+from alarm_client import (
     Scheduler,
     PoolManager,
     BlockSage,
 )
 
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
-
-
 def test_scheduler(geth_node, rpc_client, deployed_contracts, contracts):
+    block_sage = BlockSage(rpc_client)
+
     alarm = deployed_contracts.Alarm
     caller_pool = contracts.CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
+
     client_contract = deployed_contracts.SpecifyBlock
 
     deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
@@ -31,8 +27,6 @@ def test_scheduler(geth_node, rpc_client, deployed_contracts, contracts):
     blocks = (1, 4, 4, 8, 30, 40, 50, 60)
 
     call_keys = []
-
-    block_sage = BlockSage(rpc_client)
 
     for n in blocks:
         wait_for_transaction(rpc_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 100 + n))

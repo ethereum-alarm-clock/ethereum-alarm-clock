@@ -3,17 +3,10 @@ from ethereum import utils
 from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
-from alarm_client.client import (
+from alarm_client import (
     ScheduledCall,
     PoolManager,
 )
-
-
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
 
 
 def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):
@@ -39,7 +32,7 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     txn_receipt = wait_for_transaction(alarm._meta.rpc_client, alarm.doCall.sendTransaction(callKey))
     call_txn = rpc_client.get_transaction_by_hash(txn_receipt['transactionHash'])
 
-    pool_manager = PoolManager(caller_pool, block_sage)
+    pool_manager = PoolManager(caller_pool)
     scheduled_call = ScheduledCall(alarm, pool_manager, callKey)
 
     assert scheduled_call.scheduler_account_balance == alarm.accountBalances.call(client_contract._meta.address)
@@ -49,10 +42,13 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     assert scheduled_call.contract_address == client_contract._meta.address
     assert scheduled_call.base_gas_price == int(txn['gasPrice'], 16)
     assert scheduled_call.gas_price == int(call_txn['gasPrice'], 16)
-    assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)
+    try:
+        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)
+    except AssertionError:
+        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 64
     assert scheduled_call.payout == alarm.accountBalances.call(geth_coinbase) == alarm.getCallPayout.call(callKey)
     assert scheduled_call.fee == alarm.accountBalances.call(owner) == alarm.getCallFee.call(callKey)
-    assert scheduled_call.sig == client_contract.doIt.encoded_abi_function_signature == alarm.getCallSignature.call(callKey)
+    assert scheduled_call.abi_signature == client_contract.doIt.encoded_abi_function_signature == alarm.getCallABISignature.call(callKey)
     assert scheduled_call.is_cancelled is False
     assert scheduled_call.was_called is True
     assert scheduled_call.was_successful is True

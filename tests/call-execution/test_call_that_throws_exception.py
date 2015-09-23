@@ -33,4 +33,4 @@ def test_what_happens_when_call_throws_exception(geth_node, rpc_client, deployed
 
     assert client_contract.value.call() is False
     assert alarm.checkIfCalled.call(callKey) is True
-    assert alarm.checkIfSuccess.call(callKey) is True
+    assert alarm.checkIfSuccess.call(callKey) is False

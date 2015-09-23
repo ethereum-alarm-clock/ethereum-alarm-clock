@@ -104,6 +104,7 @@ contract Fails {
                 int x = 1;
                 int y = 0;
                 x / y;
+                value = true;
         }
 
         function scheduleIt(address to) public {

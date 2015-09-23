@@ -1,4 +1,5 @@
 import threading
+import time
 
 from .block_sage import BlockSage
 from .scheduled_call import ScheduledCall
@@ -43,6 +44,7 @@ class Scheduler(object):
         while getattr(self, '_run', True):
             self.schedule_upcoming_calls()
             self.cleanup_finished_calls()
+            time.sleep(self.block_sage.block_time)
 
     def schedule_upcoming_calls(self):
         upcoming_calls = enumerate_upcoming_calls(self.alarm, self.block_sage.current_block_number)

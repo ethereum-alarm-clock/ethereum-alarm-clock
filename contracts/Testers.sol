@@ -101,9 +101,13 @@ contract Fails {
         bytes32 public dataHash;
 
         function doIt() public {
-                int x = 1;
-                int y = 0;
-                x / y;
+                __throw();
+                value = true;
+        }
+
+        function __throw() internal {
+                int[] x;
+                x[1];
         }
 
         function scheduleIt(address to) public {

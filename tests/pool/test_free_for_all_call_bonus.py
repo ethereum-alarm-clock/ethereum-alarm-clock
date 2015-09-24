@@ -62,7 +62,7 @@ def test_free_for_all_window_awards_mega_bonus(geth_node, geth_coinbase, rpc_cli
     assert first_pool_key > 0
 
     # Wait for it to become active
-    wait_for_block(rpc_client, first_pool_key, 180)
+    wait_for_block(rpc_client, first_pool_key, 240)
 
     # We should both be in the pool
     assert caller_pool.getActivePoolKey.call() == first_pool_key

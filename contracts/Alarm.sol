@@ -184,11 +184,18 @@ contract CallerPool {
                 // Check if we are within the free-for-all period.  If so, we
                 // award from all pool members.
                 if (blockWindow + 2 > numWindows) {
-                        for (i = 0; i < pool.length; i++) {
-                                if (pool[i] == toCaller) {
+                        address firstCaller = getDesignatedCaller(callKey, targetBlock, gracePeriod, targetBlock);
+                        for (i = targetBlock; i <= targetBlock + gracePeriod; i += 4) {
+                                fromCaller = getDesignatedCaller(callKey, targetBlock, gracePeriod, i);
+                                if (fromCaller == firstCaller && i != targetBlock) {
+                                        // We have already gone through all of
+                                        // the pool callers so we should break
+                                        // out of the loop.
+                                        break;
+                                }
+                                if (fromCaller == toCaller) {
                                         continue;
                                 }
-                                fromCaller = pool[i];
                                 bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
 
                                 // Log the bonus was awarded.

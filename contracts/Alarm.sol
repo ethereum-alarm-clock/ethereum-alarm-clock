@@ -835,65 +835,65 @@ contract Alarm {
 
         //event TreeRotatedRight(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
 
-        //function _rotateRight() internal {
-        //        /*
-        //         *  1. Detatch the left child of the root node.  This is the
-        //         *     new root node.
-        //         *  2. Detatch the right child of the new root node.
-        //         *  3. Set the old root node as the right child of the new root node.
-        //         *  4. Set the detatched right child from the new root node in
-        //         *     the appropriate location in the tree.
-        //         */
-        //        var oldRootNode = call_to_node[rootNodeCallKey];
-        //        var newRootNode = call_to_node[oldRootNode.left];
-        //        // #1
-        //        oldRootNode.left = 0x0;
-        //        rootNodeCallKey = newRootNode.callKey;
+        function _rotateRight() internal {
+                /*
+                 *  1. Detatch the left child of the root node.  This is the
+                 *     new root node.
+                 *  2. Detatch the right child of the new root node.
+                 *  3. Set the old root node as the right child of the new root node.
+                 *  4. Set the detatched right child from the new root node in
+                 *     the appropriate location in the tree.
+                 */
+                var oldRootNode = call_to_node[rootNodeCallKey];
+                var newRootNode = call_to_node[oldRootNode.left];
+                // #1
+                oldRootNode.left = 0x0;
+                rootNodeCallKey = newRootNode.callKey;
 
-        //        // #2
-        //        bytes32 detatchedChildCallKey = newRootNode.right;
-        //        newRootNode.right = 0x0;
+                // #2
+                bytes32 detatchedChildCallKey = newRootNode.right;
+                newRootNode.right = 0x0;
 
-        //        // #3
-        //        newRootNode.right = oldRootNode.callKey;
+                // #3
+                newRootNode.right = oldRootNode.callKey;
 
-        //        // #4
-        //        if (detatchedChildCallKey != 0x0) {
-        //                // First reset the node to not have a callKey,
-        //                // otherwise the call to `placeCallInTree` will exit
-        //                // early thinking this node is already placed.
-        //                var detatchedChildNode = call_to_node[detatchedChildCallKey];
-        //                detatchedChildNode.callKey = 0x0;
-        //                // Now place it at it's new location in the tree.
-        //                placeCallInTree(detatchedChildCallKey);
-        //        }
+                // #4
+                if (detatchedChildCallKey != 0x0) {
+                        // First reset the node to not have a callKey,
+                        // otherwise the call to `placeCallInTree` will exit
+                        // early thinking this node is already placed.
+                        var detatchedChildNode = call_to_node[detatchedChildCallKey];
+                        detatchedChildNode.callKey = 0x0;
+                        // Now place it at it's new location in the tree.
+                        placeCallInTree(detatchedChildCallKey);
+                }
 
-        //        //TreeRotatedRight(oldRootNode.callKey, newRootNode.callKey);
-        //}
+                //TreeRotatedRight(oldRootNode.callKey, newRootNode.callKey);
+        }
 
-        //function _shouldRotateRight() internal returns (bool) {
-        //        /*
-        //         *  Is the left child of the rootNode in the future of the
-        //         *  current block number.
-        //         */
-        //        if (rootNodeCallKey == 0x0) {
-        //                return false;
-        //        }
+        function _shouldRotateRight() internal returns (bool) {
+                /*
+                 *  Is the left child of the rootNode in the future of the
+                 *  current block number.
+                 */
+                if (rootNodeCallKey == 0x0) {
+                        return false;
+                }
 
-        //        var currentRoot = call_to_node[rootNodeCallKey];
+                var currentRoot = call_to_node[rootNodeCallKey];
 
-        //        // No left child so cant rotate right.
-        //        if (currentRoot.left == 0x0) {
-        //                return false;
-        //        }
+                // No left child so cant rotate right.
+                if (currentRoot.left == 0x0) {
+                        return false;
+                }
 
-        //        // Current root already in the past.
-        //        if (key_to_calls[rootNodeCallKey].targetBlock <= block.number) {
-        //                return false;
-        //        }
+                // Current root already in the past.
+                if (key_to_calls[rootNodeCallKey].targetBlock <= block.number) {
+                        return false;
+                }
 
-        //        return true;
-        //}
+                return true;
+        }
 
         //event TreeRotatedLeft(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
 
@@ -985,11 +985,11 @@ contract Alarm {
                 // The current root is in the future so we can potentially
                 // rotate the tree to the right to decrease the root block
                 // number.
-                //if (rootBlockNumber > block.number) {
-                //        while (_shouldRotateRight()) {
-                //                _rotateRight();
-                //        }
-                //}
+                if (rootBlockNumber > block.number) {
+                        while (_shouldRotateRight()) {
+                                _rotateRight();
+                        }
+                }
         }
 
         /*
@@ -1122,17 +1122,17 @@ contract Alarm {
         uint lastDataLength;
         bytes32 lastDataHash;
 
-        function getLastDataHash() public returns (bytes32) {
-                return lastDataHash;
-        }
+        //function getLastDataHash() public returns (bytes32) {
+        //        return lastDataHash;
+        //}
 
-        function getLastDataLength() public returns (uint) {
-                return lastDataLength;
-        }
+        //function getLastDataLength() public returns (uint) {
+        //        return lastDataLength;
+        //}
 
-        function getLastData() public returns (bytes) {
-                return lastData;
-        }
+        //function getLastData() public returns (bytes) {
+        //        return lastData;
+        //}
 
         function getCallData(bytes32 callKey) public returns (bytes) {
                 return hash_to_data[key_to_calls[callKey].dataHash];

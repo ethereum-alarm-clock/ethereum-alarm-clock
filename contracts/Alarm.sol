@@ -1,3 +1,8 @@
+/*
+ *  Version 0.2.0
+ *
+ *  address: 0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da
+ */
 contract Relay {
         address operator;
 
@@ -19,23 +24,11 @@ contract Relay {
 }
 
 
-contract CallerPoolAlarmAPI {
-        /*
-         *  Abstract contract for the caller pool to be able to access the
-         *  Alarm api.
-         */
-        function getCallGracePeriod(bytes32 callKey) public returns (uint);
-        function getCallTargetBlock(bytes32 callKey) public returns (uint);
-}
-
-
 contract CallerPool {
         address operator;
-        CallerPoolAlarmAPI alarm;
 
         function CallerPool() {
                 operator = msg.sender;
-                alarm = CallerPoolAlarmAPI(operator);
         }
 
         /*

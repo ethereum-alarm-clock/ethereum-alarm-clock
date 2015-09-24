@@ -19,7 +19,10 @@ from eth_alarm_client import (
 )
 
 
-alarm_address = '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'
+alarm_addresses = (
+    ('0.1.0', '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'),
+    ('0.2.0 (latest)', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
+)
 
 
 rpc_client = Client('127.0.0.1', '8545')
@@ -37,11 +40,29 @@ def main():
 
 
 @main.command()
-def scheduler():
+def addresses():
+    """
+    List the addresses for different versions of the alarm contract.
+    """
+    for version, address in alarm_addresses:
+        click.echo("{0}: {1}".format(version.ljust(16), address))
+
+
+@main.command()
+@click.option(
+    '--address',
+    '-a',
+    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    help="Return the current bond balance from the caller pool.",
+)
+def scheduler(address):
+    """
+    Run the call scheduler.
+    """
     Alarm = get_contract('Alarm')
     CallerPool = get_contract('CallerPool')
 
-    alarm = Alarm(alarm_address, rpc_client)
+    alarm = Alarm(address, rpc_client)
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
 
     block_sage = BlockSage(rpc_client)
@@ -99,9 +120,18 @@ def convert_wei_to_denomination(value, denomination):
     default='wei',
     help="Return the current bond balance from the caller pool.",
 )
-def pool_balance(denomination):
+@click.option(
+    '--address',
+    '-a',
+    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    help="Return the current bond balance from the caller pool.",
+)
+def pool_balance(denomination, address):
+    """
+    Check your bond balance with the caller pool.
+    """
     Alarm = get_contract('Alarm')
-    alarm = Alarm(alarm_address, rpc_client)
+    alarm = Alarm(address, rpc_client)
     CallerPool = get_contract('CallerPool')
 
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
@@ -121,9 +151,18 @@ def pool_balance(denomination):
     default='wei',
     help="Return the current minimum bond amount for the caller pool.",
 )
-def pool_minimum(denomination):
+@click.option(
+    '--address',
+    '-a',
+    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    help="Return the current bond balance from the caller pool.",
+)
+def pool_minimum(denomination, address):
+    """
+    Check the current minimum bond balance.
+    """
     Alarm = get_contract('Alarm')
-    alarm = Alarm(alarm_address, rpc_client)
+    alarm = Alarm(address, rpc_client)
     CallerPool = get_contract('CallerPool')
 
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
@@ -136,9 +175,18 @@ def pool_minimum(denomination):
 
 
 @pool.command('status')
-def pool_status():
+@click.option(
+    '--address',
+    '-a',
+    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    help="Return the current bond balance from the caller pool.",
+)
+def pool_status(address):
+    """
+    Display some status information about the caller pools.
+    """
     Alarm = get_contract('Alarm')
-    alarm = Alarm(alarm_address, rpc_client)
+    alarm = Alarm(address, rpc_client)
     CallerPool = get_contract('CallerPool')
 
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
@@ -168,10 +216,19 @@ def pool_status():
     default=False,
     help="Deposit the bond amount in wei into the CallerPool",
 )
+@click.option(
+    '--address',
+    '-a',
+    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    help="Return the current bond balance from the caller pool.",
+)
 @click.argument('value', type=click.INT)
-def pool_deposit(async, value):
+def pool_deposit(async, address, value):
+    """
+    Deposit an amount in wei into your caller pool bond balance.
+    """
     Alarm = get_contract('Alarm')
-    alarm = Alarm(alarm_address, rpc_client)
+    alarm = Alarm(address, rpc_client)
     CallerPool = get_contract('CallerPool')
 
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)

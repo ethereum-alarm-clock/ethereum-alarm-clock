@@ -110,7 +110,7 @@ class ScheduledCall(object):
                 txn_receipt = wait_for_transaction(
                     self.rpc_client,
                     txn_hash,
-                    self.block_sage.block_time * 1.5,
+                    self.block_sage.block_time * 10,
                 )
             except ValueError:
                 self.logger.info("Unable to get transaction receipt: %s", txn_hash)

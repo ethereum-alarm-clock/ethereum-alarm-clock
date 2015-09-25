@@ -1,5 +1,7 @@
 # Ethereum Alarm Clock
 
+[![Join the chat at https://gitter.im/pipermerriam/ethereum-alarm-clock](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/pipermerriam/ethereum-alarm-clock?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Alarm allows scheduling of function calls on a contract at a specified block in
 the future.
 

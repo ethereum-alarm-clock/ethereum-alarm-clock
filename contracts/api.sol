@@ -52,21 +52,6 @@ contract AlarmAPI {
         function withdraw(uint value) public;
 
         /*
-         *  Call Tree API
-         */
-        //event CallPlacedInTree(bytes32 indexed callKey);
-        //event TreeRotatedLeft(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-        //event TreeRotatedRight(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-
-        function rootNodeCallKey() returns (bytes32);
-        function getNextBlockWithCall(uint blockNumber) returns (uint);
-        function getNextCallKey(uint blockNumber) returns (bytes32);
-        function getNextCallSibling(bytes32 callKey) public returns (bytes32);
-        function getCallLeftChild(bytes32 callKey) public returns (bytes32);
-        function getCallRightChild(bytes32 callKey) public returns (bytes32);
-        function rotateTree() public;
-
-        /*
          *  Authorization API
          */
         function unauthorizedAddress() public returns (address);

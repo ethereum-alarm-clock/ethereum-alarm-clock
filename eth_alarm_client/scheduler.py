@@ -13,9 +13,10 @@ from .utils import (
 class Scheduler(object):
     logger = get_logger('scheduler')
 
-    def __init__(self, alarm, pool_manager, block_sage=None):
+    def __init__(self, alarm, pool_manager, grove, block_sage=None):
         self.alarm = alarm
         self.pool_manager = pool_manager
+        self.grove = grove
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)

@@ -40,6 +40,9 @@ def test_enumerate_upcoming_tree_positions(geth_node, rpc_client, deployed_contr
 
     call_keys = []
 
+    import time
+    time.sleep(5)
+
     for n in blocks:
         wait_for_transaction(rpc_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 100 + n))
 

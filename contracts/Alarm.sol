@@ -1034,7 +1034,7 @@ contract Alarm {
                 call.baseGasPrice = tx.gasprice;
 
                 // Put the call into the grove index.
-                grove.insert(GROVE_INDEX_NAME, lastCallKey, int(call.targetBlock));
+                //grove.insert(GROVE_INDEX_NAME, lastCallKey, int(call.targetBlock));
 
                 //CallScheduled(lastCallKey);
         }

@@ -89,7 +89,7 @@ def enumerate_upcoming_calls(grove, index_id, anchor_block):
 
             if sibling is not None:
                 if grove.getNodeValue(sibling) == target_block:
-                    call_keys.append(sibling)
+                    call_keys.append(grove.getNodeId(sibling))
                 else:
                     break
 

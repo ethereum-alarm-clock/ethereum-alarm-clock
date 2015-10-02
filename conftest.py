@@ -13,3 +13,22 @@ def deployed_contracts_config(monkeypatch):
 @pytest.fixture(autouse=True)
 def geth_node_config(monkeypatch):
     monkeypatch.setenv('GETH_MAX_WAIT', '45')
+
+
+def _alarm_constructor_args(deployed_contracts):
+    grove = deployed_contracts['Grove']
+    return (grove._meta.address,)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def contract_deployment_config(populus_config):
+    populus_config.deploy_dependencies = {
+        "Alarm": set(["Grove"]),
+    }
+    populus_config.deploy_constructor_args = {
+        "Alarm": _alarm_constructor_args,
+    }
+    populus_config.deploy_contracts = [
+        "Alarm",
+        "Grove",
+    ]

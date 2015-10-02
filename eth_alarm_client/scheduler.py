@@ -48,7 +48,11 @@ class Scheduler(object):
             time.sleep(self.block_sage.block_time)
 
     def schedule_upcoming_calls(self):
-        upcoming_calls = enumerate_upcoming_calls(self.alarm, self.block_sage.current_block_number)
+        upcoming_calls = enumerate_upcoming_calls(
+            self.grove,
+            self.alarm.getGroveIndexId.call(),
+            self.block_sage.current_block_number,
+        )
         for call_key in upcoming_calls:
             if call_key in self.active_calls:
                 continue

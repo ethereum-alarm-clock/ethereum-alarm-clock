@@ -3,10 +3,17 @@ from ethereum import utils
 from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
-from alarm_client import (
+from eth_alarm_client import (
     ScheduledCall,
     PoolManager,
 )
+
+
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "PassesUInt",
+]
 
 
 def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):

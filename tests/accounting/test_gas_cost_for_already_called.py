@@ -1,11 +1,12 @@
 from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
 
-geth_max_wait = 45
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "NoArgs",
+]
 
 
 def test_cost_of_duplicate_call(geth_node, rpc_client, deployed_contracts):
@@ -34,4 +35,4 @@ def test_cost_of_duplicate_call(geth_node, rpc_client, deployed_contracts):
     call_txn_hash = alarm.doCall.sendTransaction(callKey)
     call_txn_receipt = wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
 
-    assert call_txn_receipt['gasUsed'] == '0x67f0'
+    assert call_txn_receipt['gasUsed'] == '0x67c2'

@@ -4,17 +4,25 @@ from populus.utils import (
     wait_for_block,
 )
 
-from alarm_client import (
+from eth_alarm_client import (
     Scheduler,
     PoolManager,
     BlockSage,
 )
 
 
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "SpecifyBlock",
+]
+
+
 def test_scheduler(geth_node, rpc_client, deployed_contracts, contracts):
     block_sage = BlockSage(rpc_client)
 
     alarm = deployed_contracts.Alarm
+    grove = deployed_contracts.Grove
     caller_pool = contracts.CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
 
     client_contract = deployed_contracts.SpecifyBlock
@@ -37,7 +45,7 @@ def test_scheduler(geth_node, rpc_client, deployed_contracts, contracts):
         call_keys.append(last_call_key)
 
     pool_manager = PoolManager(caller_pool, block_sage)
-    scheduler = Scheduler(alarm, pool_manager, block_sage)
+    scheduler = Scheduler(alarm, pool_manager, grove, block_sage=block_sage)
     scheduler.monitor_async()
 
     final_block = anchor_block + 100 + 70

@@ -1,3 +1,18 @@
+from populus.contracts.functions import (
+    Function,
+    FunctionGroup,
+)
+
+
+def enumerate_functions(config):
+    for f in config._functions:
+        if isinstance(f, FunctionGroup):
+            for sub_f in f.functions:
+                yield sub_f
+        else:
+            yield f
+
+
 def test_alarm_function_signatures(contracts):
     """
     Test that all of the ABI signatures between the actual and stub contracts
@@ -5,21 +20,20 @@ def test_alarm_function_signatures(contracts):
     """
     Alarm = contracts.Alarm
     AlarmAPI = contracts.AlarmAPI
-    assert False
 
     exclude = {
         'registerData',
     }
 
     expected_abi = {
-        hex(function.abi_function_signature): function.name
-        for function in Alarm._config._functions
+        hex(function.abi_signature): function.name
+        for function in enumerate_functions(Alarm._config)
         if function.name not in exclude
     }
 
     actual_abi = {
-        hex(function.abi_function_signature): function.name
-        for function in AlarmAPI._config._functions
+        hex(function.abi_signature): function.name
+        for function in enumerate_functions(AlarmAPI._config)
     }
 
     assert actual_abi == expected_abi
@@ -53,14 +67,14 @@ def test_caller_pool_function_signatures(contracts):
     }
 
     expected_abi = {
-        hex(function.abi_function_signature): function.name
-        for function in CallerPool._config._functions
+        hex(function.abi_signature): function.name
+        for function in enumerate_functions(CallerPool._config)
         if function.name not in exclude
     }
 
     actual_abi = {
-        hex(function.abi_function_signature): function.name
-        for function in CallerPoolAPI._config._functions
+        hex(function.abi_signature): function.name
+        for function in enumerate_functions(CallerPoolAPI._config)
     }
 
     assert actual_abi == expected_abi

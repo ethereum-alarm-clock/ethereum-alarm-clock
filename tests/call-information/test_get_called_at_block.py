@@ -2,11 +2,11 @@ from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "NoArgs",
+]
 
 
 def test_getting_called_at_block(geth_node, rpc_client, deployed_contracts):

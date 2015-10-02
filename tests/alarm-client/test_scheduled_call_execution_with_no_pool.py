@@ -4,10 +4,17 @@ from populus.utils import (
     wait_for_block,
 )
 
-from alarm_client import (
+from eth_alarm_client import (
     PoolManager,
     ScheduledCall,
 )
+
+
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "SpecifyBlock",
+]
 
 
 def test_scheduled_call_execution_without_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):

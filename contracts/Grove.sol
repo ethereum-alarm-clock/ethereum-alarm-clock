@@ -182,7 +182,6 @@ contract Grove {
                     remove(indexName, id);
                 }
 
-                int balanceFactor;
                 uint leftHeight;
                 uint rightHeight;
 

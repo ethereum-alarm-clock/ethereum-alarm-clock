@@ -3,9 +3,14 @@ from populus.utils import (
     wait_for_block,
 )
 
-from alarm_client import (
+from eth_alarm_client import (
     PoolManager,
 )
+
+
+deploy_contracts = [
+    "CallerPool",
+]
 
 
 def test_pool_manager(geth_node, geth_coinbase, rpc_client, deployed_contracts):

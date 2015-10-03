@@ -57,41 +57,117 @@ be withdrawn using the account management api.
 Determining what scheduled calls are next
 -----------------------------------------
 
-There following functions on the Alarm service facilitate querying for the next
-scheduled calls.  None of these functions filter their return values based on
-things like whether the scheduled call has been cancelled, but merely serve to
-allow querying for calls in order.
+The Alarm service uses Grove to facilitate querying for the next scheduled
+call.
+
+``0x7d7ce4e2cdfea812b33f48f419860b91cf9a141d``
 
 
-getNextBlockWithCall
-^^^^^^^^^^^^^^^^^^^^
+The Grove ABI and Abstract Contract
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* **Solidity Function Signature:** ``getNextBlockWithCall(uint blockNumber) returns (uint)``
-* **ABI Signature:** ``0xe19eb0dd``
+This is the abstract contract that TODO: relocate this.
 
-Returns the next block number for the next scheduled call on or after the
-provided ``blockNumber``.  If there are no scheduled calls on or after
-``blockNumber`` it returns ``0``.
+.. code-block::
 
-getNextCallKey
+    contract GroveAPI {
+        /*
+         *  Shortcuts
+         */
+        function getIndexId(address ownerAddress, bytes32 indexName) constant returns (bytes32);
+        function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32);
+
+        /*
+         *  Node and Index API
+         */
+        function getIndexName(bytes32 indexId) constant returns (bytes32);
+        function getIndexRoot(bytes32 indexId) constant returns (bytes32);
+        function getNodeId(bytes32 nodeId) constant returns (bytes32);
+        function getNodeIndexId(bytes32 nodeId) constant returns (bytes32);
+        function getNodeValue(bytes32 nodeId) constant returns (int);
+        function getNodeHeight(bytes32 nodeId) constant returns (uint);
+        function getNodeParent(bytes32 nodeId) constant returns (bytes32);
+        function getNodeLeftChild(bytes32 nodeId) constant returns (bytes32);
+        function getNodeRightChild(bytes32 nodeId) constant returns (bytes32);
+        /*
+         *  Traversal
+         */
+        function getNextNode(bytes32 nodeId) constant returns (bytes32);
+        function getPreviousNode(bytes32 nodeId) constant returns (bytes32);
+
+        /*
+         *  Insert and Query API
+         */
+        function insert(bytes32 indexName, bytes32 id, int value) public;
+        function query(bytes32 indexId, bytes2 operator, int value) constant returns (bytes32);
+    }
+
+
+The Grove Index
+^^^^^^^^^^^^^^^
+
+Grove tracks the ordering of data with indexes.  You can retrieve the
+``bytes32`` id one of two ways.  
+
+* From the Alarm service using the ``getGroveIndexId()`` function.
+* From Grove using the ``getIndexId(address ownerAddress ,bytes32 indexName)``
+
+The index name used by Alarm is ``'callTargetBlock'``.
+
+TODO: put in grove address and alarm address here.
+
+
+Querying Grove
 ^^^^^^^^^^^^^^
 
-* **Solidity Function Signature:** ``getNextCallKey(uint blockNumber) returns (bytes32)``
-* **ABI Signature:** ``0xaa6704da``
+* ``query(bytes32 indexID, bytes2 operator, int value)``
 
-Returns the call key for the next scheduled call on or after the provided
-``blockNumber``.  If there are no scheduled calls on or after ``blockNumber``
-it returns ``0x0``;
+One you have the index id, you will want to use the ``query`` function on Grove
+to get the first scheduled call after the current block.
 
-getNextCallSibling
-^^^^^^^^^^^^^^^^^^
+.. code-block:: javascript
 
-* **Solidity Function Signature:** ``getNextCallSibling(bytes32 callKey) returns (bytes32)``
-* **ABI Signature:** ``0x22bc71f``
+    > nodeId = grove.query.call(indexId, ">=", currentBlock)
 
-Returns the call key for the next scheduled call that occurs on the same block
-as the call referenced by the provided ``callKey``.  Returns ``0x0`` if there
-are no subsequent calls on the same block.
+This will return either ``0x0`` if there is no upcoming call, or a ``bytes32``
+node id for the first node in the tree that matches our query.  With the node
+id, we then need to fetch the value for the node id using the ``getNodeValu(bytes32 nodeId)e``
+function.
+
+.. code-block:: javascript
+
+    > targetBlock = grove.getNodeValue.call(nodeId)
+
+The return value represents the ``targetBlock`` value for the call.  If we
+choose to execute this scheduled call when the block comes around, we need to
+have the ``callKey``.  We can retrieve this with the ``getNodeId(bytes32 nodeId)`` function on
+Grove since Alarm uses the ``callKey`` for each scheduled call as it's id in
+the grove index.
+
+.. code-block:: javascript
+
+    > callKey = grove.getNodeId.call(nodeId)
+
+We should also check to see if there are more calls with the same target node.
+We can do this with the ``getNextNode(bytes32 nodeId)`` function on grove.
+
+
+.. code-block:: javascript
+
+    > next_node = grove.getNextNode.call(nodeId)
+
+You can then repeate this process until the ``targetBlock`` is beyond the point in the future that you care to monitor.
+
+.. note::
+
+    40 blocks into the future is a good range to monitor since new calls must
+    always be scheduled at least 40 blocks in the future.
+
+
+The Grove Documentation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Detailed information about grove can be found in Grove's documentation.
 
 
 Designated Callers

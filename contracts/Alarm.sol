@@ -1,7 +1,7 @@
 /*
- *  Version 0.2.0
+ *  Version 0.3.0
  *
- *  address: 0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da
+ *  address: TODO
  */
 contract Relay {
         address operator;
@@ -796,7 +796,7 @@ contract Alarm {
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        uint constant EXTRA_CALL_GAS = 151054;
+        uint constant EXTRA_CALL_GAS = 151098;
 
         // This number represents the overall overhead involved in executing a
         // scheduled call.

@@ -52,7 +52,7 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     try:
         assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)
     except AssertionError:
-        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 64
+        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 44
     assert scheduled_call.payout == alarm.accountBalances.call(geth_coinbase) == alarm.getCallPayout.call(callKey)
     assert scheduled_call.fee == alarm.accountBalances.call(owner) == alarm.getCallFee.call(callKey)
     assert scheduled_call.abi_signature == client_contract.doIt.encoded_abi_function_signature == alarm.getCallABISignature.call(callKey)

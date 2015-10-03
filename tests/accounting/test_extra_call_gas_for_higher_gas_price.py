@@ -37,4 +37,4 @@ def test_extra_call_gas_constant_when_gas_price_higher(geth_node, rpc_client, de
     try:
         assert actual_gas_used == recorded_gas_used
     except AssertionError:
-        assert actual_gas_used == recorded_gas_used + 64
+        assert actual_gas_used == recorded_gas_used + 44

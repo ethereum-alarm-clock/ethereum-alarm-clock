@@ -72,7 +72,7 @@ def enumerate_upcoming_calls(grove, index_id, anchor_block):
     call_keys = []
 
     while anchor_block > 0 and anchor_block < block_cutoff:
-        node_id = grove.query(index_id, '>=', anchor_block)
+        node_id = grove.query.call(index_id, '>=', anchor_block)
         if node_id is None:
             break
 

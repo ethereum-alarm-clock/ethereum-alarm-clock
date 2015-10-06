@@ -509,17 +509,16 @@ contract Alarm {
          *  coded owner address which receives 1% of each executed call.  This
          *  eliminates any need for trust as nobody has any special access.
          */
-        function Alarm(address groveAddress) {
+        function Alarm() {
                 unauthorizedRelay = new Relay();
                 authorizedRelay = new Relay();
                 callerPool = new CallerPool();
-                grove = GroveAPI(groveAddress);
         }
 
         address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         // The deployed grove contract for call tree tracking.
-        GroveAPI grove;
+        GroveAPI grove = GroveAPI(0x7d7ce4e2cdfea812b33f48f419860b91cf9a141d);
 
         /*
          *  Account Management API

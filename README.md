@@ -10,9 +10,11 @@ the future.
 
 * Contract
     * CallerPool freeze window is set to 256
+    * Grove contract address is hardcoded.
     * All tests passing
-    * Github issues sane.
+    * Github issues.
     * Compiled version is verifyable.
+    * Scheduler runs as expected.
 * Documentation
     * Check that all Alarm ABI signatures match.
     * Check that all Alarm API functions are documented.

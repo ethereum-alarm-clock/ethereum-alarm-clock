@@ -1,11 +1,11 @@
 from populus.utils import wait_for_transaction
 
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "NoArgs",
+]
 
 
 def test_get_call_signature(geth_node, geth_coinbase, deployed_contracts):
@@ -18,4 +18,5 @@ def test_get_call_signature(geth_node, geth_coinbase, deployed_contracts):
     call_key = alarm.getLastCallKey.call()
     assert call_key
 
-    alarm.getCallABISignature.call(call_key) == client_contract.doIt.encoded_abi_function_signature
+    alarm.getCallABISignature.call(call_key) == '\xb2\x9f\x085'
+    alarm.getCallABISignature.call(call_key) == client_contract.doIt.encoded_abi_signature

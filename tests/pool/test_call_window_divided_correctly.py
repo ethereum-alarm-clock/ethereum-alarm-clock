@@ -2,11 +2,12 @@ from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
 
-deploy_max_wait = 30
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "JoinsPool",
+    "NoArgs",
+]
 
 
 def test_call_window_divided_between_callers(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):
@@ -64,7 +65,7 @@ def test_call_window_divided_between_callers(geth_node, geth_coinbase, rpc_clien
     grace_period = alarm.getCallGracePeriod.call(callKey)
 
     callers = [
-        caller_pool.getCallerFromPool.call(callKey, target_block, grace_period, target_block + n)
+        caller_pool.getDesignatedCaller.call(callKey, target_block, grace_period, target_block + n)
         for n in range(grace_period)
     ]
     caller_a = callers[0]

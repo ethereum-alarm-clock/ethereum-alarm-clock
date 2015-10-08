@@ -1,7 +1,7 @@
 /*
- *  Version 0.2.0
+ *  Version 0.3.0
  *
- *  address: 0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da
+ *  address: TODO
  */
 contract Relay {
         address operator;
@@ -36,7 +36,7 @@ contract CallerPool {
          */
         mapping (address => uint) public callerBonds;
 
-        function getMinimumBond() public returns (uint) {
+        function getMinimumBond() constant returns (uint) {
                 return tx.gasprice * block.gaslimit;
         }
 
@@ -107,7 +107,7 @@ contract CallerPool {
         /*
          *  API used by Alarm service
          */
-        function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address) {
+        function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) constant returns (address) {
                 /*
                  *  Returns the caller from the current call pool who is
                  *  designated as the executor of this call.
@@ -140,7 +140,7 @@ contract CallerPool {
                 return pool[(offset + blockWindow) % pool.length];
         }
 
-        //event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
+        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
 
         function _doBondBonusTransfer(address fromCaller, address toCaller) internal returns (uint) {
                 uint bonusAmount = getMinimumBond();
@@ -192,7 +192,7 @@ contract CallerPool {
                                 bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
 
                                 // Log the bonus was awarded.
-                                //AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
+                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
                         }
                         return;
                 }
@@ -212,7 +212,7 @@ contract CallerPool {
                                 bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
 
                                 // Log the bonus was awarded.
-                                //AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
+                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
 
                                 // Remove the caller from the next pool.
                                 if (getNextPoolKey() == 0) {
@@ -233,7 +233,7 @@ contract CallerPool {
         uint[] public poolHistory;
         mapping (uint => address[]) callerPools;
 
-        function getPoolKeyForBlock(uint blockNumber) public returns (uint) {
+        function getPoolKeyForBlock(uint blockNumber) constant returns (uint) {
                 if (poolHistory.length == 0) {
                         return 0;
                 }
@@ -246,15 +246,15 @@ contract CallerPool {
                 return 0;
         }
 
-        function getActivePoolKey() public returns (uint) {
+        function getActivePoolKey() constant returns (uint) {
                 return getPoolKeyForBlock(block.number);
         }
 
-        function getPoolSize(uint poolKey) returns (uint) {
+        function getPoolSize(uint poolKey) constant returns (uint) {
                 return callerPools[poolKey].length;
         }
 
-        function getNextPoolKey() public returns (uint) {
+        function getNextPoolKey() constant returns (uint) {
                 if (poolHistory.length == 0) {
                         return 0;
                 }
@@ -265,7 +265,7 @@ contract CallerPool {
                 return 0;
         }
 
-        function isInAnyPool(address callerAddress) public returns (bool) {
+        function isInAnyPool(address callerAddress) constant returns (bool) {
                 /*
                  *  Returns boolean whether the `callerAddress` is in either
                  *  the current active pool or the next pool.
@@ -273,7 +273,7 @@ contract CallerPool {
                 return isInPool(msg.sender, getActivePoolKey()) || isInPool(msg.sender, getNextPoolKey());
         }
 
-        function isInPool(address callerAddress, uint poolNumber) public returns (bool) {
+        function isInPool(address callerAddress, uint poolNumber) constant returns (bool) {
                 /*
                  *  Returns boolean whether the `callerAddress` is in the
                  *  poolNumber.
@@ -302,17 +302,16 @@ contract CallerPool {
 
         // Ten minutes into the future.
         uint constant POOL_FREEZE_NUM_BLOCKS = 256;
-        //uint constant POOL_FREEZE_NUM_BLOCKS = 40;
 
-        function getPoolFreezeDuration() public returns (uint) {
+        function getPoolFreezeDuration() constant returns (uint) {
                 return POOL_FREEZE_NUM_BLOCKS;
         }
 
-        function getPoolMinimumLength() public returns (uint) {
+        function getPoolMinimumLength() constant returns (uint) {
                 return 2 * POOL_FREEZE_NUM_BLOCKS;
         }
 
-        function canEnterPool(address callerAddress) public returns (bool) {
+        function canEnterPool(address callerAddress) constant returns (bool) {
                 /*
                  *  Returns boolean whether `callerAddress` is allowed to enter
                  *  the next pool (which may or may not already have been
@@ -338,7 +337,7 @@ contract CallerPool {
                 return true;
         }
 
-        function canExitPool(address callerAddress) public returns (bool) {
+        function canExitPool(address callerAddress) constant returns (bool) {
                 /*
                  *  Returns boolean whether `callerAddress` is allowed to exit
                  *  the current active pool.
@@ -407,8 +406,8 @@ contract CallerPool {
                 }
         }
 
-        //event AddedToPool(address indexed callerAddress, uint indexed pool);
-        //event RemovedFromPool(address indexed callerAddress, uint indexed pool);
+        event AddedToPool(address indexed callerAddress, uint indexed pool);
+        event RemovedFromPool(address indexed callerAddress, uint indexed pool);
 
         function _addToPool(address callerAddress, uint poolNumber) internal {
                 if (poolNumber == 0 ) {
@@ -425,7 +424,7 @@ contract CallerPool {
                 pool[pool.length - 1] = callerAddress;
                 
                 // Log the addition.
-                //AddedToPool(callerAddress, poolNumber);
+                AddedToPool(callerAddress, poolNumber);
         }
 
         function _removeFromPool(address callerAddress, uint poolNumber) internal {
@@ -455,7 +454,7 @@ contract CallerPool {
                 }
 
                 // Log the addition.
-                //RemovedFromPool(callerAddress, poolNumber);
+                RemovedFromPool(callerAddress, poolNumber);
         }
 
         function enterPool() public {
@@ -495,6 +494,12 @@ contract CallerPool {
 }
 
 
+contract GroveAPI {
+        function getIndexId(address ownerAddress, bytes32 indexName) constant returns (bytes32);
+        function insert(bytes32 indexName, bytes32 id, int value) public;
+}
+
+
 contract Alarm {
         /*
          *  Administration API
@@ -510,6 +515,9 @@ contract Alarm {
         }
 
         address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
+
+        // The deployed grove contract for call tree tracking.
+        GroveAPI grove = GroveAPI(0xfe9d4e5717ec0e16f8301240df5c3f7d3e9effef);
 
         /*
          *  Account Management API
@@ -542,17 +550,17 @@ contract Alarm {
                 accountBalances[accountAddress] += value;
         }
 
-        //event Deposit(address indexed _from, address indexed accountAddress, uint value);
+        event Deposit(address indexed _from, address indexed accountAddress, uint value);
 
         function deposit(address accountAddress) public {
                 /*
                  *  Public API for depositing funds in a specified account.
                  */
                 _addFunds(accountAddress, msg.value);
-                //Deposit(msg.sender, accountAddress, msg.value);
+                Deposit(msg.sender, accountAddress, msg.value);
         }
 
-        //event Withdraw(address indexed accountAddress, uint value);
+        event Withdraw(address indexed accountAddress, uint value);
 
         function withdraw(uint value) public {
                 /*
@@ -570,7 +578,7 @@ contract Alarm {
                                         __throw();
                                 }
                         }
-                        //Withdraw(msg.sender, value);
+                        Withdraw(msg.sender, value);
                 }
         }
 
@@ -580,409 +588,7 @@ contract Alarm {
                  *  sending a transaction.
                  */
                 _addFunds(msg.sender, msg.value);
-                //Deposit(msg.sender, msg.sender, msg.value);
-        }
-
-        /*
-         *  Call tracking API
-         */
-        struct Node {
-                bytes32 callKey;
-                bytes32 left;
-                bytes32 right;
-        }
-
-        bytes32 public rootNodeCallKey;
-
-        mapping (bytes32 => Node) call_to_node;
-
-        function _getTreeMaxBlock(bytes32 callKey) internal returns (uint) {
-                /*
-                 *  Returns the greatest block number for all calls in the
-                 *  section of the call tree denoted by callKey.
-                 */
-                Node currentNode = call_to_node[callKey];
-
-                while (true) {
-                        if (currentNode.right == 0x0) {
-                                return key_to_calls[currentNode.callKey].targetBlock;
-                        }
-
-                        currentNode = call_to_node[currentNode.right];
-                }
-        }
-
-        function _shouldGoLeft(bytes32 callKey, uint blockNumber) internal returns (bool) {
-                /*
-                 * not if left is empty
-                 * not if current node was already called
-                 * not if current node is in the past or current block.
-                 * not if left node is in the past.
-                 */
-                Node currentNode = call_to_node[callKey];
-
-                // Nowhere to go.
-                if (currentNode.left == 0x0) {
-                        return false;
-                }
-
-                Call currentCall = key_to_calls[callKey];
-
-                // Current call is already in the past or is up next.
-                if (currentCall.targetBlock <= blockNumber) {
-                        return false;
-                }
-
-                // Left call is in the past
-                if (blockNumber > _getTreeMaxBlock(currentNode.left)) {
-                        return false;
-                }
-
-                return true;
-        }
-
-        function _shouldGoRight(bytes32 callKey, uint blockNumber) internal returns (bool) {
-                /*
-                 * not if right is empty.
-                 * not if current node is already in the future.
-                 * not if current node is equal to targetBlock and it isn't already called.
-                 *
-                 */
-                Node currentNode = call_to_node[callKey];
-
-                // Nowhere to go.
-                if (currentNode.right == 0x0) {
-                        return false;
-                }
-
-                Call currentCall = key_to_calls[callKey];
-
-                // Current call is already in the future
-                if (currentCall.targetBlock > blockNumber) {
-                        return false;
-                }
-
-                // Current call equals the desired block number and has not
-                // been called yet and is not cancelled.
-                if (currentCall.targetBlock == blockNumber) {
-                        return false;
-                }
-
-                return true;
-        }
-
-        function getNextBlockWithCall(uint blockNumber) public returns (uint) {
-                bytes32 nextCallKey = getNextCallKey(blockNumber);
-                if (nextCallKey == 0x0) {
-                        return 0;
-                }
-                return key_to_calls[nextCallKey].targetBlock;
-        }
-
-        function getNextCallKey(uint blockNumber) public returns (bytes32) {
-                if (rootNodeCallKey == 0x0) {
-                        // No calls registered
-                        return 0x0;
-                }
-
-                Node currentNode = call_to_node[rootNodeCallKey];
-
-                while (true) {
-                        if (_shouldGoLeft(currentNode.callKey, blockNumber)) {
-                                currentNode = call_to_node[currentNode.left];
-                                continue;
-                        }
-                        if (_shouldGoRight(currentNode.callKey, blockNumber)) {
-                                currentNode = call_to_node[currentNode.right];
-                                continue;
-                        }
-
-                        // Not if it is before the blockNumber
-                        if (key_to_calls[currentNode.callKey].targetBlock < blockNumber) {
-                                return 0x0;
-                        }
-
-                        // Then it must be the next one.
-                        return currentNode.callKey;
-                }
-        }
-
-        function _isBlockNumberInTree(bytes32 callKey, uint blockNumber) internal returns (bool) {
-                var node = call_to_node[callKey];
-
-                while (true) {
-                        var call = key_to_calls[node.callKey];
-
-                        if (call.targetBlock == blockNumber) {
-                                return true;
-                        }
-
-                        if (node.left != 0x0 && call.targetBlock > blockNumber) {
-                                node = call_to_node[node.left];
-                                continue;
-                        }
-
-                        if (node.right != 0x0 && call.targetBlock < blockNumber) {
-                                node = call_to_node[node.right];
-                                continue;
-                        }
-
-                        return false;
-                }
-        }
-
-        function getNextCallSibling(bytes32 callKey) public returns (bytes32) {
-                /*
-                 *  Returns the callKey any subsequent calls that have the same
-                 *  block number as the provided callKey.  If there are no
-                 *  subsequent calls with the same block number returns 0x0
-                 */
-                var node = call_to_node[callKey];
-                var call = key_to_calls[callKey];
-                uint targetBlock = call.targetBlock;
-
-                while (true) {
-                        if (node.right != 0x0 && _isBlockNumberInTree(node.right, targetBlock)) {
-                                node = call_to_node[node.right];
-                                call = key_to_calls[node.callKey];
-                                if (call.targetBlock == targetBlock) {
-                                        return node.callKey;
-                                }
-                                continue;
-                        }
-
-                        if (node.left != 0x0 && _isBlockNumberInTree(node.left, targetBlock)) {
-                                node = call_to_node[node.left];
-                                call = key_to_calls[node.callKey];
-                                if (call.targetBlock == targetBlock) {
-                                        return node.callKey;
-                                }
-                                continue;
-                        }
-
-                        return 0x0;
-                }
-        }
-
-        function getCallLeftChild(bytes32 callKey) public returns (bytes32) {
-                return call_to_node[callKey].left;
-        }
-
-        function getCallRightChild(bytes32 callKey) public returns (bytes32) {
-                return call_to_node[callKey].right;
-        }
-
-        //event CallPlacedInTree(bytes32 indexed callKey);
-
-        function placeCallInTree(bytes32 callKey) internal {
-                /*
-                 * Calls are stored in a tree structure.  Each tree node
-                 * represents a single call.  Nodes have a left and right
-                 * child.  The left child represents a call that should happen
-                 * before the node.  The right child represents a call that
-                 * should happen after the node.
-                 */
-                Call targetCall = key_to_calls[callKey];
-
-                if (callKey == call_to_node[callKey].callKey) {
-                        // This call key is already placed in the tree.
-                        return;
-                }
-
-                if (rootNodeCallKey == 0x0) {
-                        // This is the first call placement and thus should be
-                        // set as the root node.
-                        rootNodeCallKey = callKey;
-                }
-
-                Node currentNode = call_to_node[rootNodeCallKey];
-
-                while (true) {
-                        if (currentNode.callKey == 0x0) {
-                                // This is a new node and should be mapped 
-                                currentNode.callKey = callKey;
-                                //CallPlacedInTree(callKey);
-                                return;
-                        }
-
-                        Call currentCall = key_to_calls[currentNode.callKey];
-
-                        if (targetCall.targetBlock < currentCall.targetBlock) {
-                                // Call should occure before the current node
-                                // and thus should exist in the left subtree.
-                                if (currentNode.left == 0x0) {
-                                        currentNode.left = callKey;
-                                }
-                                currentNode = call_to_node[currentNode.left];
-                                continue;
-                        }
-
-                        // Call should occur after the current node and thus
-                        // should exist in the right subtree.
-                        if (currentNode.right == 0x0) {
-                                currentNode.right = callKey;
-                        }
-                        currentNode = call_to_node[currentNode.right];
-                }
-        }
-
-        //event TreeRotatedRight(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-
-        function _rotateRight() internal {
-                /*
-                 *  1. Detatch the left child of the root node.  This is the
-                 *     new root node.
-                 *  2. Detatch the right child of the new root node.
-                 *  3. Set the old root node as the right child of the new root node.
-                 *  4. Set the detatched right child from the new root node in
-                 *     the appropriate location in the tree.
-                 */
-                var oldRootNode = call_to_node[rootNodeCallKey];
-                var newRootNode = call_to_node[oldRootNode.left];
-                // #1
-                oldRootNode.left = 0x0;
-                rootNodeCallKey = newRootNode.callKey;
-
-                // #2
-                bytes32 detatchedChildCallKey = newRootNode.right;
-                newRootNode.right = 0x0;
-
-                // #3
-                newRootNode.right = oldRootNode.callKey;
-
-                // #4
-                if (detatchedChildCallKey != 0x0) {
-                        // First reset the node to not have a callKey,
-                        // otherwise the call to `placeCallInTree` will exit
-                        // early thinking this node is already placed.
-                        var detatchedChildNode = call_to_node[detatchedChildCallKey];
-                        detatchedChildNode.callKey = 0x0;
-                        // Now place it at it's new location in the tree.
-                        placeCallInTree(detatchedChildCallKey);
-                }
-
-                //TreeRotatedRight(oldRootNode.callKey, newRootNode.callKey);
-        }
-
-        function _shouldRotateRight() internal returns (bool) {
-                /*
-                 *  Is the left child of the rootNode in the future of the
-                 *  current block number.
-                 */
-                if (rootNodeCallKey == 0x0) {
-                        return false;
-                }
-
-                var currentRoot = call_to_node[rootNodeCallKey];
-
-                // No left child so cant rotate right.
-                if (currentRoot.left == 0x0) {
-                        return false;
-                }
-
-                // Current root already in the past.
-                if (key_to_calls[rootNodeCallKey].targetBlock <= block.number) {
-                        return false;
-                }
-
-                return true;
-        }
-
-        //event TreeRotatedLeft(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-
-        function _rotateLeft() internal {
-                /*
-                 *  1. Detatch the right child of the root node.  This is the
-                 *     new root node.
-                 *  2. Detatch the left child of the new root node.
-                 *  3. Set the old root node as the left child of the new root node.
-                 *  4. Set the detatched left child from the new root node in
-                 *     the appropriate location in the tree.
-                 */
-                var oldRootNode = call_to_node[rootNodeCallKey];
-                var newRootNode = call_to_node[oldRootNode.right];
-                // #1
-                oldRootNode.right = 0x0;
-                rootNodeCallKey = newRootNode.callKey;
-
-                // #2
-                bytes32 detatchedChildCallKey = newRootNode.left;
-
-                // #3
-                newRootNode.left = oldRootNode.callKey;
-
-                // #4
-                if (detatchedChildCallKey != 0x0) {
-                        // First reset the node to not have a callKey,
-                        // otherwise the call to `placeCallInTree` will exit
-                        // early thinking this node is already placed.
-                        var detatchedChildNode = call_to_node[detatchedChildCallKey];
-                        detatchedChildNode.callKey = 0x0;
-                        // Now place it at it's new location in the tree.
-                        placeCallInTree(detatchedChildCallKey);
-                }
-                //TreeRotatedLeft(oldRootNode.callKey, newRootNode.callKey);
-        }
-
-        function _shouldRotateLeft() internal returns (bool) {
-                /*
-                 *  We should rotate left if both the current root node, and
-                 *  its right child are both in the past.
-                 */
-                // Empty call tree.
-                if (rootNodeCallKey == 0x0) {
-                        return false;
-                }
-
-                var currentRoot = call_to_node[rootNodeCallKey];
-
-                // No right child so cant rotate left.
-                if (currentRoot.right == 0x0) {
-                        return false;
-                }
-
-                // Current root already in the future.
-                if (key_to_calls[rootNodeCallKey].targetBlock >= block.number) {
-                        return false;
-                }
-
-                if (key_to_calls[currentRoot.right].targetBlock >= block.number) {
-                        return false;
-                }
-
-                return true;
-        }
-
-        function rotateTree() public {
-                /*
-                 *  Shifts the root node of the tree so that the root node is
-                 *  the tree node prior to the next scheduled call.
-                 */
-                if (rootNodeCallKey == 0x0) {
-                        // No root node (empty tree)
-                        return;
-                }
-
-                var currentRoot = call_to_node[rootNodeCallKey];
-                var rootBlockNumber = key_to_calls[rootNodeCallKey].targetBlock;
-
-                // The current root is in the past so we can potentially rotate
-                // the tree to the left to increase the root block number.
-                if (rootBlockNumber < block.number) {
-                        while (_shouldRotateLeft()) {
-                                _rotateLeft();
-                        }
-                        return;
-                }
-
-                // The current root is in the future so we can potentially
-                // rotate the tree to the right to decrease the root block
-                // number.
-                if (rootBlockNumber > block.number) {
-                        while (_shouldRotateRight()) {
-                                _rotateRight();
-                        }
-                }
+                Deposit(msg.sender, msg.sender, msg.value);
         }
 
         /*
@@ -991,11 +597,11 @@ contract Alarm {
         Relay unauthorizedRelay;
         Relay authorizedRelay;
 
-        function unauthorizedAddress() public returns (address) {
+        function unauthorizedAddress() constant returns (address) {
                 return address(unauthorizedRelay);
         }
 
-        function authorizedAddress() public returns (address) {
+        function authorizedAddress() constant returns (address) {
                 return address(authorizedRelay);
         }
 
@@ -1009,7 +615,7 @@ contract Alarm {
                 accountAuthorizations[sha3(schedulerAddress, msg.sender)] = false;
         }
 
-        function checkAuthorization(address schedulerAddress, address contractAddress) public returns (bool) {
+        function checkAuthorization(address schedulerAddress, address contractAddress) constant returns (bool) {
                 return accountAuthorizations[sha3(schedulerAddress, contractAddress)];
         }
 
@@ -1018,7 +624,7 @@ contract Alarm {
          */
         bytes32 lastCallKey;
 
-        function getLastCallKey() public returns (bytes32) {
+        function getLastCallKey() constant returns (bytes32) {
                 return lastCallKey;
         }
 
@@ -1048,63 +654,63 @@ contract Alarm {
         /*
          *  Getter methods for `Call` information
          */
-        function getCallContractAddress(bytes32 callKey) public returns (address) {
+        function getCallContractAddress(bytes32 callKey) constant returns (address) {
                 return key_to_calls[callKey].contractAddress;
         }
 
-        function getCallScheduledBy(bytes32 callKey) public returns (address) {
+        function getCallScheduledBy(bytes32 callKey) constant returns (address) {
                 return key_to_calls[callKey].scheduledBy;
         }
 
-        function getCallCalledAtBlock(bytes32 callKey) public returns (uint) {
+        function getCallCalledAtBlock(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].calledAtBlock;
         }
 
-        function getCallGracePeriod(bytes32 callKey) public returns (uint) {
+        function getCallGracePeriod(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].gracePeriod;
         }
 
-        function getCallTargetBlock(bytes32 callKey) public returns (uint) {
+        function getCallTargetBlock(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].targetBlock;
         }
 
-        function getCallBaseGasPrice(bytes32 callKey) public returns (uint) {
+        function getCallBaseGasPrice(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].baseGasPrice;
         }
 
-        function getCallGasPrice(bytes32 callKey) public returns (uint) {
+        function getCallGasPrice(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].gasPrice;
         }
 
-        function getCallGasUsed(bytes32 callKey) public returns (uint) {
+        function getCallGasUsed(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].gasUsed;
         }
 
-        function getCallABISignature(bytes32 callKey) public returns (bytes4) {
+        function getCallABISignature(bytes32 callKey) constant returns (bytes4) {
                 return key_to_calls[callKey].abiSignature;
         }
 
-        function checkIfCalled(bytes32 callKey) public returns (bool) {
+        function checkIfCalled(bytes32 callKey) constant returns (bool) {
                 return key_to_calls[callKey].wasCalled;
         }
 
-        function checkIfSuccess(bytes32 callKey) public returns (bool) {
+        function checkIfSuccess(bytes32 callKey) constant returns (bool) {
                 return key_to_calls[callKey].wasSuccessful;
         }
 
-        function checkIfCancelled(bytes32 callKey) public returns (bool) {
+        function checkIfCancelled(bytes32 callKey) constant returns (bool) {
                 return key_to_calls[callKey].isCancelled;
         }
 
-        function getCallDataHash(bytes32 callKey) public returns (bytes32) {
+        function getCallDataHash(bytes32 callKey) constant returns (bytes32) {
                 return key_to_calls[callKey].dataHash;
         }
 
-        function getCallPayout(bytes32 callKey) public returns (uint) {
+        function getCallPayout(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].payout;
         }
 
-        function getCallFee(bytes32 callKey) public returns (uint) {
+        function getCallFee(bytes32 callKey) constant returns (uint) {
                 return key_to_calls[callKey].fee;
         }
 
@@ -1115,19 +721,19 @@ contract Alarm {
         uint lastDataLength;
         bytes32 lastDataHash;
 
-        //function getLastDataHash() public returns (bytes32) {
-        //        return lastDataHash;
-        //}
+        function getLastDataHash() constant returns (bytes32) {
+                return lastDataHash;
+        }
 
-        //function getLastDataLength() public returns (uint) {
-        //        return lastDataLength;
-        //}
+        function getLastDataLength() constant returns (uint) {
+                return lastDataLength;
+        }
 
-        //function getLastData() public returns (bytes) {
-        //        return lastData;
-        //}
+        function getLastData() constant returns (bytes) {
+                return lastData;
+        }
 
-        function getCallData(bytes32 callKey) public returns (bytes) {
+        function getCallData(bytes32 callKey) constant returns (bytes) {
                 return hash_to_data[key_to_calls[callKey].dataHash];
         }
 
@@ -1139,17 +745,16 @@ contract Alarm {
         //event DataRegistered(bytes32 indexed dataHash);
 
         function registerData() public {
-                bytes trunc;
+                lastData.length = msg.data.length - 4;
                 if (msg.data.length > 4) {
-                        trunc.length = msg.data.length - 4;
-                        for (uint i = 0; i < trunc.length; i++) {
-                                trunc[trunc.length - 1 - i] = msg.data[msg.data.length - 1 - i];
+                        for (uint i = 0; i < lastData.length; i++) {
+                                lastData[i] = msg.data[i + 4];
                         }
                 }
-                hash_to_data[sha3(trunc)] = trunc;
-                lastDataHash = sha3(trunc);
-                lastDataLength = trunc.length;
-                lastData = trunc;
+                hash_to_data[sha3(lastData)] = lastData;
+                lastDataHash = sha3(lastData);
+                lastDataLength = lastData.length;
+                lastData = lastData;
 
                 // Log it.
                 //DataRegistered(lastDataHash);
@@ -1160,26 +765,21 @@ contract Alarm {
          */
         CallerPool callerPool;
 
-        function getCallerPoolAddress() public returns (address) {
+        function getCallerPoolAddress() constant returns (address) {
                 return address(callerPool);
         }
 
         // This number represents the constant gas cost of the addition
         // operations that occur in `doCall` that cannot be tracked with
         // msg.gas.
-        //
-        // NOTE: Currently this value seems to vary between 151761 and 151697.
-        // Until I can understand why this is happening, or account for it, we
-        // use the higher value.
-        uint constant EXTRA_CALL_GAS = 151761;
-        // uint constant EXTRA_CALL_GAS = 151697;
+        uint constant EXTRA_CALL_GAS = 151098;
 
         // This number represents the overall overhead involved in executing a
         // scheduled call.
-        uint constant CALL_OVERHEAD = 145601;
+        uint constant CALL_OVERHEAD = 144982;
 
-        //event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
-        //event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
+        event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
+        event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
 
         function doCall(bytes32 callKey) public {
                 uint gasBefore = msg.gas;
@@ -1188,32 +788,32 @@ contract Alarm {
 
                 if (call.wasCalled) {
                         // The call has already been executed so don't do it again.
-                        //CallAborted(msg.sender, callKey, "ALREADY CALLED");
+                        CallAborted(msg.sender, callKey, "ALREADY CALLED");
                         return;
                 }
 
                 if (call.isCancelled) {
                         // The call was cancelled so don't execute it.
-                        //CallAborted(msg.sender, callKey, "CANCELLED");
+                        CallAborted(msg.sender, callKey, "CANCELLED");
                         return;
                 }
 
                 if (call.contractAddress == 0x0) {
                         // This call key doesnt map to a registered call.
-                        //CallAborted(msg.sender, callKey, "UNKNOWN");
+                        CallAborted(msg.sender, callKey, "UNKNOWN");
                         return;
                 }
 
                 if (block.number < call.targetBlock) {
                         // Target block hasnt happened yet.
-                        //CallAborted(msg.sender, callKey, "TOO EARLY");
+                        CallAborted(msg.sender, callKey, "TOO EARLY");
                         return;
                 }
 
                 if (block.number > call.targetBlock + call.gracePeriod) {
                         // The blockchain has advanced passed the period where
                         // it was allowed to be called.
-                        //CallAborted(msg.sender, callKey, "TOO LATE");
+                        CallAborted(msg.sender, callKey, "TOO LATE");
                         return;
                 }
 
@@ -1228,7 +828,7 @@ contract Alarm {
                         call.wasCalled = true;
                         
                         // Log it.
-                        //CallAborted(msg.sender, callKey, "INSUFFICIENT_FUNDS");
+                        CallAborted(msg.sender, callKey, "INSUFFICIENT_FUNDS");
                         return;
                 }
 
@@ -1239,7 +839,7 @@ contract Alarm {
                                 // This call was reserved for someone from the
                                 // bonded pool of callers and can only be
                                 // called by them during this block window.
-                                //CallAborted(msg.sender, callKey, "WRONG_CALLER");
+                                CallAborted(msg.sender, callKey, "WRONG_CALLER");
                                 return;
                         }
 
@@ -1279,7 +879,7 @@ contract Alarm {
                 call.wasCalled = true;
 
                 // Log the call execution.
-                //CallExecuted(msg.sender, callKey);
+                CallExecuted(msg.sender, callKey);
 
                 // Compute the scalar (0 - 200) for the fee.
                 uint feeScalar = getCallFeeScalar(call.baseGasPrice, call.gasPrice);
@@ -1302,7 +902,7 @@ contract Alarm {
                 _addFunds(owner, call.fee);
         }
 
-        function getCallMaxCost(bytes32 callKey) public returns (uint) {
+        function getCallMaxCost(bytes32 callKey) constant returns (uint) {
                 /*
                  *  tx.gasprice * block.gaslimit
                  *  
@@ -1316,7 +916,7 @@ contract Alarm {
                 return gasCost * feeScalar * 102 / 10000;
         }
 
-        function getCallFeeScalar(uint baseGasPrice, uint gasPrice) public returns (uint) {
+        function getCallFeeScalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
                 /*
                  *  Return a number between 0 - 200 to scale the fee based on
                  *  the gas price set for the calling transaction as compared
@@ -1348,15 +948,30 @@ contract Alarm {
         // looking up call data that failed to register.
         bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
-        function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32) {
+        function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) constant returns (bytes32) {
                 return sha3(scheduledBy, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
         }
 
         // Ten minutes into the future.
         uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
-        //event CallScheduled(bytes32 indexed callKey);
+        event CallScheduled(bytes32 indexed callKey);
         //event CallRejected(bytes32 indexed callKey, bytes15 reason);
+
+        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public {
+                /*
+                 *  Schedule call with gracePeriod defaulted to 255 and nonce
+                 *  defaulted to 0.
+                 */
+                scheduleCall(contractAddress, abiSignature, dataHash, targetBlock, 255, 0);
+        }
+
+        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public {
+                /*
+                 *  Schedule call with nonce defaulted to 0.
+                 */
+                scheduleCall(contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, 0);
+        }
 
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
                 /*
@@ -1403,10 +1018,24 @@ contract Alarm {
                 call.gracePeriod = gracePeriod;
                 call.baseGasPrice = tx.gasprice;
 
-                placeCallInTree(lastCallKey);
-                rotateTree();
+                // Put the call into the grove index.
+                grove.insert(GROVE_INDEX_NAME, lastCallKey, int(call.targetBlock));
 
-                //CallScheduled(lastCallKey);
+                CallScheduled(lastCallKey);
+        }
+
+        bytes32 constant GROVE_INDEX_NAME = "callTargetBlock";
+
+        function getGroveAddress() constant returns (address) {
+                return address(grove);
+        }
+
+        function getGroveIndexName() constant returns (bytes32) {
+                return GROVE_INDEX_NAME;
+        }
+
+        function getGroveIndexId() constant returns (bytes32) {
+                return grove.getIndexId(address(this), GROVE_INDEX_NAME);
         }
 
         //event CallCancelled(bytes32 indexed callKey);

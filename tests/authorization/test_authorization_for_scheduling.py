@@ -4,11 +4,11 @@ from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "AuthorizesOthers",
+]
 
 
 def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deployed_contracts):
@@ -25,7 +25,7 @@ def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deploye
 
     txn_1_hash = alarm.scheduleCall.sendTransaction(
         client_contract._meta.address,
-        client_contract.doIt.encoded_abi_function_signature,
+        client_contract.doIt.encoded_abi_signature,
         utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
         rpc_client.get_block_number() + 50,
         255,
@@ -48,7 +48,7 @@ def test_authorizing_other_address(geth_node, geth_coinbase, rpc_client, deploye
 
     txn_2_hash = alarm.scheduleCall.sendTransaction(
         client_contract._meta.address,
-        client_contract.doIt.encoded_abi_function_signature,
+        client_contract.doIt.encoded_abi_signature,
         utils.decode_hex('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'),
         rpc_client.get_block_number() + 50,
         255,

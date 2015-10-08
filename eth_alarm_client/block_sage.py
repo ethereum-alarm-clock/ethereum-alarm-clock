@@ -47,6 +47,9 @@ class BlockSage(object):
             ((self._block_sample_window - 1) * self._block_time + value) / self._block_sample_window
         )
 
+    def estimated_time_to_block(self, block_number):
+        return self.block_time * max(0, block_number - self.current_block_number)
+
     @property
     def expected_next_block_time(self):
         return self.current_block_timestamp + self.block_time

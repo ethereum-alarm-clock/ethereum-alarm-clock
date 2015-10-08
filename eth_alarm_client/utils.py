@@ -66,28 +66,33 @@ def get_logger(name, level=logging.INFO):
     return logger
 
 
-def enumerate_upcoming_calls(alarm, anchor_block):
+def enumerate_upcoming_calls(grove, index_id, anchor_block):
     block_cutoff = anchor_block + 40
 
     call_keys = []
 
     while anchor_block > 0 and anchor_block < block_cutoff:
-        call_key = alarm.getNextCallKey.call(anchor_block)
-
-        if call_key is None:
+        node_id = grove.query.call(index_id, '>=', anchor_block)
+        if node_id is None:
             break
 
-        if alarm.getCallTargetBlock.call(call_key) > block_cutoff:
+        target_block = grove.getNodeValue.call(node_id)
+        if target_block > block_cutoff:
             break
 
+        call_key = grove.getNodeId(node_id)
         call_keys.append(call_key)
 
-        sibling = call_key
+        sibling = node_id
         while sibling:
-            sibling = alarm.getNextCallSibling.call(sibling)
-            if sibling is not None:
-                call_keys.append(sibling)
+            sibling = grove.getNextNode.call(sibling)
 
-        anchor_block = alarm.getNextBlockWithCall.call(anchor_block + 1)
+            if sibling is not None:
+                if grove.getNodeValue(sibling) == target_block:
+                    call_keys.append(grove.getNodeId(sibling))
+                else:
+                    break
+
+        anchor_block = target_block + 1
 
     return tuple(call_keys)

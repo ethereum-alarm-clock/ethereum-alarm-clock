@@ -12,7 +12,7 @@ contract CallerPoolAPI {
          */
         function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address);
 
-        //event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
+        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
 
         /*
          *  Pool querying
@@ -21,7 +21,9 @@ contract CallerPoolAPI {
         function getPoolKeyForBlock(uint blockNumber) public returns (uint);
         function getActivePoolKey() public returns (uint);
         function getNextPoolKey() public returns (uint);
-        function getPoolSize(uint poolKey) returns (uint);
+        function getPoolSize(uint poolKey) constant returns (uint);
+        function getPoolFreezeDuration() constant returns (uint);
+        function getPoolMinimumLength() constant returns (uint);
 
         /*
          *  Pool membership API
@@ -45,26 +47,11 @@ contract AlarmAPI {
          */
         function accountBalances(address account) public returns (uint);
 
-        //event Deposit(address indexed _from, address indexed accountAddress, uint value);
+        event Deposit(address indexed _from, address indexed accountAddress, uint value);
         function deposit(address accountAddress) public;
 
-        //event Withdraw(address indexed accountAddress, uint value);
+        event Withdraw(address indexed accountAddress, uint value);
         function withdraw(uint value) public;
-
-        /*
-         *  Call Tree API
-         */
-        //event CallPlacedInTree(bytes32 indexed callKey);
-        //event TreeRotatedLeft(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-        //event TreeRotatedRight(bytes32 indexed oldRootNodeCallKey, bytes32 indexed newRootNodeCallKey);
-
-        function rootNodeCallKey() returns (bytes32);
-        function getNextBlockWithCall(uint blockNumber) returns (uint);
-        function getNextCallKey(uint blockNumber) returns (bytes32);
-        function getNextCallSibling(bytes32 callKey) public returns (bytes32);
-        function getCallLeftChild(bytes32 callKey) public returns (bytes32);
-        function getCallRightChild(bytes32 callKey) public returns (bytes32);
-        function rotateTree() public;
 
         /*
          *  Authorization API
@@ -79,9 +66,9 @@ contract AlarmAPI {
          *  Scheduled Call Meta API
          */
         function getLastCallKey() public returns (bytes32);
-        //function getLastDataHash() public returns (bytes32);
-        //function getLastDataLength() public returns (uint);
-        //function getLastData() public returns (bytes);
+        function getLastDataHash() public returns (bytes32);
+        function getLastDataLength() public returns (uint);
+        function getLastData() public returns (bytes);
 
         function getCallContractAddress(bytes32 callKey) public returns (address);
         function getCallScheduledBy(bytes32 callKey) public returns (address);
@@ -103,24 +90,33 @@ contract AlarmAPI {
         /*
          *  Call Data Registration API
          */
-        //event DataRegistered(bytes32 indexed dataHash);
+        event DataRegistered(bytes32 indexed dataHash);
 
         /*
          *  Call Scheduling API
          */
-        //event CallScheduled(bytes32 indexed callKey);
-        //event CallRejected(bytes32 indexed callKey, bytes12 reason);
-        //event CallCancelled(bytes32 indexed callKey);
+        event CallScheduled(bytes32 indexed callKey);
+        event CallRejected(bytes32 indexed callKey, bytes12 reason);
+        event CallCancelled(bytes32 indexed callKey);
 
         function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32);
+        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public;
+        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public;
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
         function cancelCall(bytes32 callKey) public;
 
         /*
+         *  Grove data getters
+         */
+        function getGroveAddress() constant returns (address);
+        function getGroveIndexName() constant returns (bytes32);
+        function getGroveIndexId() constant returns (bytes32);
+
+        /*
          *  Call Execution API
          */
-        //event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
-        //event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
+        event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
+        event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
 
         function doCall(bytes32 callKey) public;
         function getCallMaxCost(bytes32 callKey) public returns (uint);

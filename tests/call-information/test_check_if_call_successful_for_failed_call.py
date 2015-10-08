@@ -2,12 +2,13 @@ from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
 
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
 geth_chain_name = "default-test-lower-gas-limit"
+
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "InfiniteLoop",
+]
 
 
 def test_check_if_call_successful_for_failed_call(geth_node, rpc_client, deployed_contracts):

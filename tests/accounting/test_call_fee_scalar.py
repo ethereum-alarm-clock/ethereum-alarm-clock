@@ -1,10 +1,3 @@
-deploy_max_wait = 15
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
-
-
 test_values = (
     (20, (
         (4, 145),

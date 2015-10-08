@@ -1,11 +1,9 @@
 from populus.utils import wait_for_transaction, wait_for_block
 
 
-deploy_max_wait = 30
-deploy_max_first_block_wait = 180
-deploy_wait_for_block = 1
-
-geth_max_wait = 45
+deploy_contracts = [
+    "CallerPool",
+]
 
 
 def test_exiting_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts):

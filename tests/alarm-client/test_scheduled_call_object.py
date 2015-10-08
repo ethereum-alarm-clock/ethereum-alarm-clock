@@ -3,10 +3,17 @@ from ethereum import utils
 from populus.contracts import get_max_gas
 from populus.utils import wait_for_transaction, wait_for_block
 
-from alarm_client import (
+from eth_alarm_client import (
     ScheduledCall,
     PoolManager,
 )
+
+
+deploy_contracts = [
+    "Alarm",
+    "Grove",
+    "PassesUInt",
+]
 
 
 def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, deployed_contracts, contracts):
@@ -45,10 +52,10 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     try:
         assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)
     except AssertionError:
-        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 64
+        assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 44
     assert scheduled_call.payout == alarm.accountBalances.call(geth_coinbase) == alarm.getCallPayout.call(callKey)
     assert scheduled_call.fee == alarm.accountBalances.call(owner) == alarm.getCallFee.call(callKey)
-    assert scheduled_call.abi_signature == client_contract.doIt.encoded_abi_function_signature == alarm.getCallABISignature.call(callKey)
+    assert scheduled_call.abi_signature == client_contract.doIt.encoded_abi_signature == alarm.getCallABISignature.call(callKey)
     assert scheduled_call.is_cancelled is False
     assert scheduled_call.was_called is True
     assert scheduled_call.was_successful is True

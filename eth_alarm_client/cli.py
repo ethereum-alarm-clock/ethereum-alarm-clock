@@ -25,6 +25,7 @@ alarm_addresses = (
     ('0.3.0 (latest)', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
 )
 
+DEFAULT_ADDRESS = '0xdb15058402c241b04a03846f6fb104b1fbeea10b'
 
 rpc_client = Client('127.0.0.1', '8545')
 
@@ -126,7 +127,7 @@ def convert_wei_to_denomination(value, denomination):
 @click.option(
     '--address',
     '-a',
-    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    default=DEFAULT_ADDRESS,
     help="Return the current bond balance from the caller pool.",
 )
 def pool_balance(denomination, address):
@@ -157,7 +158,7 @@ def pool_balance(denomination, address):
 @click.option(
     '--address',
     '-a',
-    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    default=DEFAULT_ADDRESS,
     help="Return the current bond balance from the caller pool.",
 )
 def pool_minimum(denomination, address):
@@ -181,7 +182,7 @@ def pool_minimum(denomination, address):
 @click.option(
     '--address',
     '-a',
-    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    default=DEFAULT_ADDRESS,
     help="Return the current bond balance from the caller pool.",
 )
 def pool_status(address):
@@ -222,7 +223,7 @@ def pool_status(address):
 @click.option(
     '--address',
     '-a',
-    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    default=DEFAULT_ADDRESS,
     help="Return the current bond balance from the caller pool.",
 )
 @click.argument('value', type=click.INT)

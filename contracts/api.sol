@@ -12,8 +12,6 @@ contract CallerPoolAPI {
          */
         function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address);
 
-        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
-
         /*
          *  Pool querying
          */

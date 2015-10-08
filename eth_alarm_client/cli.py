@@ -21,7 +21,8 @@ from eth_alarm_client import (
 
 alarm_addresses = (
     ('0.1.0', '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'),
-    ('0.2.0 (latest)', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
+    ('0.2.0', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
+    ('0.3.0 (latest)', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
 )
 
 
@@ -52,7 +53,7 @@ def addresses():
 @click.option(
     '--address',
     '-a',
-    default='0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da',
+    default='0xdb15058402c241b04a03846f6fb104b1fbeea10b',
     help="Return the current bond balance from the caller pool.",
 )
 def scheduler(address):
@@ -61,14 +62,16 @@ def scheduler(address):
     """
     Alarm = get_contract('Alarm')
     CallerPool = get_contract('CallerPool')
+    Grove = get_contract('Grove')
 
     alarm = Alarm(address, rpc_client)
     caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
+    grove = Grove(alarm.getGroveAddress.call(), rpc_client)
 
     block_sage = BlockSage(rpc_client)
     pool_manager = PoolManager(caller_pool, block_sage=block_sage)
     pool_manager.monitor_async()
-    scheduler = Scheduler(alarm, pool_manager, block_sage=block_sage)
+    scheduler = Scheduler(alarm, pool_manager, grove, block_sage=block_sage)
 
     scheduler.monitor_async()
 

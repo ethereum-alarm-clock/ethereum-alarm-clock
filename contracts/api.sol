@@ -31,6 +31,10 @@ contract CallerPoolAPI {
         function isInAnyPool(address callerAddress) public returns (bool);
         function isInPool(address callerAddress, uint poolNumber) public returns (bool);
 
+        event AddedToPool(address indexed callerAddress, uint indexed pool);
+        event RemovedFromPool(address indexed callerAddress, uint indexed pool);
+        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
+
         /*
          *  Enter/Exit pool API
          */
@@ -90,14 +94,14 @@ contract AlarmAPI {
         /*
          *  Call Data Registration API
          */
-        event DataRegistered(bytes32 indexed dataHash);
+        //event DataRegistered(bytes32 indexed dataHash);
 
         /*
          *  Call Scheduling API
          */
         event CallScheduled(bytes32 indexed callKey);
-        event CallRejected(bytes32 indexed callKey, bytes12 reason);
-        event CallCancelled(bytes32 indexed callKey);
+        //event CallRejected(bytes32 indexed callKey, bytes12 reason);
+        //event CallCancelled(bytes32 indexed callKey);
 
         function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes32);
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public;

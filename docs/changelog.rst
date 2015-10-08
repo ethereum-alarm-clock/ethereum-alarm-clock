@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.3.0
+-----
+
+- Convert Alarm service to use `Grove`_ for tracking scheduled call ordering.
+- Enable logging most notable Alarm service events.
+- Two additional convenience functions for invoking ``scheduleCall`` with
+  **gracePeriod** and **nonce** as optional parameters.
+
 
 0.2.0
 -----
@@ -19,3 +27,4 @@ Changelog
 
 
 .. _Issue 42: https://github.com/pipermerriam/ethereum-alarm-clock/issues/42
+.. _Grove: https://github.com/pipermerriam/ethereum-grove

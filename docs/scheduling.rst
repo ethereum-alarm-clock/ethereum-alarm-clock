@@ -92,6 +92,21 @@ The ``scheduleCall`` function takes the following parameters:
     Prior to scheduling a function call, any call data necessary for the call must
     have already been registered.
 
+The ``scheduleCall`` function has two alternate invocation formats that can be
+used as well.
+
+* **Solidity Function Signature:** ``scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public``
+* **ABI Signature:** ``0x1145a20f``
+
+When invoked this way, the **nonce** argument is defaulted to ``0``.
+
+
+* **Solidity Function Signature:** ``scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint256 targetBlock) public``
+* **ABI Signature:** ``0xf828c3fa``
+
+When invoked this way, the **gracePeriod** argument is defaulted to ``255`` and
+then **nonce** set to ``0``.
+
 
 Contract scheduling its own call
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

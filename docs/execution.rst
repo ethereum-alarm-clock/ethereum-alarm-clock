@@ -60,7 +60,7 @@ Determining what scheduled calls are next
 The Alarm service uses Grove to facilitate querying for the next scheduled
 call.
 
-* Grove Contract Address: ``0x7d7ce4e2cdfea812b33f48f419860b91cf9a141d``
+* Grove Contract Address: ``0xfe9d4e5717ec0e16f8301240df5c3f7d3e9effef``
 
 
 The Grove Index

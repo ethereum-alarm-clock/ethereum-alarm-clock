@@ -98,9 +98,11 @@ class BlockSage(object):
                     self.current_block_number,
                     decimal.Decimal(str(self._block_time)).quantize(decimal.Decimal('1.00')),
                 )
-            elif time.time() + 20 * self.block_time > self.expected_next_block_time:
-                self.logger.error(
-                    "Potentially stuck at block %s - Have waited %s seconds.",
-                    self.current_block_number,
-                    time.time() - self.current_block_timestamp,
-                )
+            elif time.time() > self.expected_next_block_time + 20 * self.block_time:
+                delta = time.time() - self.expected_next_block_time
+                if delta > 120:
+                    self.logger.error(
+                        "Potentially stuck at block %s - Have waited %s seconds.",
+                        self.current_block_number,
+                        time.time() - self.current_block_timestamp,
+                    )

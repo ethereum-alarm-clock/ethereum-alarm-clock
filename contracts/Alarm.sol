@@ -301,8 +301,7 @@ contract CallerPool {
         }
 
         // Ten minutes into the future.
-        //uint constant POOL_FREEZE_NUM_BLOCKS = 256;
-        uint constant POOL_FREEZE_NUM_BLOCKS = 40;
+        uint constant POOL_FREEZE_NUM_BLOCKS = 256;
 
         function getPoolFreezeDuration() constant returns (uint) {
                 return POOL_FREEZE_NUM_BLOCKS;
@@ -518,7 +517,7 @@ contract Alarm {
         address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         // The deployed grove contract for call tree tracking.
-        GroveAPI grove = GroveAPI(0x7d7ce4e2cdfea812b33f48f419860b91cf9a141d);
+        GroveAPI grove = GroveAPI(0xfe9d4e5717ec0e16f8301240df5c3f7d3e9effef);
 
         /*
          *  Account Management API
@@ -743,7 +742,7 @@ contract Alarm {
         /*
          *  Data registration API
          */
-        event DataRegistered(bytes32 indexed dataHash);
+        //event DataRegistered(bytes32 indexed dataHash);
 
         function registerData() public {
                 lastData.length = msg.data.length - 4;
@@ -957,7 +956,7 @@ contract Alarm {
         uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
         event CallScheduled(bytes32 indexed callKey);
-        event CallRejected(bytes32 indexed callKey, bytes15 reason);
+        //event CallRejected(bytes32 indexed callKey, bytes15 reason);
 
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public {
                 /*
@@ -986,25 +985,25 @@ contract Alarm {
                         // Don't allow registering calls if the data hash has
                         // not actually been registered.  The only exception is
                         // the *emptyDataHash*.
-                        CallRejected(callKey, "NO_DATA");
+                        //CallRejected(callKey, "NO_DATA");
                         return;
                 }
 
                 if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
                         // Don't allow scheduling further than
                         // MAX_BLOCKS_IN_FUTURE
-                        CallRejected(callKey, "TOO_SOON");
+                        //CallRejected(callKey, "TOO_SOON");
                         return;
                 }
                 var call = key_to_calls[callKey];
 
                 if (call.contractAddress != 0x0) {
-                        CallRejected(callKey, "DUPLICATE");
+                        //CallRejected(callKey, "DUPLICATE");
                         return;
                 }
 
                 if (gracePeriod < 16) {
-                        CallRejected(callKey, "GRACE_TOO_SHORT");
+                        //CallRejected(callKey, "GRACE_TOO_SHORT");
                         return;
                 }
 
@@ -1039,7 +1038,7 @@ contract Alarm {
                 return grove.getIndexId(address(this), GROVE_INDEX_NAME);
         }
 
-        event CallCancelled(bytes32 indexed callKey);
+        //event CallCancelled(bytes32 indexed callKey);
 
         // Two minutes
         uint constant MIN_CANCEL_WINDOW = 8;
@@ -1059,7 +1058,7 @@ contract Alarm {
                         return;
                 }
                 call.isCancelled = true;
-                CallCancelled(callKey);
+                //CallCancelled(callKey);
         }
 
         function __throw() internal {

@@ -288,10 +288,10 @@ library ScheduledCallLib {
             call.payout = call.gasCost * feeScalar * 101 / 10000;
             call.fee = call.gasCost * feeScalar / 10000;
 
-            _deductFunds(call.scheduledBy, call.payout + call.fee);
+            AccountingLib._deductFunds(self.gasBank, call.scheduledBy, call.payout + call.fee);
 
-            _addFunds(msg.sender, call.payout);
-            _addFunds(owner, call.fee);
+            AccountingLib._addFunds(self.gasBank, msg.sender, call.payout);
+            AccountingLib._addFunds(self.gasBank, owner, call.fee);
     }
 
     function getCallMaxCost(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
@@ -350,7 +350,7 @@ library ScheduledCallLib {
     event CallScheduled(bytes32 indexed callKey);
     event CallRejected(bytes32 indexed callKey, bytes15 reason);
 
-    function scheduleCall(CallDatabase storage self, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
+    function scheduleCall(CallDatabase storage self, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes15) {
             /*
              * Primary API for scheduling a call.  Prior to calling this
              * the data should already have been registered through the
@@ -362,29 +362,25 @@ library ScheduledCallLib {
                     // Don't allow registering calls if the data hash has
                     // not actually been registered.  The only exception is
                     // the *emptyDataHash*.
-                    CallRejected(callKey, "NO_DATA");
-                    return;
+                    return "NO_DATA";
             }
 
             if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
                     // Don't allow scheduling further than
                     // MAX_BLOCKS_IN_FUTURE
-                    CallRejected(callKey, "TOO_SOON");
-                    return;
+                    return "TOO_SOON";
             }
             var call = self.data_registry[callKey];
 
             if (call.contractAddress != 0x0) {
-                    CallRejected(callKey, "DUPLICATE");
-                    return;
+                    return "DUPLICATE";
             }
 
             if (gracePeriod < 16) {
-                    CallRejected(callKey, "GRACE_TOO_SHORT");
-                    return;
+                    return "GRACE_TOO_SHORT";
             }
 
-            lastCallKey = callKey;
+            self.lastCallKey = callKey;
 
             call.contractAddress = contractAddress;
             call.scheduledBy = msg.sender;
@@ -397,6 +393,8 @@ library ScheduledCallLib {
 
             // Put the call into the grove index.
             GroveLib.insert(self.callIndex, self.lastCallKey, int(call.targetBlock));
+
+            return 0x0;
     }
 
     event CallCancelled(bytes32 indexed callKey);

@@ -14,8 +14,9 @@ class BlockSage(object):
     current_block_number = None
     current_block = None
     current_block_timestamp = None
+    heartbeat = None
 
-    def __init__(self, rpc_client):
+    def __init__(self, rpc_client, heartbeat=4):
         self.rpc_client = rpc_client
 
         self.current_block_number = rpc_client.get_block_number()
@@ -30,6 +31,8 @@ class BlockSage(object):
         self._thread = threading.Thread(target=self.monitor_block_times)
         self._thread.daemon = True
         self._thread.start()
+
+        self.heartbeat = heartbeat
 
     _block_time = 1.0
     _block_sample_window = 10
@@ -53,6 +56,29 @@ class BlockSage(object):
     @property
     def expected_next_block_time(self):
         return self.current_block_timestamp + self.block_time
+
+    _next_heartbeat = 0
+
+    @property
+    def next_heartbeat(self):
+        if self.heartbeat and self._next_heartbeat is None:
+            self._next_heartbeat = self.current_block_number + self.heartbeat
+        return self._next_heartbeat
+
+    @next_heartbeat.setter
+    def next_heartbeat(self, value):
+        self._next_heartbeat = value
+
+    def do_heartbeat(self):
+        if self.heartbeat:
+            if self.current_block_number > self.next_heartbeat:
+                self.logger.info(
+                    "> Heartbeat: block #%s : block_time: %s",
+                    self.current_block_number,
+                    self.block_time,
+                )
+                self.next_heartbeat = self.current_block_number + self.heartbeat
+
 
     _sleep_time = _block_time
 
@@ -82,6 +108,7 @@ class BlockSage(object):
         self.current_block_timestamp = int(self.current_block['timestamp'], 16)
 
         while self._run:
+            self.do_heartbeat()
             sleep_time = self.sleep_time
             time.sleep(sleep_time)
             if self.rpc_client.get_block_number() > self.current_block_number:

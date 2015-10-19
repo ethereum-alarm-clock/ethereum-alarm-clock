@@ -10,7 +10,6 @@ library ResourcePoolLib {
                 uint rotationDelay;
                 uint overlapSize;
                 uint freezePeriod;
-                uint minimumBond;
 
                 uint _id;
 
@@ -37,7 +36,7 @@ library ResourcePoolLib {
                 address[] members;
         }
 
-        function _createNextGeneration(Pool storage self) public returns (uint) {
+        function createNextGeneration(Pool storage self) public returns (uint) {
             // TODO: tests
                 /*
                  *  Creat a new pool generation with all of the current
@@ -80,7 +79,7 @@ library ResourcePoolLib {
                 return nextGeneration.id;
         }
 
-        function getGenerationForWindow(Pool storage self, uint leftBound, uint rightBound) internal returns (Generation) {
+        function getGenerationForWindow(Pool storage self, uint leftBound, uint rightBound) constant returns (uint) {
             // TODO: tests
                 var left = GroveLib.query(self.generationStart, "<=", int(leftBound));
                 var right = GroveLib.query(self.generationEnd, ">=", int(rightBound));
@@ -89,11 +88,12 @@ library ResourcePoolLib {
                 Generation memory rightCandidate = self.generations[StringLib.bytesToUInt(GroveLib.getNodeId(self.generationEnd, right))];
 
                 if (leftCandidate.startAt <= leftBound && (leftCandidate.endAt <= rightBound || leftCandidate.endAt == 0)) {
-                    return leftCandidate;
+                    return leftCandidate.id;
                 }
                 if (rightCandidate.startAt <= leftBound && (rightCandidate.endAt <= rightBound || rightCandidate.endAt == 0)) {
-                    return rightCandidate;
+                    return rightCandidate.id;
                 }
+                return 0;
         }
 
         function getNextGenerationId(Pool storage self) constant returns (uint) {
@@ -151,8 +151,14 @@ library ResourcePoolLib {
             return (isInCurrentGeneration(self, resourceAddress) || isInNextGeneration(self, resourceAddress));
         }
 
-        event AddedToPool(address indexed callerAddress, uint indexed generationId);
-        event RemovedFromPool(address indexed callerAddress, uint indexed generationId);
+        event _AddedToGeneration(address indexed callerAddress, uint indexed generationId);
+        function AddedToGeneration(address callerAddress, uint generationId) public {
+                _AddedToGeneration(callerAddress, generationId);
+        }
+        event _RemovedFromGeneration(address indexed callerAddress, uint indexed generationId);
+        function RemovedFromGeneration(address callerAddress, uint generationId) public {
+                _RemovedFromGeneration(callerAddress, generationId);
+        }
 
         function canEnterPool(Pool storage self, address resourceAddress, uint minimumBond) constant returns (bool) {
             /*
@@ -192,7 +198,7 @@ library ResourcePoolLib {
             uint nextGenerationId = getNextGenerationId(self);
             if (nextGenerationId == 0) {
                 // No next generation has formed yet so create it.
-                nextGenerationId = _createNextGeneration(self);
+                nextGenerationId = createNextGeneration(self);
             }
             Generation storage nextGeneration = self.generations[nextGenerationId];
             // now add the new address.
@@ -230,25 +236,31 @@ library ResourcePoolLib {
             uint nextGenerationId = getNextGenerationId(self);
             if (nextGenerationId == 0) {
                 // No next generation has formed yet so create it.
-                nextGenerationId = _createNextGeneration(self);
+                nextGenerationId = createNextGeneration(self);
             }
-            Generation storage nextGeneration = self.generations[nextGenerationId];
+            // Remove them from the generation
+            removeFromGeneration(self, nextGenerationId, resourceAddress);
+            return nextGenerationId;
+        }
+
+        function removeFromGeneration(Pool storage self, uint generationId, address resourceAddress) public returns (bool){
+            Generation storage generation = self.generations[generationId];
             // now remove the address
-            for (uint i = 0; i < nextGeneration.members.length; i++) {
-                if (nextGeneration.members[i] == resourceAddress) {
-                    nextGeneration.members[i] = nextGeneration.members[nextGeneration.members.length - 1];
-                    nextGeneration.members.length -= 1;
-                    break;
+            for (uint i = 0; i < generation.members.length; i++) {
+                if (generation.members[i] == resourceAddress) {
+                    generation.members[i] = generation.members[generation.members.length - 1];
+                    generation.members.length -= 1;
+                    return true;
                 }
             }
-            return nextGenerationId;
+            return false;
         }
 
         /*
          *  Bonding
          */
 
-        function _deductFromBond(Pool storage self, address resourceAddress, uint value) {
+        function deductFromBond(Pool storage self, address resourceAddress, uint value) public {
                 /*
                  *  deduct funds from a bond value without risk of an
                  *  underflow.
@@ -260,7 +272,7 @@ library ResourcePoolLib {
                 self.bonds[resourceAddress] -= value;
         }
 
-        function _addToBond(Pool storage self, address resourceAddress, uint value) {
+        function addToBond(Pool storage self, address resourceAddress, uint value) public {
                 /*
                  *  Add funds to a bond value without risk of an
                  *  overflow.
@@ -293,7 +305,7 @@ library ResourcePoolLib {
                         return;
                 }
 
-                _deductFromBond(self, resourceAddress, value);
+                deductFromBond(self, resourceAddress, value);
                 if (!resourceAddress.send(value)) {
                         // Potentially sending money to a contract that
                         // has a fallback function.  So instead, try

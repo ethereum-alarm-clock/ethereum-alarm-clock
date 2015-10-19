@@ -1,10 +1,31 @@
-import "libraries/GroveLib.sol"
-import "libraries/ResourcePoolLib.sol"
-import "libraries/AccountingLib.sol"
+import "libraries/GroveLib.sol";
+import "libraries/ResourcePoolLib.sol";
+import "libraries/AccountingLib.sol";
+
+
+contract Relay {
+        address operator;
+
+        function Relay() {
+                operator = msg.sender;
+        }
+
+        function relayCall(address contractAddress, bytes4 abiSignature, bytes data) public returns (bool) {
+                if (msg.sender != operator) {
+                        throw;
+                }
+                return contractAddress.call(abiSignature, data);
+        }
+}
+
+
 
 
 library ScheduledCallLib {
     struct CallDatabase {
+        Relay unauthorizedRelay;
+        Relay authorizedRelay;
+
         bytes32 lastCallKey;
         bytes lastData;
         uint lastDataLength;
@@ -42,67 +63,70 @@ library ScheduledCallLib {
             bytes32 dataHash;
     }
 
+    // The author (Piper Merriam) address.
+    address constant owner = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
+
     /*
      *  Getter methods for `Call` information
      */
     function getCallContractAddress(CallDatabase storage self, bytes32 callKey) constant returns (address) {
-            return self.data_registry[callKey].contractAddress;
+            return self.calls[callKey].contractAddress;
     }
 
     function getCallScheduledBy(CallDatabase storage self, bytes32 callKey) constant returns (address) {
-            return self.data_registry[callKey].scheduledBy;
+            return self.calls[callKey].scheduledBy;
     }
 
     function getCallCalledAtBlock(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].calledAtBlock;
+            return self.calls[callKey].calledAtBlock;
     }
 
     function getCallGracePeriod(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].gracePeriod;
+            return self.calls[callKey].gracePeriod;
     }
 
     function getCallTargetBlock(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].targetBlock;
+            return self.calls[callKey].targetBlock;
     }
 
     function getCallBaseGasPrice(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].baseGasPrice;
+            return self.calls[callKey].baseGasPrice;
     }
 
     function getCallGasPrice(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].gasPrice;
+            return self.calls[callKey].gasPrice;
     }
 
     function getCallGasUsed(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].gasUsed;
+            return self.calls[callKey].gasUsed;
     }
 
     function getCallABISignature(CallDatabase storage self, bytes32 callKey) constant returns (bytes4) {
-            return self.data_registry[callKey].abiSignature;
+            return self.calls[callKey].abiSignature;
     }
 
     function checkIfCalled(CallDatabase storage self, bytes32 callKey) constant returns (bool) {
-            return self.data_registry[callKey].wasCalled;
+            return self.calls[callKey].wasCalled;
     }
 
     function checkIfSuccess(CallDatabase storage self, bytes32 callKey) constant returns (bool) {
-            return self.data_registry[callKey].wasSuccessful;
+            return self.calls[callKey].wasSuccessful;
     }
 
     function checkIfCancelled(CallDatabase storage self, bytes32 callKey) constant returns (bool) {
-            return self.data_registry[callKey].isCancelled;
+            return self.calls[callKey].isCancelled;
     }
 
     function getCallDataHash(CallDatabase storage self, bytes32 callKey) constant returns (bytes32) {
-            return self.data_registry[callKey].dataHash;
+            return self.calls[callKey].dataHash;
     }
 
     function getCallPayout(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].payout;
+            return self.calls[callKey].payout;
     }
 
     function getCallFee(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            return self.data_registry[callKey].fee;
+            return self.calls[callKey].fee;
     }
 
     /*
@@ -124,38 +148,163 @@ library ScheduledCallLib {
     /*
      *  Data Registry API
      */
-    function getLastDataHash(CallDatabase storage self) constant returns (bytes32) {
-            return lastDataHash;
-    }
-
-    function getLastDataLength(CallDatabase storage self) constant returns (uint) {
-            return lastDataLength;
-    }
-
-    function getLastData(CallDatabase storage self) constant returns (bytes) {
-            return lastData;
-    }
-
     function getCallData(CallDatabase storage self, bytes32 callKey) constant returns (bytes) {
-            return self.data_registry[self.data_registry[callKey].dataHash];
+            return self.data_registry[self.calls[callKey].dataHash];
+    }
+
+    /*
+     *  API used by Alarm service
+     */
+
+    // TODO: these functions should be put in the ScheduledCallLib and
+    // reworked since they used to be in the CallerPool contract.
+
+    function getDesignatedCaller(CallDatabase storage self, bytes32 callKey, uint blockNumber) constant returns (address) {
+            /*
+             *  Returns the caller from the current call pool who is
+             *  designated as the executor of this call.
+             */
+            Call call = self.calls[callKey];
+            if (blockNumber < call.targetBlock || blockNumber > call.targetBlock + call.gracePeriod) {
+                    // blockNumber not within call window.
+                    return 0x0;
+            }
+
+            // Check if we are in free-for-all window.
+            uint numWindows = call.gracePeriod / 4;
+            uint blockWindow = (blockNumber - call.targetBlock) / 4;
+
+            if (blockWindow + 2 > numWindows) {
+                    // We are within the free-for-all period.
+                    return 0x0;
+            }
+
+
+            // Pool used is based on the starting block for the call.  This
+            // allows us to know that the pool cannot change for at least
+            // POOL_FREEZE_NUM_BLOCKS which is kept greater than the max
+            // grace period.
+            // TODO: this comment needs to be rewritten
+            uint generationId = ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod);
+            if (generationId == 0) {
+                    // No pool currently in operation.
+                    return 0x0;
+            }
+            var generation = self.callerPool.generations[generationId];
+
+            uint offset = uint(callKey) % generation.members.length;
+            return generation.members[(offset + blockWindow) % generation.members.length];
+    }
+
+    event _AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, bytes32 callKey, uint blockNumber, uint bonusAmount);
+    function AwardedMissedBlockBonus(address fromCaller, address toCaller, uint generationId, bytes32 callKey, uint blockNumber, uint bonusAmount) public {
+        _AwardedMissedBlockBonus(fromCaller, toCaller, generationId, callKey, blockNumber, bonusAmount);
+    }
+
+    function getMinimumBond() constant returns (uint) {
+            return tx.gasprice * block.gaslimit;
+    }
+
+    function doBondBonusTransfer(CallDatabase storage self, address fromCaller, address toCaller) internal returns (uint) {
+            uint bonusAmount = getMinimumBond();
+            uint bondBalance = self.callerPool.bonds[fromCaller];
+
+            // If the bond balance is lower than the award
+            // balance, then adjust the reward amount to
+            // match the bond balance.
+            if (bonusAmount > bondBalance) {
+                    bonusAmount = bondBalance;
+            }
+
+            // Transfer the funds fromCaller => toCaller
+            ResourcePoolLib.deductFromBond(self.callerPool, fromCaller, bonusAmount);
+            ResourcePoolLib.addToBond(self.callerPool, toCaller, bonusAmount);
+
+            return bonusAmount;
+    }
+
+    function awardMissedBlockBonus(CallDatabase storage self, address toCaller, bytes32 callKey) public {
+            var call = self.calls[callKey];
+
+            var generation = self.callerPool.generations[ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod)];
+            uint i;
+            uint bonusAmount;
+            address fromCaller;
+
+            uint numWindows = call.gracePeriod / 4;
+            uint blockWindow = (block.number - call.targetBlock) / 4;
+
+            // Check if we are within the free-for-all period.  If so, we
+            // award from all pool members.
+            if (blockWindow + 2 > numWindows) {
+                    address firstCaller = getDesignatedCaller(self, callKey, call.targetBlock);
+                    for (i = call.targetBlock; i <= call.targetBlock + call.gracePeriod; i += 4) {
+                            fromCaller = getDesignatedCaller(self, callKey, call.targetBlock);
+                            if (fromCaller == firstCaller && i != call.targetBlock) {
+                                    // We have already gone through all of
+                                    // the pool callers so we should break
+                                    // out of the loop.
+                                    break;
+                            }
+                            if (fromCaller == toCaller) {
+                                    continue;
+                            }
+                            bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
+
+                            // Log the bonus was awarded.
+                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callKey, block.number, bonusAmount);
+                    }
+                    return;
+            }
+
+            // Special case for single member and empty pools
+            if (generation.members.length < 2) {
+                    return;
+            }
+
+            // Otherwise the award comes from the previous caller.
+            for (i = 0; i < generation.members.length; i++) {
+                    // Find where the member is in the pool and
+                    // award from the previous pool members bond.
+                    if (generation.members[i] == toCaller) {
+                            fromCaller = generation.members[(i + generation.members.length - 1) % generation.members.length];
+
+                            bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
+
+                            // Log the bonus was awarded.
+                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callKey, block.number, bonusAmount);
+
+                            // Remove the caller from the next pool.
+                            if (ResourcePoolLib.getNextGenerationId(self.callerPool) == 0) {
+                                    // This is the first address to modify the
+                                    // current pool so we need to setup the next
+                                    // pool.
+                                    ResourcePoolLib.createNextGeneration(self.callerPool);
+                            }
+                            ResourcePoolLib.removeFromGeneration(self.callerPool, ResourcePoolLib.getNextGenerationId(self.callerPool), fromCaller);
+                            return;
+                    }
+            }
     }
 
     /*
      *  Data registration API
      */
-    event DataRegistered(CallDatabase storage self, bytes32 indexed dataHash);
+    event _DataRegistered(bytes32 indexed dataHash);
+    function DataRegistered(bytes32 dataHash) constant {
+        _DataRegistered(dataHash);
+    }
 
     function registerData(CallDatabase storage self, bytes data) public {
-            lastData.length = data.length - 4;
+            self.lastData.length = data.length - 4;
             if (data.length > 4) {
-                    for (uint i = 0; i < lastData.length; i++) {
-                            lastData[i] = data[i + 4];
+                    for (uint i = 0; i < self.lastData.length; i++) {
+                            self.lastData[i] = data[i + 4];
                     }
             }
-            self.data_registry[sha3(lastData)] = lastData;
-            lastDataHash = sha3(lastData);
-            lastDataLength = lastData.length;
-            lastData = lastData;
+            self.data_registry[sha3(self.lastData)] = self.lastData;
+            self.lastDataHash = sha3(self.lastData);
+            self.lastDataLength = self.lastData.length;
     }
 
     /*
@@ -164,54 +313,57 @@ library ScheduledCallLib {
     // This number represents the constant gas cost of the addition
     // operations that occur in `doCall` that cannot be tracked with
     // msg.gas.
+    // TODO: recompute this value
     uint constant EXTRA_CALL_GAS = 151098;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
+    // TODO: recompute this value
     uint constant CALL_OVERHEAD = 144982;
 
-    event CallExecuted(address indexed executedBy, bytes32 indexed callKey);
-    event CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
+    event _CallExecuted(address indexed executedBy, bytes32 indexed callKey);
+    function CallExecuted(address executedBy, bytes32 callKey) public {
+        _CallExecuted(executedBy, callKey);
+    }
+    event _CallAborted(address indexed executedBy, bytes32 indexed callKey, bytes18 reason);
+    function CallAborted(address executedBy, bytes32 callKey, bytes18 reason) public {
+        _CallAborted(executedBy, callKey, reason);
+    }
 
-    function doCall(CallDatabase storage self, bytes32 callKey) public {
+    function doCall(CallDatabase storage self, bytes32 callKey) public returns (bytes18) {
             uint gasBefore = msg.gas;
 
-            var call = self.data_registry[callKey];
+            var call = self.calls[callKey];
 
             if (call.wasCalled) {
                     // The call has already been executed so don't do it again.
-                    CallAborted(msg.sender, callKey, "ALREADY CALLED");
-                    return;
+                    return "ALREADY CALLED";
             }
 
             if (call.isCancelled) {
                     // The call was cancelled so don't execute it.
-                    CallAborted(msg.sender, callKey, "CANCELLED");
-                    return;
+                    return "CANCELLED";
             }
 
             if (call.contractAddress == 0x0) {
                     // This call key doesnt map to a registered call.
-                    CallAborted(msg.sender, callKey, "UNKNOWN");
-                    return;
+                    return "UNKNOWN";
             }
 
             if (block.number < call.targetBlock) {
                     // Target block hasnt happened yet.
-                    CallAborted(msg.sender, callKey, "TOO EARLY");
-                    return;
+                    return "TOO EARLY";
             }
 
             if (block.number > call.targetBlock + call.gracePeriod) {
                     // The blockchain has advanced passed the period where
                     // it was allowed to be called.
-                    CallAborted(msg.sender, callKey, "TOO LATE");
-                    return;
+                    return "TOO LATE";
             }
 
-            uint heldBalance = getCallMaxCost(callKey);
+            uint heldBalance = getCallMaxCost(self, callKey);
 
-            if (accountBalances[call.scheduledBy] < heldBalance) {
+            if (self.gasBank.accountBalances[call.scheduledBy] < heldBalance) {
                     // The scheduledBy's account balance is less than the
                     // current gasLimit and thus potentiall can't pay for
                     // the call.
@@ -220,19 +372,17 @@ library ScheduledCallLib {
                     call.wasCalled = true;
                     
                     // Log it.
-                    CallAborted(msg.sender, callKey, "INSUFFICIENT_FUNDS");
-                    return;
+                    return "INSUFFICIENT_FUNDS";
             }
 
             // Check if this caller is allowed to execute the call.
-            if (callerPool.getPoolSize(callerPool.getActivePoolKey()) > 0) {
-                    address poolCaller = callerPool.getDesignatedCaller(callKey, call.targetBlock, call.gracePeriod, block.number);
-                    if (poolCaller != 0x0 && poolCaller != msg.sender) {
+            if (self.callerPool.generations[ResourcePoolLib.getCurrentGenerationId(self.callerPool)].members.length > 0) {
+                    address caller = getDesignatedCaller(self, callKey, block.number);
+                    if (caller != 0x0 && caller != msg.sender) {
                             // This call was reserved for someone from the
                             // bonded pool of callers and can only be
                             // called by them during this block window.
-                            CallAborted(msg.sender, callKey, "WRONG_CALLER");
-                            return;
+                            return "WRONG_CALLER";
                     }
 
                     uint blockWindow = (block.number - call.targetBlock) / 4;
@@ -240,7 +390,7 @@ library ScheduledCallLib {
                             // Someone missed their call so this caller
                             // gets to claim their bond for picking up
                             // their slack.
-                            callerPool.awardMissedBlockBonus(msg.sender, callKey, call.targetBlock, call.gracePeriod);
+                            awardMissedBlockBonus(self, msg.sender, callKey);
                     }
             }
 
@@ -250,28 +400,25 @@ library ScheduledCallLib {
             call.calledAtBlock = block.number;
 
             // Fetch the call data
-            var data = getCallData(callKey);
+            var data = getCallData(self, callKey);
 
             // During the call, we need to put enough funds to pay for the
             // call on hold to ensure they are available to pay the caller.
-            _deductFunds(call.scheduledBy, heldBalance);
+            AccountingLib.withdraw(self.gasBank, call.scheduledBy, heldBalance);
 
             // Mark whether the function call was successful.
-            if (checkAuthorization(call.scheduledBy, call.contractAddress)) {
-                    call.wasSuccessful = authorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
+            if (checkAuthorization(self, call.scheduledBy, call.contractAddress)) {
+                    call.wasSuccessful = self.authorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
             }
             else {
-                    call.wasSuccessful = unauthorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
+                    call.wasSuccessful = self.unauthorizedRelay.relayCall.gas(msg.gas - CALL_OVERHEAD)(call.contractAddress, call.abiSignature, data);
             }
 
             // Add the held funds back into the scheduler's account.
-            _addFunds(call.scheduledBy, heldBalance);
+            AccountingLib.deposit(self.gasBank, call.scheduledBy, heldBalance);
 
             // Mark the call as having been executed.
             call.wasCalled = true;
-
-            // Log the call execution.
-            CallExecuted(msg.sender, callKey);
 
             // Compute the scalar (0 - 200) for the fee.
             uint feeScalar = getCallFeeScalar(call.baseGasPrice, call.gasPrice);
@@ -288,10 +435,12 @@ library ScheduledCallLib {
             call.payout = call.gasCost * feeScalar * 101 / 10000;
             call.fee = call.gasCost * feeScalar / 10000;
 
-            AccountingLib._deductFunds(self.gasBank, call.scheduledBy, call.payout + call.fee);
+            AccountingLib.withdraw(self.gasBank, call.scheduledBy, call.payout + call.fee);
 
-            AccountingLib._addFunds(self.gasBank, msg.sender, call.payout);
-            AccountingLib._addFunds(self.gasBank, owner, call.fee);
+            AccountingLib.deposit(self.gasBank, msg.sender, call.payout);
+            AccountingLib.deposit(self.gasBank, owner, call.fee);
+
+            return 0x0;
     }
 
     function getCallMaxCost(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
@@ -300,7 +449,7 @@ library ScheduledCallLib {
              *  
              */
             // call cost + 2%
-            var call = self.data_registry[callKey];
+            var call = self.calls[callKey];
 
             uint gasCost = tx.gasprice * block.gaslimit;
             uint feeScalar = getCallFeeScalar(call.baseGasPrice, tx.gasprice);
@@ -340,15 +489,21 @@ library ScheduledCallLib {
     // looking up call data that failed to register.
     bytes32 constant emptyDataHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
-    function getCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) constant returns (bytes32) {
+    function computeCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) constant returns (bytes32) {
             return sha3(scheduledBy, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
     }
 
     // Ten minutes into the future.
     uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
-    event CallScheduled(bytes32 indexed callKey);
-    event CallRejected(bytes32 indexed callKey, bytes15 reason);
+    event _CallScheduled(bytes32 indexed callKey);
+    function CallScheduled(bytes32 callKey) public {
+        _CallScheduled(callKey);
+    }
+    event _CallRejected(bytes32 indexed callKey, bytes15 reason);
+    function CallRejected(bytes32 callKey, bytes15 reason) public {
+        _CallRejected(callKey, reason);
+    }
 
     function scheduleCall(CallDatabase storage self, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes15) {
             /*
@@ -356,7 +511,7 @@ library ScheduledCallLib {
              * the data should already have been registered through the
              * `registerData` API.
              */
-            bytes32 callKey = getCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
+            bytes32 callKey = computeCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
 
             if (dataHash != emptyDataHash && self.data_registry[dataHash].length == 0) {
                     // Don't allow registering calls if the data hash has
@@ -370,7 +525,7 @@ library ScheduledCallLib {
                     // MAX_BLOCKS_IN_FUTURE
                     return "TOO_SOON";
             }
-            var call = self.data_registry[callKey];
+            var call = self.calls[callKey];
 
             if (call.contractAddress != 0x0) {
                     return "DUPLICATE";
@@ -397,13 +552,16 @@ library ScheduledCallLib {
             return 0x0;
     }
 
-    event CallCancelled(bytes32 indexed callKey);
+    event _CallCancelled(bytes32 indexed callKey);
+    function CallCancelled(bytes32 callKey) public {
+        CallCancelled(callKey);
+    }
 
     // Two minutes
     uint constant MIN_CANCEL_WINDOW = 8;
 
     function cancelCall(CallDatabase storage self, bytes32 callKey) public returns (bool) {
-            var call = self.data_registry[callKey];
+            var call = self.calls[callKey];
             if (call.scheduledBy != msg.sender) {
                     // Nobody but the scheduler can cancel a call.
                     return false;

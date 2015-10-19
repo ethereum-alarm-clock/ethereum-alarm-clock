@@ -1,22 +1,7 @@
-import "libraries/GroveLib.sol"
-import "libraries/ResourcePoolLib.sol"
-import "libraries/ScheduledCallLib.sol"
-import "libraries/AccountingLib.sol"
-
-contract Relay {
-        address operator;
-
-        function Relay() {
-                operator = msg.sender;
-        }
-
-        function relayCall(address contractAddress, bytes4 abiSignature, bytes data) public returns (bool) {
-                if (msg.sender != operator) {
-                        throw;
-                }
-                return contractAddress.call(abiSignature, data);
-        }
-}
+import "libraries/GroveLib.sol";
+import "libraries/ResourcePoolLib.sol";
+import "libraries/ScheduledCallLib.sol";
+import "libraries/AccountingLib.sol";
 
 
 /*
@@ -32,14 +17,12 @@ contract Alarm {
          *  - configures the caller pool.
          */
         function Alarm() {
-                unauthorizedRelay = new Relay();
-                authorizedRelay = new Relay();
+                callDatabase.unauthorizedRelay = new Relay();
+                callDatabase.authorizedRelay = new Relay();
 
                 callDatabase.callerPool.freezePeriod = 40;
                 callDatabase.callerPool.rotationDelay = 40;
                 callDatabase.callerPool.overlapSize = 40;
-                // TODO: how to deal with this being a fixed amount.
-                callDatabase.callerPool.minimumBond = 1 ether;
         }
 
         ScheduledCallLib.CallDatabase callDatabase;
@@ -50,6 +33,10 @@ contract Alarm {
         /*
          *  Account Management API
          */
+        function getAccountBalance(address accountAddress) constant public returns (uint) {
+                return callDatabase.gasBank.accountBalances[accountAddress];
+        }
+
         function deposit() public {
                 deposit(msg.sender);
         }
@@ -59,7 +46,7 @@ contract Alarm {
                  *  Public API for depositing funds in a specified account.
                  */
                 AccountingLib.deposit(callDatabase.gasBank, accountAddress, msg.value);
-                Deposit(msg.sender, accountAddress, msg.value);
+                AccountingLib.Deposit(msg.sender, accountAddress, msg.value);
         }
 
         function withdraw(uint value) public {
@@ -67,7 +54,7 @@ contract Alarm {
                  *  Public API for withdrawing funds.
                  */
                 if (AccountingLib.withdraw(callDatabase.gasBank, msg.sender, value)) {
-                        AccountingLib.Withdraw(msg.sender, value);
+                        AccountingLib.Withdrawal(msg.sender, value);
                 }
                 else {
                         AccountingLib.InsufficientFunds(msg.sender, value, callDatabase.gasBank.accountBalances[msg.sender]);
@@ -85,177 +72,48 @@ contract Alarm {
         /*
          *  Scheduling Authorization API
          */
-        Relay unauthorizedRelay;
-        Relay authorizedRelay;
-
         function unauthorizedAddress() constant returns (address) {
-                return address(unauthorizedRelay);
+                return address(callDatabase.unauthorizedRelay);
         }
 
         function authorizedAddress() constant returns (address) {
-                return address(authorizedRelay);
+                return address(callDatabase.authorizedRelay);
         }
 
         function addAuthorization(address schedulerAddress) public {
-                return ScheduledCallLib.addAuthorization(callDatabase, schedulerAddress, msg.sender);
+                ScheduledCallLib.addAuthorization(callDatabase, schedulerAddress, msg.sender);
         }
 
         function removeAuthorization(address schedulerAddress) public {
-                accountAuthorizations[sha3(schedulerAddress, msg.sender)] = false;
+                callDatabase.accountAuthorizations[sha3(schedulerAddress, msg.sender)] = false;
         }
 
         function checkAuthorization(address schedulerAddress, address contractAddress) constant returns (bool) {
-                return accountAuthorizations[sha3(schedulerAddress, contractAddress)];
+                return callDatabase.accountAuthorizations[sha3(schedulerAddress, contractAddress)];
         }
 
         /*
          *  Caller bonding
          */
         function getMinimumBond() constant returns (uint) {
-                // TODO: how to do this with new library.
-                return tx.gasprice * block.gaslimit;
+                return ScheduledCallLib.getMinimumBond();
         }
 
         function depositBond() public {
-                ResourcePoolLib._addToBond(callDatabase.callerPool, msg.sender, msg.value);
+                ResourcePoolLib.addToBond(callDatabase.callerPool, msg.sender, msg.value);
         }
 
         function withdrawBond(uint value) public {
-                ResourcePoolLib.withdrawBond(callDatabase.callerPool, msg.sender, value)
+                ResourcePoolLib.withdrawBond(callDatabase.callerPool, msg.sender, value);
         }
 
-        /*
-         *  API used by Alarm service
-         */
-
-        // TODO: these functions should be put in the ScheduledCallLib and
-        // reworked since they used to be in the CallerPool contract.
-
-        function getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) constant returns (address) {
-                /*
-                 *  Returns the caller from the current call pool who is
-                 *  designated as the executor of this call.
-                 */
-                if (blockNumber < targetBlock || blockNumber > targetBlock + gracePeriod) {
-                        // blockNumber not within call window.
-                        return 0x0;
-                }
-
-                // Pool used is based on the starting block for the call.  This
-                // allows us to know that the pool cannot change for at least
-                // POOL_FREEZE_NUM_BLOCKS which is kept greater than the max
-                // grace period.
-                uint poolNumber = getPoolKeyForBlock(targetBlock);
-                if (poolNumber == 0) {
-                        // No pool currently in operation.
-                        return 0x0;
-                }
-                var pool = callDatabase.callerPool[poolNumber];
-
-                uint numWindows = gracePeriod / 4;
-                uint blockWindow = (blockNumber - targetBlock) / 4;
-
-                if (blockWindow + 2 > numWindows) {
-                        // We are within the free-for-all period.
-                        return 0x0;
-                }
-
-                uint offset = uint(callKey) % pool.length;
-                return pool[(offset + blockWindow) % pool.length];
-        }
-
-        event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed poolNumber, bytes32 callKey, uint blockNumber, uint bonusAmount);
-
-        function _doBondBonusTransfer(address fromCaller, address toCaller) internal returns (uint) {
-                uint bonusAmount = getMinimumBond();
-                uint bondBalance = callerBonds[fromCaller];
-
-                // If the bond balance is lower than the award
-                // balance, then adjust the reward amount to
-                // match the bond balance.
-                if (bonusAmount > bondBalance) {
-                        bonusAmount = bondBalance;
-                }
-
-                // Transfer the funds fromCaller => toCaller
-                _deductFromBond(fromCaller, bonusAmount);
-                _addToBond(toCaller, bonusAmount);
-
-                return bonusAmount;
-        }
-
-        function awardMissedBlockBonus(address toCaller, bytes32 callKey, uint targetBlock, uint8 gracePeriod) public {
-                if (msg.sender != operator) {
-                        return;
-                }
-
-                uint poolNumber = getPoolKeyForBlock(targetBlock);
-                var pool = callDatabase.callerPool[poolNumber];
-                uint i;
-                uint bonusAmount;
-                address fromCaller;
-
-                uint numWindows = gracePeriod / 4;
-                uint blockWindow = (block.number - targetBlock) / 4;
-
-                // Check if we are within the free-for-all period.  If so, we
-                // award from all pool members.
-                if (blockWindow + 2 > numWindows) {
-                        address firstCaller = getDesignatedCaller(callKey, targetBlock, gracePeriod, targetBlock);
-                        for (i = targetBlock; i <= targetBlock + gracePeriod; i += 4) {
-                                fromCaller = getDesignatedCaller(callKey, targetBlock, gracePeriod, i);
-                                if (fromCaller == firstCaller && i != targetBlock) {
-                                        // We have already gone through all of
-                                        // the pool callers so we should break
-                                        // out of the loop.
-                                        break;
-                                }
-                                if (fromCaller == toCaller) {
-                                        continue;
-                                }
-                                bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
-
-                                // Log the bonus was awarded.
-                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
-                        }
-                        return;
-                }
-
-                // Special case for single member and empty pools
-                if (pool.length < 2) {
-                        return;
-                }
-
-                // Otherwise the award comes from the previous caller.
-                for (i = 0; i < pool.length; i++) {
-                        // Find where the member is in the pool and
-                        // award from the previous pool members bond.
-                        if (pool[i] == toCaller) {
-                                fromCaller = pool[(i + pool.length - 1) % pool.length];
-
-                                bonusAmount = _doBondBonusTransfer(fromCaller, toCaller);
-
-                                // Log the bonus was awarded.
-                                AwardedMissedBlockBonus(fromCaller, toCaller, poolNumber, callKey, block.number, bonusAmount);
-
-                                // Remove the caller from the next pool.
-                                if (getNextPoolKey() == 0) {
-                                        // This is the first address to modify the
-                                        // current pool so we need to setup the next
-                                        // pool.
-                                        _initiateNextPool();
-                                }
-                                _removeFromPool(fromCaller, getNextPoolKey());
-                                return;
-                        }
-                }
-        }
 
         /*
          *  Pool Management
          */
         function getGenerationForCall(bytes32 callKey) constant returns (uint) {
-                // TODO
+                var call = callDatabase.calls[callKey];
+                return ResourcePoolLib.getGenerationForWindow(callDatabase.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod);
         }
 
         function getGenerationSize(uint generationId) constant returns (uint) {
@@ -292,8 +150,16 @@ contract Alarm {
         /*
          *  Pool Membership
          */
+        function canEnterPool() constant returns (bool) {
+                return ResourcePoolLib.canEnterPool(callDatabase.callerPool, msg.sender, getMinimumBond());
+        }
+
         function canEnterPool(address callerAddress) constant returns (bool) {
-                return ResourcePoolLib.canEnterPool(callDatabase.callerPool, callerAddress, getMinimumBond())
+                return ResourcePoolLib.canEnterPool(callDatabase.callerPool, callerAddress, getMinimumBond());
+        }
+
+        function canExitPool() constant returns (bool) {
+                return ResourcePoolLib.canExitPool(callDatabase.callerPool, msg.sender);
         }
 
         function canExitPool(address callerAddress) constant returns (bool) {
@@ -301,13 +167,13 @@ contract Alarm {
         }
 
         function enterPool() public {
-                uint generationId = ResourcePoolLib.enterPool(callDatabase.callerPool, callerAddress, getMinimumBond());
-                ResourcePoolLib.AddedToPool(callerAddress, generationId);
+                uint generationId = ResourcePoolLib.enterPool(callDatabase.callerPool, msg.sender, getMinimumBond());
+                ResourcePoolLib.AddedToGeneration(msg.sender, generationId);
         }
 
         function exitPool() public {
-                uint generationId = ResourcePoolLib.exitPool(callDatabase.callerPool, callerAddress);
-                ResourcePoolLib.RemovedFromPool(callerAddress, generationId);
+                uint generationId = ResourcePoolLib.exitPool(callDatabase.callerPool, msg.sender);
+                ResourcePoolLib.RemovedFromGeneration(msg.sender, generationId);
         }
 
         /*
@@ -385,15 +251,15 @@ contract Alarm {
          *  Data Registry API
          */
         function getLastDataHash() constant returns (bytes32) {
-                return lastDataHash;
+                return callDatabase.lastDataHash;
         }
 
         function getLastDataLength() constant returns (uint) {
-                return lastDataLength;
+                return callDatabase.lastDataLength;
         }
 
         function getLastData() constant returns (bytes) {
-                return lastData;
+                return callDatabase.lastData;
         }
 
         function getCallData(bytes32 callKey) constant returns (bytes) {
@@ -404,8 +270,8 @@ contract Alarm {
          *  Data registration API
          */
         function registerData() public {
-                ScheduledCallLib.registerData(msg.data);
-                ScheduledCallLib.DataRegistered(lastDataHash);
+                ScheduledCallLib.registerData(callDatabase, msg.data);
+                ScheduledCallLib.DataRegistered(callDatabase.lastDataHash);
         }
 
         /*
@@ -450,7 +316,7 @@ contract Alarm {
                  * `registerData` API.
                  */
                 bytes15 reason = ScheduledCallLib.scheduleCall(callDatabase, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
-                bytes32 callKey = ScheduledCallLib.getCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
+                bytes32 callKey = ScheduledCallLib.computeCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
 
                 if (reason != 0x0) {
                         ScheduledCallLib.CallRejected(callKey, reason);
@@ -461,21 +327,25 @@ contract Alarm {
         }
 
         function cancelCall(bytes32 callKey) public {
-                if (ScheduledCallLib.cancelCall(callDatabase, callKey) {
-                        ScheduledCallLib.CallCancelled(callDatabase, callKey);
+                if (ScheduledCallLib.cancelCall(callDatabase, callKey)) {
+                        ScheduledCallLib.CallCancelled(callKey);
                 }
         }
 
         /*
          *  Next Call API
          */
-        function getNextCall(uint blockNumber) {
-                // TODO: tests
-                return GroveLib.query(callIndex, ">=", int(blockNumber));
+        function getDesignatedCaller(bytes32 callKey, uint blockNumber) constant returns (address) {
+                return ScheduledCallLib.getDesignatedCaller(callDatabase, callKey, blockNumber);
         }
 
-        function getNextCallSibling(bytes32 callKey) {
+        function getNextCall(uint blockNumber) constant returns (bytes32) {
                 // TODO: tests
-                return GroveLib.getNextNode(callIndex, callKey);
+                return GroveLib.query(callDatabase.callIndex, ">=", int(blockNumber));
+        }
+
+        function getNextCallSibling(bytes32 callKey) constant returns (bytes32) {
+                // TODO: tests
+                return GroveLib.getNextNode(callDatabase.callIndex, callKey);
         }
 }

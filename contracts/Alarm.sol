@@ -278,7 +278,7 @@ contract Alarm {
          *  Call execution API
          */
         function doCall(bytes32 callKey) public {
-                bytes18 reason = ScheduledCallLib.doCall(callDatabase, callKey);
+                bytes18 reason = ScheduledCallLib.doCall(callDatabase, callKey, msg.sender);
                 if (reason != 0x0) {
                         ScheduledCallLib.CallAborted(msg.sender, callKey, reason);
                 }
@@ -299,14 +299,14 @@ contract Alarm {
                  *  Schedule call with gracePeriod defaulted to 255 and nonce
                  *  defaulted to 0.
                  */
-                ScheduledCallLib.scheduleCall(callDatabase, contractAddress, abiSignature, dataHash, targetBlock, 255, 0);
+                scheduleCall(contractAddress, abiSignature, dataHash, targetBlock, 255, 0);
         }
 
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public {
                 /*
                  *  Schedule call with nonce defaulted to 0.
                  */
-                ScheduledCallLib.scheduleCall(callDatabase, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, 0);
+                scheduleCall(contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, 0);
         }
 
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public {
@@ -315,7 +315,7 @@ contract Alarm {
                  * the data should already have been registered through the
                  * `registerData` API.
                  */
-                bytes15 reason = ScheduledCallLib.scheduleCall(callDatabase, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
+                bytes15 reason = ScheduledCallLib.scheduleCall(callDatabase, msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
                 bytes32 callKey = ScheduledCallLib.computeCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
 
                 if (reason != 0x0) {
@@ -327,7 +327,7 @@ contract Alarm {
         }
 
         function cancelCall(bytes32 callKey) public {
-                if (ScheduledCallLib.cancelCall(callDatabase, callKey)) {
+                if (ScheduledCallLib.cancelCall(callDatabase, callKey, msg.sender)) {
                         ScheduledCallLib.CallCancelled(callKey);
                 }
         }

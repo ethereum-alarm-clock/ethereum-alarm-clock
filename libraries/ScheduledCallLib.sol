@@ -330,10 +330,10 @@ library ScheduledCallLib {
         _CallAborted(executedBy, callKey, reason);
     }
 
-    function doCall(CallDatabase storage self, bytes32 callKey) public returns (bytes18) {
+    function doCall(CallDatabase storage self, bytes32 callKey, address msgSender) public returns (bytes18) {
             uint gasBefore = msg.gas;
 
-            var call = self.calls[callKey];
+            Call storage call = self.calls[callKey];
 
             if (call.wasCalled) {
                     // The call has already been executed so don't do it again.
@@ -377,8 +377,8 @@ library ScheduledCallLib {
 
             // Check if this caller is allowed to execute the call.
             if (self.callerPool.generations[ResourcePoolLib.getCurrentGenerationId(self.callerPool)].members.length > 0) {
-                    address caller = getDesignatedCaller(self, callKey, block.number);
-                    if (caller != 0x0 && caller != msg.sender) {
+                    address designatedCaller = getDesignatedCaller(self, callKey, block.number);
+                    if (designatedCaller != 0x0 && designatedCaller != msgSender) {
                             // This call was reserved for someone from the
                             // bonded pool of callers and can only be
                             // called by them during this block window.
@@ -390,17 +390,17 @@ library ScheduledCallLib {
                             // Someone missed their call so this caller
                             // gets to claim their bond for picking up
                             // their slack.
-                            awardMissedBlockBonus(self, msg.sender, callKey);
+                            awardMissedBlockBonus(self, msgSender, callKey);
                     }
             }
 
             // Log metadata about the call.
             call.gasPrice = tx.gasprice;
-            call.executedBy = msg.sender;
+            call.executedBy = msgSender;
             call.calledAtBlock = block.number;
 
             // Fetch the call data
-            var data = getCallData(self, callKey);
+            var data = self.data_registry[call.dataHash];
 
             // During the call, we need to put enough funds to pay for the
             // call on hold to ensure they are available to pay the caller.
@@ -437,7 +437,7 @@ library ScheduledCallLib {
 
             AccountingLib.withdraw(self.gasBank, call.scheduledBy, call.payout + call.fee);
 
-            AccountingLib.deposit(self.gasBank, msg.sender, call.payout);
+            AccountingLib.deposit(self.gasBank, msgSender, call.payout);
             AccountingLib.deposit(self.gasBank, owner, call.fee);
 
             return 0x0;
@@ -505,13 +505,13 @@ library ScheduledCallLib {
         _CallRejected(callKey, reason);
     }
 
-    function scheduleCall(CallDatabase storage self, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes15) {
+    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes15) {
             /*
              * Primary API for scheduling a call.  Prior to calling this
              * the data should already have been registered through the
              * `registerData` API.
              */
-            bytes32 callKey = computeCallKey(msg.sender, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
+            bytes32 callKey = computeCallKey(schedulerAddress, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
 
             if (dataHash != emptyDataHash && self.data_registry[dataHash].length == 0) {
                     // Don't allow registering calls if the data hash has
@@ -525,7 +525,7 @@ library ScheduledCallLib {
                     // MAX_BLOCKS_IN_FUTURE
                     return "TOO_SOON";
             }
-            var call = self.calls[callKey];
+            Call storage call = self.calls[callKey];
 
             if (call.contractAddress != 0x0) {
                     return "DUPLICATE";
@@ -538,7 +538,7 @@ library ScheduledCallLib {
             self.lastCallKey = callKey;
 
             call.contractAddress = contractAddress;
-            call.scheduledBy = msg.sender;
+            call.scheduledBy = schedulerAddress;
             call.nonce = nonce;
             call.abiSignature = abiSignature;
             call.dataHash = dataHash;
@@ -560,9 +560,9 @@ library ScheduledCallLib {
     // Two minutes
     uint constant MIN_CANCEL_WINDOW = 8;
 
-    function cancelCall(CallDatabase storage self, bytes32 callKey) public returns (bool) {
-            var call = self.calls[callKey];
-            if (call.scheduledBy != msg.sender) {
+    function cancelCall(CallDatabase storage self, bytes32 callKey, address msgSender) public returns (bool) {
+            Call storage call = self.calls[callKey];
+            if (call.scheduledBy != msgSender) {
                     // Nobody but the scheduler can cancel a call.
                     return false;
             }

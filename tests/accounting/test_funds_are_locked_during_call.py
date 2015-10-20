@@ -1,41 +1,40 @@
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction, wait_for_block
+from populus.utils import wait_for_transaction
 
 
 deploy_contracts = [
     "Alarm",
-    "Grove",
     "WithdrawsDuringCall",
 ]
 
 
-def test_funds_are_locked_during_execution(geth_node, rpc_client, deployed_contracts):
+def test_funds_are_locked_during_execution(deploy_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.WithdrawsDuringCall
 
-    wait_for_transaction(rpc_client, client_contract.setAlarm.sendTransaction(alarm._meta.address))
+    wait_for_transaction(deploy_client, client_contract.setAlarm.sendTransaction(alarm._meta.address))
 
-    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
     alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     txn_hash = client_contract.scheduleIt.sendTransaction()
-    wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    wait_for_transaction(deploy_client, txn_hash)
 
-    assert client_contract.wasCalled.call() is False
+    assert client_contract.wasCalled() is False
 
-    callKey = alarm.getLastCallKey.call()
-    assert callKey is not None
+    call_key = alarm.getLastCallKey()
+    assert call_key is not None
 
     pre_balance = client_contract.getAlarmBalance.call()
     assert pre_balance == deposit_amount
 
-    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
-    call_txn_hash = alarm.doCall.sendTransaction(callKey)
-    wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    deploy_client.wait_for_block(alarm.getCallTargetBlock(call_key), 120)
+    call_txn_hash = alarm.doCall.sendTransaction(call_key)
+    wait_for_transaction(deploy_client, call_txn_hash)
 
-    fee = alarm.getCallFee.call(callKey)
-    payout = alarm.getCallPayout.call(callKey)
-    withdrawn_amount = client_contract.withdrawAmount.call()
+    fee = alarm.getCallFee(call_key)
+    payout = alarm.getCallPayout(call_key)
+    withdrawn_amount = client_contract.withdrawAmount()
 
     assert all(v > 0 for v in (fee, payout, withdrawn_amount))
 
@@ -47,4 +46,4 @@ def test_funds_are_locked_during_execution(geth_node, rpc_client, deployed_contr
     # fees left in the account.
     assert post_balance == pre_balance - fee - payout - withdrawn_amount
 
-    assert alarm.checkIfCalled.call(callKey) is True
+    assert alarm.checkIfCalled(call_key) is True

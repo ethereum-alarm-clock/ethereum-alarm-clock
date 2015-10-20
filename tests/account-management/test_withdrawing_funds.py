@@ -17,7 +17,7 @@ def test_withdrawing_funds(geth_node, geth_coinbase, rpc_client, deployed_contra
     alarm = deployed_contracts.Alarm
     block_reward = 5000000000000000000
 
-    assert alarm.accountBalances.call(geth_coinbase) == 0
+    assert alarm.getAccountBalance.call(geth_coinbase) == 0
 
     txn_1_hash = alarm.deposit.sendTransaction(geth_coinbase, value=1000 * denoms.ether)
     wait_for_transaction(rpc_client, txn_1_hash)
@@ -25,7 +25,7 @@ def test_withdrawing_funds(geth_node, geth_coinbase, rpc_client, deployed_contra
     txn_1_delta = get_balance_delta(rpc_client, txn_1_hash)
 
     assert txn_1_delta == 1000 * denoms.ether - block_reward
-    assert alarm.accountBalances.call(geth_coinbase) == 1000 * denoms.ether
+    assert alarm.getAccountBalance.call(geth_coinbase) == 1000 * denoms.ether
 
     txn_2_hash = alarm.withdraw.sendTransaction(250 * denoms.ether)
     wait_for_transaction(rpc_client, txn_2_hash)
@@ -34,7 +34,7 @@ def test_withdrawing_funds(geth_node, geth_coinbase, rpc_client, deployed_contra
 
     assert txn_2_delta == -1 * 250 * denoms.ether - block_reward
 
-    assert alarm.accountBalances.call(geth_coinbase) == 750 * denoms.ether
+    assert alarm.getAccountBalance.call(geth_coinbase) == 750 * denoms.ether
 
     txn_3_hash = alarm.withdraw.sendTransaction(500 * denoms.ether)
     wait_for_transaction(rpc_client, txn_3_hash)
@@ -43,4 +43,4 @@ def test_withdrawing_funds(geth_node, geth_coinbase, rpc_client, deployed_contra
 
     assert txn_3_delta == -1 * 500 * denoms.ether - block_reward
 
-    assert alarm.accountBalances.call(geth_coinbase) == 250 * denoms.ether
+    assert alarm.getAccountBalance.call(geth_coinbase) == 250 * denoms.ether

@@ -12,7 +12,7 @@ def test_contract_depositing_funds(geth_node, geth_coinbase, rpc_client, deploye
     alarm = deployed_contracts.Alarm
     depositer = deployed_contracts.DepositsFunds
 
-    assert alarm.accountBalances.call(depositer._meta.address) == 0
+    assert alarm.getAccountBalance.call(depositer._meta.address) == 0
 
     wait_for_transaction(rpc_client, rpc_client.send_transaction(
         to=depositer._meta.address,
@@ -30,12 +30,12 @@ def test_contract_depositing_funds(geth_node, geth_coinbase, rpc_client, deploye
 
     assert depositer.sentSuccessful.call() == 1
 
-    assert alarm.accountBalances.call(geth_coinbase) == 0
-    assert alarm.accountBalances.call(depositer._meta.address) == 123
+    assert alarm.getAccountBalance.call(geth_coinbase) == 0
+    assert alarm.getAccountBalance.call(depositer._meta.address) == 123
 
     wait_for_transaction(rpc_client, depositer.doIt.sendTransaction(
         alarm._meta.address,
         456,
     ))
 
-    assert alarm.accountBalances.call(depositer._meta.address) == 579
+    assert alarm.getAccountBalance.call(depositer._meta.address) == 579

@@ -1,6 +1,6 @@
 contract AlarmTestAPI {
         function withdraw(uint value) public;
-        function accountBalances(address account) public returns (uint);
+        function getAccountBalance(address account) public returns (uint);
         function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
 }
 
@@ -216,7 +216,7 @@ contract WithdrawsDuringCall {
         }
 
         function getAlarmBalance() public returns (uint) {
-                return alarm.accountBalances(address(this));
+                return alarm.getAccountBalance(address(this));
         }
 
         bool public wasCalled;

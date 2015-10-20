@@ -42,7 +42,7 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
     pool_manager = PoolManager(caller_pool)
     scheduled_call = ScheduledCall(alarm, pool_manager, callKey)
 
-    assert scheduled_call.scheduler_account_balance == alarm.accountBalances.call(client_contract._meta.address)
+    assert scheduled_call.scheduler_account_balance == alarm.getAccountBalance.call(client_contract._meta.address)
     assert scheduled_call.target_block == alarm.getCallTargetBlock.call(callKey)
     assert scheduled_call.scheduled_by == client_contract._meta.address
     assert scheduled_call.called_at_block == int(txn_receipt['blockNumber'], 16)
@@ -53,8 +53,8 @@ def test_scheduled_call_python_object(geth_node, geth_coinbase, rpc_client, depl
         assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16)
     except AssertionError:
         assert scheduled_call.gas_used == int(txn_receipt['gasUsed'], 16) + 44
-    assert scheduled_call.payout == alarm.accountBalances.call(geth_coinbase) == alarm.getCallPayout.call(callKey)
-    assert scheduled_call.fee == alarm.accountBalances.call(owner) == alarm.getCallFee.call(callKey)
+    assert scheduled_call.payout == alarm.getAccountBalance.call(geth_coinbase) == alarm.getCallPayout.call(callKey)
+    assert scheduled_call.fee == alarm.getAccountBalance.call(owner) == alarm.getCallFee.call(callKey)
     assert scheduled_call.abi_signature == client_contract.doIt.encoded_abi_signature == alarm.getCallABISignature.call(callKey)
     assert scheduled_call.is_cancelled is False
     assert scheduled_call.was_called is True

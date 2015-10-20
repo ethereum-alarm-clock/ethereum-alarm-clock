@@ -23,7 +23,7 @@ def test_extra_call_gas_constant_when_gas_price_lower(deploy_client, deployed_co
 
     base_gas_price = alarm.getCallBaseGasPrice(call_key)
 
-    deploy_client.mine_until_block(alarm.getCallTargetBlock(call_key))
+    deploy_client.wait_for_block(alarm.getCallTargetBlock(call_key), 120)
     call_txn_hash = alarm.doCall.sendTransaction(call_key)
 
     call_txn_receipt = wait_for_transaction(deploy_client, call_txn_hash)
@@ -33,7 +33,6 @@ def test_extra_call_gas_constant_when_gas_price_lower(deploy_client, deployed_co
     recorded_gas_used = alarm.getCallGasUsed(call_key)
     actual_gas_used = int(call_txn_receipt['gasUsed'], 16)
 
-    try:
-        assert actual_gas_used == recorded_gas_used
-    except AssertionError:
-        assert actual_gas_used == recorded_gas_used + 44
+    assert recorded_gas_used >= actual_gas_used
+
+    assert abs(recorded_gas_used - actual_gas_used) in {0, 86}

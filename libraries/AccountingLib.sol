@@ -6,20 +6,7 @@ library AccountingLib {
         /*
          *  Account Management API
          */
-        function _deductFunds(Bank storage self, address accountAddress, uint value) internal {
-                /*
-                 *  Helper function that should be used for any reduction of
-                 *  account funds.  It has error checking to prevent
-                 *  underflowing the account balance which would be REALLY bad.
-                 */
-                if (value > self.accountBalances[accountAddress]) {
-                        // Prevent Underflow.
-                        throw;
-                }
-                self.accountBalances[accountAddress] -= value;
-        }
-
-        function _addFunds(Bank storage self, address accountAddress, uint value) internal {
+        function addFunds(Bank storage self, address accountAddress, uint value) public {
                 /*
                  *  Helper function that should be used for any addition of
                  *  account funds.  It has error checking to prevent
@@ -41,7 +28,7 @@ library AccountingLib {
                 /*
                  *  Public API for depositing funds in a specified account.
                  */
-                _addFunds(self, accountAddress, value);
+                addFunds(self, accountAddress, value);
                 return true;
         }
 
@@ -55,17 +42,30 @@ library AccountingLib {
             _InsufficientFunds(accountAddress, value, balance);
         }
 
+        function deductFunds(Bank storage self, address accountAddress, uint value) public {
+                /*
+                 *  Helper function that should be used for any reduction of
+                 *  account funds.  It has error checking to prevent
+                 *  underflowing the account balance which would be REALLY bad.
+                 */
+                if (value > self.accountBalances[accountAddress]) {
+                        // Prevent Underflow.
+                        throw;
+                }
+                self.accountBalances[accountAddress] -= value;
+        }
+
         function withdraw(Bank storage self, address accountAddress, uint value) public returns (bool) {
                 /*
                  *  Public API for withdrawing funds.
                  */
                 if (self.accountBalances[accountAddress] >= value) {
-                        _deductFunds(self, accountAddress, value);
+                        deductFunds(self, accountAddress, value);
                         if (!accountAddress.send(value)) {
                                 // Potentially sending money to a contract that
                                 // has a fallback function.  So instead, try
                                 // tranferring the funds with the call api.
-                                if (!accountAddress.call.gas(msg.gas).value(value)()) {
+                                if (!accountAddress.call.value(value)()) {
                                         // Revert the entire transaction.  No
                                         // need to destroy the funds.
                                         throw;

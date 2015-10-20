@@ -317,13 +317,15 @@ library ScheduledCallLib {
     //uint constant EXTRA_CALL_GAS = 151098;
     //uint constant EXTRA_CALL_GAS = 160574;
     //uint constant EXTRA_CALL_GAS = 160143;
-    uint constant EXTRA_CALL_GAS = 160229;
+    //uint constant EXTRA_CALL_GAS = 160229;
+    uint constant EXTRA_CALL_GAS = 153037;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
     // TODO: recompute this value
     //uint constant CALL_OVERHEAD = 144982;
-    uint constant CALL_OVERHEAD = 127077;
+    //uint constant CALL_OVERHEAD = 127077;
+    uint constant CALL_OVERHEAD = 120104;
 
     event _CallExecuted(address indexed executedBy, bytes32 indexed callKey);
     function CallExecuted(address executedBy, bytes32 callKey) public {
@@ -446,10 +448,10 @@ library ScheduledCallLib {
             call.payout = call.gasCost * feeScalar * 101 / 10000;
             call.fee = call.gasCost * feeScalar / 10000;
 
-            AccountingLib.withdraw(self.gasBank, call.scheduledBy, call.payout + call.fee);
+            AccountingLib.deductFunds(self.gasBank, call.scheduledBy, call.payout + call.fee);
 
-            AccountingLib.deposit(self.gasBank, msgSender, call.payout);
-            AccountingLib.deposit(self.gasBank, owner, call.fee);
+            AccountingLib.addFunds(self.gasBank, msgSender, call.payout);
+            AccountingLib.addFunds(self.gasBank, owner, call.fee);
     }
 
     function getCallMaxCost(CallDatabase storage self, bytes32 callKey) constant returns (uint) {

@@ -284,13 +284,7 @@ library ResourcePoolLib {
                 self.bonds[resourceAddress] += value;
         }
 
-        function canWithdrawBond(Pool storage self, address resourceAddress, uint value) constant returns (bool) {
-                // TODO: only allow withdrawl if not in any active or pending
-                // pools.
-                return false;
-        }
-
-        function withdrawBond(Pool storage self, address resourceAddress, uint value) public {
+        function withdrawBond(Pool storage self, address resourceAddress, uint value, uint minimumBond) public {
                 /*
                  *  Only if you are not in either of the current call pools.
                  */
@@ -301,8 +295,10 @@ library ResourcePoolLib {
 
                 // Do a permissions check to be sure they can withdraw the
                 // funds.
-                if (!canWithdrawBond(self, resourceAddress, value)) {
-                        return;
+                if (isInPool(self, resourceAddress)) {
+                        if (self.bonds[resourceAddress] - value < minimumBond) {
+                            return;
+                        }
                 }
 
                 deductFromBond(self, resourceAddress, value);

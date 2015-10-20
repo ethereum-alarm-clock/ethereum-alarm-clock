@@ -104,7 +104,15 @@ contract Alarm {
         }
 
         function withdrawBond(uint value) public {
-                ResourcePoolLib.withdrawBond(callDatabase.callerPool, msg.sender, value);
+                ResourcePoolLib.withdrawBond(callDatabase.callerPool, msg.sender, value, getMinimumBond());
+        }
+
+        function getBondBalance() constant returns (uint) {
+                return getBondBalance(msg.sender);
+        }
+
+        function getBondBalance(address callerAddress) constant returns (uint) {
+                return callDatabase.callerPool.bonds[callerAddress];
         }
 
 

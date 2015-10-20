@@ -2,40 +2,41 @@ from populus.utils import wait_for_transaction
 
 
 deploy_contracts = [
-    "CallerPool",
+    "Alarm",
 ]
 
 
-def test_withdrawing_bond_restricted_when_in_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts):
-    caller_pool = deployed_contracts.CallerPool
+def test_withdrawing_bond_restricted_when_in_pool(deploy_client, deployed_contracts):
+    alarm = deployed_contracts.Alarm
+    coinbase = deploy_client.get_coinbase()
 
-    assert caller_pool.callerBonds.call(geth_coinbase) == 0
-    deposit_amount = caller_pool.getMinimumBond.call() * 10
+    assert alarm.getBondBalance(coinbase) == 0
+    deposit_amount = alarm.getMinimumBond() * 10
 
-    txn_1_hash = caller_pool.depositBond.sendTransaction(value=deposit_amount)
-    wait_for_transaction(rpc_client, txn_1_hash)
+    txn_1_hash = alarm.depositBond.sendTransaction(value=deposit_amount)
+    wait_for_transaction(deploy_client, txn_1_hash)
 
-    assert caller_pool.callerBonds.call(geth_coinbase) == deposit_amount
+    assert alarm.getBondBalance(coinbase) == deposit_amount
 
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is False
-    assert caller_pool.canEnterPool.call(geth_coinbase) is True
-    wait_for_transaction(rpc_client, caller_pool.enterPool.sendTransaction())
+    assert alarm.isInPool(coinbase) is False
+    assert alarm.canEnterPool(coinbase) is True
+    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
 
-    txn_2_hash = caller_pool.withdrawBond.sendTransaction(deposit_amount)
-    wait_for_transaction(rpc_client, txn_2_hash)
+    txn_2_hash = alarm.withdrawBond.sendTransaction(deposit_amount)
+    wait_for_transaction(deploy_client, txn_2_hash)
 
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
+    assert alarm.isInPool(coinbase) is True
 
     # Withdrawl of full amount not allowed
-    assert caller_pool.callerBonds.call(geth_coinbase) == deposit_amount
+    assert alarm.getBondBalance(coinbase) == deposit_amount
 
     # wi
-    minimum_bond = caller_pool.getMinimumBond.call()
-    txn_3_hash = caller_pool.withdrawBond.sendTransaction(
+    minimum_bond = alarm.getMinimumBond()
+    txn_3_hash = alarm.withdrawBond.sendTransaction(
         deposit_amount - 2 * minimum_bond,
     )
-    wait_for_transaction(rpc_client, txn_3_hash)
+    wait_for_transaction(deploy_client, txn_3_hash)
 
     # Withdrawl of amount above minimum bond amount is allowed
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
-    assert caller_pool.callerBonds.call(geth_coinbase) == 2 * minimum_bond
+    assert alarm.isInPool(coinbase) is True
+    assert alarm.getBondBalance(coinbase) == 2 * minimum_bond

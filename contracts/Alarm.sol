@@ -278,13 +278,7 @@ contract Alarm {
          *  Call execution API
          */
         function doCall(bytes32 callKey) public {
-                bytes18 reason = ScheduledCallLib.doCall(callDatabase, callKey, msg.sender);
-                if (reason != 0x0) {
-                        ScheduledCallLib.CallAborted(msg.sender, callKey, reason);
-                }
-                else {
-                        ScheduledCallLib.CallExecuted(msg.sender, callKey);
-                }
+                ScheduledCallLib.doCall(callDatabase, callKey, msg.sender);
         }
 
         function getCallMaxCost(bytes32 callKey) constant returns (uint) {

@@ -314,12 +314,16 @@ library ScheduledCallLib {
     // operations that occur in `doCall` that cannot be tracked with
     // msg.gas.
     // TODO: recompute this value
-    uint constant EXTRA_CALL_GAS = 151098;
+    //uint constant EXTRA_CALL_GAS = 151098;
+    //uint constant EXTRA_CALL_GAS = 160574;
+    //uint constant EXTRA_CALL_GAS = 160143;
+    uint constant EXTRA_CALL_GAS = 160229;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
     // TODO: recompute this value
-    uint constant CALL_OVERHEAD = 144982;
+    //uint constant CALL_OVERHEAD = 144982;
+    uint constant CALL_OVERHEAD = 127077;
 
     event _CallExecuted(address indexed executedBy, bytes32 indexed callKey);
     function CallExecuted(address executedBy, bytes32 callKey) public {
@@ -330,35 +334,40 @@ library ScheduledCallLib {
         _CallAborted(executedBy, callKey, reason);
     }
 
-    function doCall(CallDatabase storage self, bytes32 callKey, address msgSender) public returns (bytes18) {
+    function doCall(CallDatabase storage self, bytes32 callKey, address msgSender) public {
             uint gasBefore = msg.gas;
 
             Call storage call = self.calls[callKey];
 
             if (call.wasCalled) {
                     // The call has already been executed so don't do it again.
-                    return "ALREADY CALLED";
+                    _CallAborted(msg.sender, callKey, "ALREADY CALLED");
+                    return;
             }
 
             if (call.isCancelled) {
                     // The call was cancelled so don't execute it.
-                    return "CANCELLED";
+                    _CallAborted(msg.sender, callKey, "CANCELLED");
+                    return;
             }
 
             if (call.contractAddress == 0x0) {
                     // This call key doesnt map to a registered call.
-                    return "UNKNOWN";
+                    _CallAborted(msg.sender, callKey, "UNKNOWN");
+                    return;
             }
 
             if (block.number < call.targetBlock) {
                     // Target block hasnt happened yet.
-                    return "TOO EARLY";
+                    _CallAborted(msg.sender, callKey, "TOO EARLY");
+                    return;
             }
 
             if (block.number > call.targetBlock + call.gracePeriod) {
                     // The blockchain has advanced passed the period where
                     // it was allowed to be called.
-                    return "TOO LATE";
+                    _CallAborted(msg.sender, callKey, "TOO LATE");
+                    return;
             }
 
             uint heldBalance = getCallMaxCost(self, callKey);
@@ -372,7 +381,8 @@ library ScheduledCallLib {
                     call.wasCalled = true;
                     
                     // Log it.
-                    return "INSUFFICIENT_FUNDS";
+                    _CallAborted(msg.sender, callKey, "INSUFFICIENT_FUNDS");
+                    return;
             }
 
             // Check if this caller is allowed to execute the call.
@@ -382,7 +392,8 @@ library ScheduledCallLib {
                             // This call was reserved for someone from the
                             // bonded pool of callers and can only be
                             // called by them during this block window.
-                            return "WRONG_CALLER";
+                            _CallAborted(msg.sender, callKey, "WRONG_CALLER");
+                            return;
                     }
 
                     uint blockWindow = (block.number - call.targetBlock) / 4;
@@ -439,8 +450,6 @@ library ScheduledCallLib {
 
             AccountingLib.deposit(self.gasBank, msgSender, call.payout);
             AccountingLib.deposit(self.gasBank, owner, call.fee);
-
-            return 0x0;
     }
 
     function getCallMaxCost(CallDatabase storage self, bytes32 callKey) constant returns (uint) {

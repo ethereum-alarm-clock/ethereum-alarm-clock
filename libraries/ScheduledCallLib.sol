@@ -318,7 +318,8 @@ library ScheduledCallLib {
     //uint constant EXTRA_CALL_GAS = 160574;
     //uint constant EXTRA_CALL_GAS = 160143;
     //uint constant EXTRA_CALL_GAS = 160229;
-    uint constant EXTRA_CALL_GAS = 153037;
+    //uint constant EXTRA_CALL_GAS = 153037;
+    uint constant EXTRA_CALL_GAS = 153145;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
@@ -565,7 +566,7 @@ library ScheduledCallLib {
 
     event _CallCancelled(bytes32 indexed callKey);
     function CallCancelled(bytes32 callKey) public {
-        CallCancelled(callKey);
+        _CallCancelled(callKey);
     }
 
     // Two minutes

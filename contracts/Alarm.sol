@@ -329,7 +329,7 @@ contract Alarm {
         }
 
         function cancelCall(bytes32 callKey) public {
-                if (ScheduledCallLib.cancelCall(callDatabase, callKey, msg.sender)) {
+                if (ScheduledCallLib.cancelCall(callDatabase, callKey, address(msg.sender))) {
                         ScheduledCallLib.CallCancelled(callKey);
                 }
         }

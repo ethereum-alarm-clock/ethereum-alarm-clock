@@ -13,8 +13,8 @@ from .utils import (
 class PoolManager(object):
     logger = get_logger('pool_manager')
 
-    def __init__(self, caller_pool, block_sage=None):
-        self.caller_pool = caller_pool
+    def __init__(self, alarm, block_sage=None):
+        self.alarm = alarm
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -22,7 +22,7 @@ class PoolManager(object):
 
     @property
     def rpc_client(self):
-        return self.caller_pool._meta.rpc_client
+        return self.alarm._meta.rpc_client
 
     @cached_property
     def coinbase(self):
@@ -51,13 +51,16 @@ class PoolManager(object):
         self._thread.start()
 
     def get_snooze_time(self):
-        if self.next_pool:
-            block_delta = max(1, self.next_pool - self.block_sage.current_block_number)
-            return 0.8 * self.block_sage.block_time * block_delta
+        if self.next_generation_id:
+            return 0.8 * self.block_sage.estimated_time_to_block(self.next_generation_start_at)
 
         # If there is no next pool, snooze for about 1/2 of the minimum number
         # of blocks before something interesting could happen.
-        return 0.8 * self.block_sage.block_time * self.pool_freeze_duration / 2
+        return 0.8 * self.block_sage.estimated_time_to_block(
+            block_sage.current_block_number + (
+                (self.pool_freeze_duration + self.pool_rotation_delay) / 2
+            )
+        )
 
     def manage_membership(self):
         if self.in_any_pool:
@@ -69,7 +72,7 @@ class PoolManager(object):
             self.stop()
 
         # check the next pool is not currently frozen.
-        if self.next_pool and self.is_pool_frozen(self.next_pool):
+        if self.next_generation_id and self.is_generation_frozen(self.next_generation_id):
             self.logger.info("Next pool is frozen and cannot be joined")
             return
 
@@ -82,7 +85,7 @@ class PoolManager(object):
         txn_hash = self.enter_pool()
         self.logger.debug("Entered caller pool with txn: %s", txn_hash)
         wait_for_transaction(self.rpc_client, txn_hash, 60)
-        self.logger.info("Entered caller pool #%s", self.next_pool)
+        self.logger.info("Entered caller pool at generation #%s", self.next_generation_id)
 
     def manage_bond(self):
         """
@@ -94,7 +97,7 @@ class PoolManager(object):
         # if self.bond_balance < self.minimum_bond * 2:
         #     deficit = self.minimum_bond * 2 - self.bond_balance
         #     self.logger.info("Bond value below threshold.  Depositing %s", deficit)
-        #     txn_hash = self.caller_pool.deposit(value=deficit)
+        #     txn_hash = self.alarm.deposit(value=deficit)
         #     self.logger.debug("Deposited %s: Txn Hash: %s", deficit, txn_hash)
         #     wait_for_transaction(
         #         self.rpc_client,
@@ -108,68 +111,98 @@ class PoolManager(object):
     #
     @property
     def freeze_horizon(self):
-        return self.block_sage.current_block_number + self.pool_freeze_duration
+        return sum((
+            self.block_sage.current_block_number,
+            self.pool_freeze_duration,
+            self.pool_rotation_delay,
+        ))
 
-    def is_pool_frozen(self, pool_number):
-        if self.block_sage.current_block_number < pool_number < self.freeze_horizon:
+    def is_generation_frozen(self, generation_id):
+        generation_start_at = self.alarm.getGenerationStartAt(generation_id)
+        if self.block_sage.current_block_number < generation_start_at < self.freeze_horizon:
             return True
         return False
 
-    def get_pool_size(self, pool_number):
-        return self.caller_pool.getPoolSize.call(pool_number)
+    def get_generation_size(self, generation_id):
+        return self.alarm.getGenerationSize(generation_id)
 
     @property
     def pool_freeze_duration(self):
-        return self.caller_pool.getPoolFreezeDuration.call()
+        return self.alarm.getPoolFreezeDuration()
+
+    @property
+    def pool_rotation_delay(self):
+        return self.alarm.getPoolRotationDelay()
+
+    @property
+    def pool_overlap_size(self):
+        return self.alarm.getPoolOverlapSize()
 
     @property
     def minimum_pool_length(self):
-        return self.caller_pool.getPoolFreezeDuration.call()
+        assert False  # TODO
+        return self.alarm.getPoolFreezeDuration()
 
     @property
-    def active_pool(self):
-        return self.caller_pool.getActivePoolKey.call()
+    def current_generation_id(self):
+        return self.alarm.getCurrentGenerationId()
 
     @property
-    def next_pool(self):
-        return self.caller_pool.getNextPoolKey.call()
+    def current_generation_start_at(self):
+        return self.alarm.getGenerationStartAt(self.current_generation_id)
+
+    @property
+    def current_generation_end_at(self):
+        return self.alarm.getGenerationEndAt(self.current_generation_id)
+
+    @property
+    def next_generation_id(self):
+        return self.alarm.getNextGenerationId()
+
+    @property
+    def next_generation_start_at(self):
+        return self.alarm.getGenerationStartAt(self.next_generation_id)
+
+    @property
+    def next_generation_end_at(self):
+        return self.alarm.getGenerationEndAt(self.next_generation_id)
 
     @property
     def in_any_pool(self):
-        return self.caller_pool.isInAnyPool.call(self.coinbase)
+        return self.alarm.isInPool()
 
     @property
-    def in_active_pool(self):
-        return self.caller_pool.isInPool.call(self.coinbase, self.active_pool)
+    def in_current_generation(self):
+        return self.alarm.isInGeneration(self.coinbase, self.current_generation_id)
 
     @property
-    def in_next_pool(self):
-        return self.caller_pool.isInPool.call(self.coinbase, self.next_pool)
+    def in_next_generation(self):
+        return self.alarm.isInGeneration(self.coinbase, self.next_generation_id)
 
     @property
     def can_enter_pool(self):
-        return self.caller_pool.canEnterPool.call(self.coinbase)
+        return self.alarm.canEnterPool(self.coinbase)
 
     @property
     def can_exit_pool(self):
-        return self.caller_pool.canExitPool.call(self.coinbase)
+        return self.alarm.canExitPool(self.coinbase)
 
     def enter_pool(self):
-        return self.caller_pool.enterPool.sendTransaction()
+        return self.alarm.enterPool.sendTransaction()
 
     def exit_pool(self):
-        return self.caller_pool.exitPool.sendTransaction()
+        return self.alarm.exitPool.sendTransaction()
 
     #
     # Bond API
     #
     @property
     def bond_balance(self):
-        return self.caller_pool.callerBonds.call(self.coinbase)
+        return self.alarm.getBondBalance()
 
     @property
     def minimum_bond(self):
-        return self.caller_pool.getMinimumBond.call()
+        return self.alarm.getMinimumBond()
 
     def deposit(self, value):
-        return self.caller_pool.deposit.sendTransaction(value=value)
+        return self.alarm.deposit.sendTransaction(value=value)

@@ -275,19 +275,8 @@ contract Alarm {
                 return ScheduledCallLib.getCallFee(callDatabase, callKey);
         }
 
-        /*
-         *  Data Registry API
-         */
-        function getLastDataHash() constant returns (bytes32) {
-                return callDatabase.lastDataHash;
-        }
-
-        function getLastDataLength() constant returns (uint) {
-                return callDatabase.lastDataLength;
-        }
-
-        function getLastData() constant returns (bytes) {
-                return callDatabase.lastData;
+        function getCallMaxCost(bytes32 callKey) constant returns (uint) {
+                return ScheduledCallLib.getCallMaxCost(callDatabase, callKey);
         }
 
         function getCallData(bytes32 callKey) constant returns (bytes) {
@@ -302,15 +291,23 @@ contract Alarm {
                 ScheduledCallLib.DataRegistered(callDatabase.lastDataHash);
         }
 
+        function getLastDataHash() constant returns (bytes32) {
+                return callDatabase.lastDataHash;
+        }
+
+        function getLastDataLength() constant returns (uint) {
+                return callDatabase.lastDataLength;
+        }
+
+        function getLastData() constant returns (bytes) {
+                return callDatabase.lastData;
+        }
+
         /*
          *  Call execution API
          */
         function doCall(bytes32 callKey) public {
                 ScheduledCallLib.doCall(callDatabase, callKey, msg.sender);
-        }
-
-        function getCallMaxCost(bytes32 callKey) constant returns (uint) {
-                return ScheduledCallLib.getCallMaxCost(callDatabase, callKey);
         }
 
         /*
@@ -376,6 +373,11 @@ contract Alarm {
         function getNextCall(uint blockNumber) constant returns (bytes32) {
                 // TODO: tests
                 return GroveLib.query(callDatabase.callIndex, ">=", int(blockNumber));
+        }
+
+        function getPreviousCall(uint blockNumber) constant returns (bytes32) {
+                // TODO: tests
+                return GroveLib.query(callDatabase.callIndex, "<=", int(blockNumber));
         }
 
         function getNextCallSibling(bytes32 callKey) constant returns (bytes32) {

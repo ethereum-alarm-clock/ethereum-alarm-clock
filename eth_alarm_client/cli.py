@@ -22,10 +22,11 @@ from eth_alarm_client import (
 alarm_addresses = (
     ('0.1.0', '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'),
     ('0.2.0', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
-    ('0.3.0 (latest)', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
+    ('0.3.0', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
+    ('0.4.0 (latest)', 'TODO'),
 )
 
-DEFAULT_ADDRESS = '0xdb15058402c241b04a03846f6fb104b1fbeea10b'
+DEFAULT_ADDRESS = 'TODO'
 
 rpc_client = Client('127.0.0.1', '8545')
 
@@ -54,7 +55,7 @@ def addresses():
 @click.option(
     '--address',
     '-a',
-    default='0xdb15058402c241b04a03846f6fb104b1fbeea10b',
+    default=DEFAULT_ADDRESS,
     help="Return the current bond balance from the caller pool.",
 )
 def scheduler(address):
@@ -62,17 +63,13 @@ def scheduler(address):
     Run the call scheduler.
     """
     Alarm = get_contract('Alarm')
-    CallerPool = get_contract('CallerPool')
-    Grove = get_contract('Grove')
 
     alarm = Alarm(address, rpc_client)
-    caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
-    grove = Grove(alarm.getGroveAddress.call(), rpc_client)
 
     block_sage = BlockSage(rpc_client)
-    pool_manager = PoolManager(caller_pool, block_sage=block_sage)
+    pool_manager = PoolManager(alarm, block_sage=block_sage)
     pool_manager.monitor_async()
-    scheduler = Scheduler(alarm, pool_manager, grove, block_sage=block_sage)
+    scheduler = Scheduler(alarm, pool_manager, block_sage=block_sage)
 
     scheduler.monitor_async()
 
@@ -136,11 +133,8 @@ def pool_balance(denomination, address):
     """
     Alarm = get_contract('Alarm')
     alarm = Alarm(address, rpc_client)
-    CallerPool = get_contract('CallerPool')
 
-    caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
-
-    pool_manager = PoolManager(caller_pool)
+    pool_manager = PoolManager(alarm)
     balance = pool_manager.bond_balance
     click.echo("Balance: {0}".format(
         convert_wei_to_denomination(balance, denomination),
@@ -167,11 +161,8 @@ def pool_minimum(denomination, address):
     """
     Alarm = get_contract('Alarm')
     alarm = Alarm(address, rpc_client)
-    CallerPool = get_contract('CallerPool')
 
-    caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
-
-    pool_manager = PoolManager(caller_pool)
+    pool_manager = PoolManager(alarm)
     minimum_bond = pool_manager.minimum_bond
     click.echo("Minimum Bond: {0}".format(
         convert_wei_to_denomination(minimum_bond, denomination),
@@ -191,24 +182,20 @@ def pool_status(address):
     """
     Alarm = get_contract('Alarm')
     alarm = Alarm(address, rpc_client)
-    CallerPool = get_contract('CallerPool')
-
-    caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
-
-    pool_manager = PoolManager(caller_pool)
+    pool_manager = PoolManager(alarm)
 
     status_msg = (
-        "Current Block: {b}\n"
-        "Active Pool: {ap} - {ap_m} - ({ap_s})\n"
-        "Next Pool  : {np} - {np_m} - ({np_s})"
+        "Current Block      : {b}\n"
+        "Current Generation : {ap} - {ap_m} - ({ap_s})\n"
+        "Next Generation    : {np} - {np_m} - ({np_s})"
     ).format(
         b=pool_manager.block_sage.current_block_number,
-        ap=(pool_manager.active_pool or "N/A"),
-        ap_m=pool_manager.get_pool_size(pool_manager.active_pool),
-        ap_s="member" if pool_manager.in_active_pool else "not member",
-        np=(pool_manager.next_pool or "N/A"),
-        np_m=pool_manager.get_pool_size(pool_manager.next_pool),
-        np_s="member" if pool_manager.in_next_pool else "not member",
+        ap=(pool_manager.current_generation_id or "N/A"),
+        ap_m=pool_manager.get_generation_size(pool_manager.current_generation_id),
+        ap_s="member" if pool_manager.in_current_generation else "not member",
+        np=(pool_manager.next_generation_id or "N/A"),
+        np_m=pool_manager.get_generation_size(pool_manager.next_generation_id),
+        np_s="member" if pool_manager.in_next_generation else "not member",
     )
     click.echo(status_msg)
 
@@ -233,10 +220,7 @@ def pool_deposit(async, address, value):
     """
     Alarm = get_contract('Alarm')
     alarm = Alarm(address, rpc_client)
-    CallerPool = get_contract('CallerPool')
-
-    caller_pool = CallerPool(alarm.getCallerPoolAddress.call(), rpc_client)
-    pool_manager = PoolManager(caller_pool)
+    pool_manager = PoolManager(alarm)
 
     msg = (
         "Do you want to deposit {0} into the bond balance for the CallerPool "

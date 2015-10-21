@@ -25,10 +25,9 @@ class ScheduledCall(object):
     txn_receipt = None
     txn = None
 
-    def __init__(self, alarm, pool_manager, call_key, block_sage=None):
+    def __init__(self, alarm, call_key, block_sage=None):
         self.call_key = call_key
         self.alarm = alarm
-        self.pool_manager = pool_manager
         self.logger = get_logger('call-{0}'.format(self.hex_call_key[:5]))
 
         if block_sage is None:
@@ -54,16 +53,15 @@ class ScheduledCall(object):
         ))
 
     @property
-    def call_window_passed(self):
+    def is_expired(self):
         return self.block_sage.current_block_number >= self.last_block
 
     @property
     def scheduler_can_pay(self):
-        gas_limit = int(self.block_sage.current_block['gasLimit'], 16)
-        gas_price = self.rpc_client.get_gas_price()
+        max_cost = self.alarm.getCallMaxCost(self.call_key)
 
-        # Require 110% of max gas to be sure.
-        return self.scheduler_account_balance >= gas_limit * gas_price * 1.1
+        # Require 105% of max gas to be sure.
+        return self.scheduler_account_balance >= max_cost * 1.05
 
     def stop(self):
         self._run = False
@@ -139,7 +137,7 @@ class ScheduledCall(object):
 
         self.logger.info("Waiting for block #%s", self.target_block - buffer)
         while getattr(self, '_run', True) and self.block_sage.current_block_number < self.target_block - buffer:
-            time.sleep(0.25)
+            time.sleep(1)
 
     #
     #  Meta Properties
@@ -157,9 +155,9 @@ class ScheduledCall(object):
         """
         The account balance of the scheduler for this call.
         """
-        return self.alarm.accountBalances.call(self.scheduled_by)
+        return self.alarm.getAccountBalance(self.scheduled_by)
 
-    @property
+    @cached_property
     def last_block(self):
         """
         The last block number that this call can be executed on.
@@ -176,7 +174,7 @@ class ScheduledCall(object):
         Mapping of block number to designated caller address.
         """
         return {
-            block_number: self.pool_manager.caller_pool.getDesignatedCaller.call(self.call_key, self.target_block, self.grace_period, block_number)
+            block_number: self.alarm.getDesignatedCaller(self.call_key, block_number)
             for block_number
             in range(self.target_block, self.last_block + 1)
         }
@@ -219,47 +217,47 @@ class ScheduledCall(object):
     #
     @cached_property
     def contract_address(self):
-        return self.alarm.getCallContractAddress.call(self.call_key)
+        return self.alarm.getCallContractAddress(self.call_key)
 
     @cached_property
     def scheduled_by(self):
-        return self.alarm.getCallScheduledBy.call(self.call_key)
+        return self.alarm.getCallScheduledBy(self.call_key)
 
     @cache_once(0)
     def called_at_block(self):
-        return self.alarm.getCallCalledAtBlock.call(self.call_key)
+        return self.alarm.getCallCalledAtBlock(self.call_key)
 
     @cached_property
     def target_block(self):
-        return self.alarm.getCallTargetBlock.call(self.call_key)
+        return self.alarm.getCallTargetBlock(self.call_key)
 
     @cached_property
     def grace_period(self):
-        return self.alarm.getCallGracePeriod.call(self.call_key)
+        return self.alarm.getCallGracePeriod(self.call_key)
 
     @cached_property
     def base_gas_price(self):
-        return self.alarm.getCallBaseGasPrice.call(self.call_key)
+        return self.alarm.getCallBaseGasPrice(self.call_key)
 
     @cache_once(0)
     def gas_price(self):
-        return self.alarm.getCallGasPrice.call(self.call_key)
+        return self.alarm.getCallGasPrice(self.call_key)
 
     @cache_once(0)
     def gas_used(self):
-        return self.alarm.getCallGasUsed.call(self.call_key)
+        return self.alarm.getCallGasUsed(self.call_key)
 
     @cache_once(0)
     def payout(self):
-        return self.alarm.getCallPayout.call(self.call_key)
+        return self.alarm.getCallPayout(self.call_key)
 
     @cache_once(0)
     def fee(self):
-        return self.alarm.getCallFee.call(self.call_key)
+        return self.alarm.getCallFee(self.call_key)
 
     @cached_property
     def abi_signature(self):
-        return self.alarm.getCallABISignature.call(self.call_key)
+        return self.alarm.getCallABISignature(self.call_key)
 
     _is_cancelled = None
 
@@ -272,14 +270,14 @@ class ScheduledCall(object):
         if self._is_cancelled is not None:
             return self._is_cancelled
 
-        value = self.alarm.checkIfCancelled.call(self.call_key)
+        value = self.alarm.checkIfCancelled(self.call_key)
         if value or self.block_sage.current_block_number > self.target_block - CANCELLATION_WINDOW:
             self._is_cancelled = value
         return value
 
     @cache_once(False)
     def was_called(self):
-        return self.alarm.checkIfCalled.call(self.call_key)
+        return self.alarm.checkIfCalled(self.call_key)
 
     _was_successful = None
 
@@ -291,9 +289,9 @@ class ScheduledCall(object):
         if self._was_successful is None:
             if not self.was_called:
                 return False
-            self._was_successful = self.alarm.checkIfSuccess.call(self.call_key)
+            self._was_successful = self.alarm.checkIfSuccess(self.call_key)
         return bool(self._was_successful)
 
     @cached_property
     def data_hash(self):
-        return self.alarm.getCallDataHash.call(self.call_key)
+        return self.alarm.getCallDataHash(self.call_key)

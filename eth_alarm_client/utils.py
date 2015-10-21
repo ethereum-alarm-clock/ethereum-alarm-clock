@@ -1,4 +1,6 @@
+import os
 import logging
+import collections
 from logging import handlers
 
 
@@ -50,9 +52,21 @@ def cache_once(default_value):
     return type('cache_once', (_cache_once,), {'default_value': default_value})
 
 
-def get_logger(name, level=logging.INFO):
+LEVELS = collections.defaultdict(lambda: logging.INFO)
+LEVELS.update({
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
+})
+
+
+def get_logger(name, level=None):
+    if level is None:
+        level = LEVELS[os.environ.get('LOG_LEVEL', logging.INFO)]
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.DEBUG)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(level)
     stream_handler.setFormatter(
@@ -60,36 +74,36 @@ def get_logger(name, level=logging.INFO):
     )
     logger.addHandler(stream_handler)
     file_handler = handlers.RotatingFileHandler('logs/{0}.log'.format(name), maxBytes=10000000)
-    file_handler.setLevel(level)
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter('%(levelname)s: %(asctime)s %(message)s'))
     logger.addHandler(file_handler)
     return logger
 
 
-def enumerate_upcoming_calls(grove, index_id, anchor_block):
+def enumerate_upcoming_calls(alarm, anchor_block):
     block_cutoff = anchor_block + 40
 
     call_keys = []
 
     while anchor_block > 0 and anchor_block < block_cutoff:
-        node_id = grove.query.call(index_id, '>=', anchor_block)
-        if node_id is None:
+        call_key = alarm.getNextCall(anchor_block)
+
+        if call_key is None:
             break
 
-        target_block = grove.getNodeValue.call(node_id)
+        target_block = alarm.getCallTargetBlock(call_key)
         if target_block > block_cutoff:
             break
 
-        call_key = grove.getNodeId(node_id)
         call_keys.append(call_key)
 
-        sibling = node_id
-        while sibling:
-            sibling = grove.getNextNode.call(sibling)
+        sibling_call_key = call_key
+        while sibling_call_key:
+            sibling_call_key = alarm.getNextCallSibling(sibling_call_key)
 
-            if sibling is not None:
-                if grove.getNodeValue(sibling) == target_block:
-                    call_keys.append(grove.getNodeId(sibling))
+            if sibling_call_key is not None:
+                if alarm.getCallTargetBlock(sibling_call_key) == target_block:
+                    call_keys.append(sibling_call_key)
                 else:
                     break
 

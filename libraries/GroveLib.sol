@@ -10,34 +10,17 @@ library GroveLib {
          *  Address: 0xd07ce4329b27eb8896c51458468d98a0e4c0394c
          */
         struct Index {
-                bytes32 id;
-                bytes32 name;
                 bytes32 root;
                 mapping (bytes32 => Node) nodes;
         }
 
         struct Node {
                 bytes32 id;
-                bytes32 indexId;
                 int value;
                 bytes32 parent;
                 bytes32 left;
                 bytes32 right;
                 uint height;
-        }
-
-        /// @dev This is merely a shortcut for `sha3(owner, indexName)`
-        /// @param owner The address of the owner of this index.
-        /// @param indexName The human readable name for this index.
-        function computeIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
-                return sha3(owner, indexName);
-        }
-
-        /// @dev This is merely a shortcut for `sha3(indexId, id)`
-        /// @param indexId The id for the index the node belongs to.
-        /// @param id The unique identifier for the data this node represents.
-        function computeNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
-                return sha3(indexId, id);
         }
 
         function max(uint a, uint b) internal returns (uint) {
@@ -55,13 +38,6 @@ library GroveLib {
         /// @param id The id for the node to be looked up.
         function getNodeId(Index storage index, bytes32 id) constant returns (bytes32) {
             return index.nodes[id].id;
-        }
-
-        /// @dev Retrieve the index id for the node.
-        /// @param index The index that the node is part of.
-        /// @param id The id for the node to be looked up.
-        function getNodeIndexId(Index storage index, bytes32 id) constant returns (bytes32) {
-            return index.nodes[id].indexId;
         }
 
         /// @dev Retrieve the value for the node.
@@ -215,21 +191,17 @@ library GroveLib {
 
                 bytes32 previousNodeId = 0x0;
 
-                bytes32 rootNodeId = index.root;
-
-                if (rootNodeId == 0x0) {
-                    rootNodeId = id;
+                if (index.root == 0x0) {
                     index.root = id;
                 }
-                Node storage currentNode = index.nodes[rootNodeId];
+                Node storage currentNode = index.nodes[index.root];
 
                 // Do insertion
                 while (true) {
-                    if (currentNode.indexId == 0x0) {
+                    if (currentNode.id == 0x0) {
                         // This is a new unpopulated node.
                         currentNode.id = id;
                         currentNode.parent = previousNodeId;
-                        currentNode.indexId = index.id;
                         currentNode.value = value;
                         break;
                     }
@@ -331,8 +303,8 @@ library GroveLib {
                     }
                 }
                 else {
-                    // If the node we are deleting is the root node so update
-                    // the indexId to root node mapping.
+                    // If the node we are deleting is the root node update the
+                    // index root node pointer.
                     index.root = replacementNode.id;
                 }
 
@@ -371,7 +343,6 @@ library GroveLib {
 
             // Now we zero out all of the fields on the nodeToDelete.
             nodeToDelete.id = 0x0;
-            nodeToDelete.indexId = 0x0;
             nodeToDelete.value = 0;
             nodeToDelete.parent = 0x0;
             nodeToDelete.left = 0x0;

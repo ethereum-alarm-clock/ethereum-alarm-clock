@@ -325,7 +325,9 @@ library ScheduledCallLib {
     //uint constant EXTRA_CALL_GAS = 160143;
     //uint constant EXTRA_CALL_GAS = 160229;
     //uint constant EXTRA_CALL_GAS = 153037;
-    uint constant EXTRA_CALL_GAS = 153145;
+    //uint constant EXTRA_CALL_GAS = 153145;
+    //uint constant EXTRA_CALL_GAS = 153321;
+    uint constant EXTRA_CALL_GAS = 153343;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
@@ -573,7 +575,7 @@ library ScheduledCallLib {
             call.baseGasPrice = tx.gasprice;
 
             // Put the call into the grove index.
-            GroveLib.insert(self.callIndex, self.lastCallKey, int(call.targetBlock));
+            GroveLib.insert(self.callIndex, callKey, int(call.targetBlock));
 
             return 0x0;
     }

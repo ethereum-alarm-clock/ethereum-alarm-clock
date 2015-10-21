@@ -10,13 +10,13 @@ class BlockSage(object):
     """
     A single entity that can be queried for information on the latest block.
     """
-    logger = get_logger('blocksage')
     current_block_number = None
     current_block = None
     current_block_timestamp = None
     heartbeat = None
 
     def __init__(self, rpc_client, heartbeat=4):
+        self.logger = get_logger('blocksage')
         self.rpc_client = rpc_client
 
         self.current_block_number = rpc_client.get_block_number()
@@ -127,8 +127,8 @@ class BlockSage(object):
                 )
             elif time.time() > self.expected_next_block_time + 20 * self.block_time:
                 delta = time.time() - self.expected_next_block_time
-                if delta > 120:
-                    self.logger.error(
+                if delta > 120 and int(delta) % 10 == 0:
+                    self.logger.warning(
                         "Potentially stuck at block %s - Have waited %s seconds.",
                         self.current_block_number,
                         time.time() - self.current_block_timestamp,

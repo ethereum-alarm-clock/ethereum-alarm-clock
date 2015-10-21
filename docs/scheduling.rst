@@ -131,7 +131,7 @@ Contracts can take care of their own call scheduling.
             // allow for the maximum grace period of 255 blocks.
             uint8 gracePeriod = 255;
             // 0x52afbc33 is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
-            alarm.call(0x1145a20f, address(this), sig, dataHash, targetBlock, gracePeriod)
+            alarm.call(0xf828c3fa, address(this), sig, dataHash, targetBlock)
         }
 
         function pickWinner() public {

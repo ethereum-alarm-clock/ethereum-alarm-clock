@@ -57,7 +57,7 @@ following information:
 3. SHA3 hash of the call data that should be included in the function call.
 4. Target block number that the call should be executed on.
 5. Number of blocks after the target block during which it still ok to execute
-   the call.
+   the call.  (between 64 - 255 blocks)
 6. A nonce to allow differentiation between identical calls that are scheduled
    for the same block.
 
@@ -97,7 +97,6 @@ circumstances.
 Will I get paid for executing a call?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are diligent about how you go about executing scheduled calls, there
-should be a near 0% chance that you will not be reimbursed for your gas costs.
-See the section on executing calls for more information on how to protect
-yourself.
+If you are diligent about how you go about executing scheduled calls then
+executing scheduled calls is guaranteed to be profitable.  See the section on
+executing calls for more information.

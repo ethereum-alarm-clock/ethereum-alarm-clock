@@ -19,7 +19,7 @@ Your account balance can be checked by accessing the public mapping of accounts
 to balances.
 
 * **Solidity Function Signature:** ``getAccountBalance(address accountAddress) returns (uint)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x93423e9c``
 
 Calling this function will return the balance in wei for the provided address.
 
@@ -60,6 +60,11 @@ function and sending the desired deposit value with the transaction.
 
 * **Solidity Function Signature:** ``deposit(address accountAddress)``
 * **ABI Signature:** ``0xf340fa01``
+
+Or to deposit into the address that sends the transaction.
+
+* **Solidity Function Signature:** ``deposit()``
+* **ABI Signature:** ``0xd0e30db0``
 
 
 Sending from a contract

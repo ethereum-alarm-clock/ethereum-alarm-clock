@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.4.0
+-----
+
+- Convert Alarm service to use library contracts for all functionality.
+- CallerPool contract API is now integrated into the Alarm API
+
+
 0.3.0
 -----
 

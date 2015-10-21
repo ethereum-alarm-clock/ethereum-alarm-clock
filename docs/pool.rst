@@ -8,16 +8,6 @@ Any caller who reliably executes the calls which are allocated to them will
 make a consistent profit from doing so, while callers who don't get removed
 from the pool and forfeit some or all of their bond.
 
-The Caller Pool is handled by a separate contract.  This contract is deployed
-by the Alarm service contract during creation.  The address of this contract
-can be retrieved with the ``getCallerPoolAddress`` function on the Alarm
-service.
-
-* **Solidity Function Signature:** ``getCallerPoolAddress() returns (address)``
-* **ABI Signature:** ``0x662fc8a0``
-
-This returns the appropriate address to use for interacting with the Caller
-Pool.
 
 Caller Bonding
 --------------
@@ -25,6 +15,7 @@ Caller Bonding
 In order to execute scheduled calls, callers put up a small amount of ether up
 front.  This bond, is held for the duration that a caller remains in the caller
 pool.
+
 
 Minimum Bond
 ^^^^^^^^^^^^
@@ -50,10 +41,15 @@ your bond.
 Checking bond balance
 ^^^^^^^^^^^^^^^^^^^^^
 
-Use the ``callerBonds`` function to check the balance of your bond.
+Use the ``getBondBalance`` function to check the bond balance of an account.
 
-* **Solidity Function Signature:** ``callerBonds(address) returns (uint)``
-* **ABI Signature:** ``0xc861cd66``
+* **Solidity Function Signature:** ``getBondBalance(address) returns (uint)``
+* **ABI Signature:** ``0x33613cbe``
+
+Or to just check the balance of the sender of the transaction.
+
+* **Solidity Function Signature:** ``getBondBalance(address) returns (uint)``
+* **ABI Signature:** ``0x3cbfed74``
 
 
 Withdrawing your bond
@@ -84,27 +80,33 @@ willing to put up a new bond.
 About Pools
 -----------
 
-The Caller Pool contract maintains a lists of caller addresses.  Whenver a
+The caller pool maintains a lists of caller addresses.  Whenever a
 change is made to the pool, either addition of a new member or removal of an
-existing member, a new pool is queued to take place of the current pool 512
-blocks in the future.  The new pool has all of the previous pool's members plus
-or minus whatever additions or removals take place.
+existing member, a new generation is queued to take place of the current
+generation. 
 
-During the first 256 blocks prior to a queued pool becoming active, additional
-members may choose to enter or leave.  The state of the queued pool becomes
-frozen and cannot be changed starting at the 256 blocks leading up to the pool
-becoming active.
+The new generation will be set to begin 160 blocks in the future.  During the first
+80 blocks of this window, other members may leave or join the generation.  The new
+generation will be frozen for the 80 blocks leading up to it's starting block.  Each
+new generation overlaps the previous generation by 256 blocks.
 
-Once the queued pool becomes active, members are once again allowed to enter
+For example, if we are currently on block 1000, and a member exits the pool.
+
+* The new generation will become active at block 1160
+* The new generation will not allow any membership changes after block 1080
+* The current generation will be set to end at block 1416 (1160 + 256)
+ 
+Each new generation carries over all of the previous members upon creation.
+
+Once the queued generation becomes active, members are once again allowed to enter
 and exit the pool.
 
-Each time a new pool is created, the ordering of its members is shuffled.
+Each time a new generation is created, the ordering of its members is shuffled.
 
 .. note::
     It is worth pointing out that from the block during which you exit the
-    pool, you must still execute the calls that are allocated to you for the
-    next 512 blocks until the new queue becomes active.  Failing to do so will
-    cause bond forfeiture.
+    pool, you must still execute the calls that are allocated to you until the
+    current generation has ended.  Failing to do so will cause bond forfeiture.
 
 
 Entering the Pool
@@ -112,10 +114,9 @@ Entering the Pool
 
 An address can enter the caller pool if the following conditions are met.
 
-* The caller has deposited the minimum bond amount into their account with the
-  Caller Pool.
-* The caller is not in the active pool, or the next queued pool.
-* The next queued pool does not go active within the next 256 blocks.
+* The caller has deposited the minimum bond amount into their bond account.
+* The caller is not already in the active pool, or the next queued pool.
+* The next queued pool does not go active within the next 80 blocks.
 
 To enter the pool, call the ``enterPool`` function on the Caller Pool.
 
@@ -123,8 +124,8 @@ To enter the pool, call the ``enterPool`` function on the Caller Pool.
 * **ABI Signature:** ``0x50a3bd39``
 
 If the appropriate conditions are met, you will be added to the next caller
-pool.  This will create a new pool if one has not already been created.
-Otherwise you will be added to the next queued pool.
+pool.  This will create a new generation if one has not already been created.
+Otherwise you will be added to the next queued generation.
 
 You can use the ``canEnterPool`` function to check whether a given address is
 currently allowed to enter the pool.
@@ -132,16 +133,21 @@ currently allowed to enter the pool.
 * **Solidity Function Signature:** ``canEnterPool(address callerAddress) returns (bool)``
 * **ABI Signature:** ``0x8dd5e298``
 
+Or to to check for the address sending the transaction.
+
+* **Solidity Function Signature:** ``canEnterPool() returns (bool)``
+* **ABI Signature:** ``0xc630f92b``
+
 
 Exiting the Pool
 ----------------
 
 An address can exit the caller pool if the following conditions are met.
 
-* The caller is in the current active pool.
+* The caller is in the current active generation.
 * The caller has not already exited or been removed from the queued pool (if it
   exists)
-* The next queued pool does not go active within the next 256 blocks.
+* The next queued pool does not go active within the next 80 blocks.
 
 To exit the pool, use the ``exitPool`` function on the Caller Pool.
 
@@ -156,3 +162,8 @@ currently allowed to exit the pool.
 
 * **Solidity Function Signature:** ``canExitPool(address callerAddress) returns (bool)``
 * **ABI Signature:** ``0xb010d94a``
+
+Alernatively, you can check for the address sending the transaction.
+
+* **Solidity Function Signature:** ``canExitPool(address callerAddress) returns (bool)``
+* **ABI Signature:** ``0x5a5383ac``

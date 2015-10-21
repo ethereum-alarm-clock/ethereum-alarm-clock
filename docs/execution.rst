@@ -57,77 +57,24 @@ be withdrawn using the account management api.
 Determining what scheduled calls are next
 -----------------------------------------
 
-The Alarm service uses Grove to facilitate querying for the next scheduled
-call.
+You can query the Alarm service for the call key of the next scheduled call on
+or after a specified block number using the ``getNextCall`` function
 
-* Grove Contract Address: ``0xfe9d4e5717ec0e16f8301240df5c3f7d3e9effef``
+* **Solidity Function Signature:** ``getNextCall(uint blockNumber)``
+* **ABI Signature:** ``0x9f927be7``
 
+Since there may be multiple calls on the same block, it is best to also check
+if the call has any *siblings* using the ``getNextCallSibling`` function.  This
+function takes a call key and returns the call key that is scheduled to come
+next.
 
-The Grove Index
-^^^^^^^^^^^^^^^
-
-Grove tracks the ordering of data with indexes.  You can retrieve the
-``bytes32`` id one of two ways.  
-
-* From the Alarm service using the ``getGroveIndexId()`` function.
-* From Grove using the ``getIndexId(address ownerAddress ,bytes32 indexName)``
-
-The index name used by Alarm is ``'callTargetBlock'``.
-
-TODO: put in grove address and alarm address here.
-
-
-Querying Grove
-^^^^^^^^^^^^^^
-
-* ``query(bytes32 indexID, bytes2 operator, int value)``
-
-One you have the index id, you will want to use the ``query`` function on Grove
-to get the first scheduled call after the current block.
-
-.. code-block:: javascript
-
-    > nodeId = grove.query.call(indexId, ">=", currentBlock)
-
-This will return either ``0x0`` if there is no upcoming call, or a ``bytes32``
-node id for the first node in the tree that matches our query.  With the node
-id, we then need to fetch the value for the node id using the ``getNodeValu(bytes32 nodeId)e``
-function.
-
-.. code-block:: javascript
-
-    > targetBlock = grove.getNodeValue.call(nodeId)
-
-The return value represents the ``targetBlock`` value for the call.  If we
-choose to execute this scheduled call when the block comes around, we need to
-have the ``callKey``.  We can retrieve this with the ``getNodeId(bytes32 nodeId)`` function on
-Grove since Alarm uses the ``callKey`` for each scheduled call as it's id in
-the grove index.
-
-.. code-block:: javascript
-
-    > callKey = grove.getNodeId.call(nodeId)
-
-We should also check to see if there are more calls with the same target node.
-We can do this with the ``getNextNode(bytes32 nodeId)`` function on grove.
-
-
-.. code-block:: javascript
-
-    > next_node = grove.getNextNode.call(nodeId)
-
-You can then repeate this process until the ``targetBlock`` is beyond the point in the future that you care to monitor.
+* **Solidity Function Signature:** ``getNextCallSibling(bytes32 callKey)``
+* **ABI Signature:** ``0x22bc71f``
 
 .. note::
 
     40 blocks into the future is a good range to monitor since new calls must
     always be scheduled at least 40 blocks in the future.
-
-
-The Grove Documentation
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Detailed information about grove can be found in Grove's documentation.
 
 
 Designated Callers
@@ -149,26 +96,24 @@ Each call has a window during which it is allowed to be executed.  This window
 begins at the specified ``targetBlock`` and extends through ``targetBlock +
 gracePeriod``.   This window is inclusive of it's bounding blocks.
 
-For each 4 block section of the call window, the caller pool associated with
+For each 16 block section of the call window, the caller pool associated with
 the ``targetBlock`` is selected.  The members of the pool can be though of as a
 circular queue, meaning that when you iterate through them, when you reach the
 last member, you start back over at the first member.  For each call, a random
-starting position is selected in the member queue and the 4 block sections of
+starting position is selected in the member queue and the 16 block sections of
 the call window are assigned in order to the membes of the call pool beginning
 at this randomly chosen index..
 
-The last two 4 block sections (5-8 blocks depending on the gracePeriod) are not
+The last two 16 block sections (17-32 blocks depending on the gracePeriod) are not
 allocated, but are considered *free-for-all* allowing anyone to call.
 
 Use the ``getDesignatedCaller`` function to determine which caller from the
 caller pool has been designated for the block.
 
-* **Solidity Function Signature:** ``getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address)``
-* **ABI Signature:** ``0xe8543d0d``
+* **Solidity Function Signature:** ``getDesignatedCaller(bytes32 callKey, uint256 blockNumber)``
+* **ABI Signature:** ``0x3c941423``
 
 * **callKey:** specifies the scheduled call.
-* **targetBlock:** the target block for the specified call.
-* **gracePeriod:** the grace period for the specified call.
 * **blockNumber:** the block number (during the call window) in question.
 
 This returns the address of the caller who is designated for this block, or
@@ -183,13 +128,13 @@ their bond merely by executing the call during their window.  When this
 happens, the previous caller who missed their call window has the current
 minimum bond amount deducted from their bond balance and transferred to the
 caller who executed the call.  The caller who missed their call is also removed
-from the pool.  This removal takes 512 blocks to take place as it occurs within
+from the pool.  This removal takes 416 blocks to take place as it occurs within
 the same mechanism as if they removed themselves from the pool.
 
 Free For All
 ^^^^^^^^^^^^
 
-When a call enters the last two 4-block chunks of its call window it enters
+When a call enters the last two 16-block chunks of its call window it enters
 free-for-all mode.  During these blocks anyone, even unbonded callers, can
 execute the call.  The sender of the executing transaction will be rewarded the
 bond bonus from all callers who missed their call window.

@@ -56,25 +56,3 @@ def test_alarm_events(contracts):
     }
 
     assert actual_events == expected_events
-
-
-def test_caller_pool_function_signatures(contracts):
-    CallerPool = contracts.CallerPool
-    CallerPoolAPI = contracts.CallerPoolAPI
-
-    exclude = {
-        'awardMissedBlockBonus',
-    }
-
-    expected_abi = {
-        hex(function.abi_signature): function.name
-        for function in enumerate_functions(CallerPool._config)
-        if function.name not in exclude
-    }
-
-    actual_abi = {
-        hex(function.abi_signature): function.name
-        for function in enumerate_functions(CallerPoolAPI._config)
-    }
-
-    assert actual_abi == expected_abi

@@ -3,17 +3,16 @@ from populus.utils import wait_for_transaction
 
 deploy_contracts = [
     "Alarm",
-    "Grove",
     "NoArgs",
 ]
 
 
-def test_get_call_signature(geth_node, geth_coinbase, deployed_contracts):
+def test_get_call_signature(deploy_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.NoArgs
 
     txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
-    wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    wait_for_transaction(deploy_client, txn_hash)
 
     call_key = alarm.getLastCallKey.call()
     assert call_key

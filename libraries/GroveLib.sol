@@ -1,33 +1,26 @@
-contract Grove {
+// Grove v0.2
+
+
+/// @title GroveLib - Library for queriable indexed ordered data.
+/// @author PiperMerriam - <pipermerriam@gmail.com>
+library GroveLib {
         /*
-         *  Call tracking API
+         *  Indexes for ordered data
+         *
+         *  Address: 0xd07ce4329b27eb8896c51458468d98a0e4c0394c
          */
+        struct Index {
+                bytes32 root;
+                mapping (bytes32 => Node) nodes;
+        }
+
         struct Node {
-                bytes32 nodeId;
-                bytes32 indexId;
                 bytes32 id;
                 int value;
                 bytes32 parent;
                 bytes32 left;
                 bytes32 right;
                 uint height;
-        }
-
-        // Maps an index id to the id of it's root node.
-        mapping (bytes32 => bytes32) index_to_root;
-
-        // Maps node_id to Node
-        mapping (bytes32 => Node) node_lookup;
-
-        // Map index_id to index Name
-        mapping (bytes32 => bytes32) index_lookup;
-
-        function getIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
-                return sha3(owner, indexName);
-        }
-
-        function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
-                return sha3(indexId, id);
         }
 
         function max(uint a, uint b) internal returns (uint) {
@@ -40,79 +33,88 @@ contract Grove {
         /*
          *  Node getters
          */
-        function getIndexName(bytes32 indexId) constant returns (bytes32) {
-            return index_lookup[indexId];
+        /// @dev Retrieve the unique identifier for the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeId(Index storage index, bytes32 id) constant returns (bytes32) {
+            return index.nodes[id].id;
         }
 
-        function getIndexRoot(bytes32 indexId) constant returns (bytes32) {
-            return index_to_root[indexId];
+        /// @dev Retrieve the value for the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeValue(Index storage index, bytes32 id) constant returns (int) {
+            return index.nodes[id].value;
         }
 
-        function getNodeId(bytes32 nodeId) constant returns (bytes32) {
-            return node_lookup[nodeId].id;
+        /// @dev Retrieve the height of the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeHeight(Index storage index, bytes32 id) constant returns (uint) {
+            return index.nodes[id].height;
         }
 
-        function getNodeIndexId(bytes32 nodeId) constant returns (bytes32) {
-            return node_lookup[nodeId].indexId;
+        /// @dev Retrieve the parent id of the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeParent(Index storage index, bytes32 id) constant returns (bytes32) {
+            return index.nodes[id].parent;
         }
 
-        function getNodeValue(bytes32 nodeId) constant returns (int) {
-            return node_lookup[nodeId].value;
+        /// @dev Retrieve the left child id of the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeLeftChild(Index storage index, bytes32 id) constant returns (bytes32) {
+            return index.nodes[id].left;
         }
 
-        function getNodeHeight(bytes32 nodeId) constant returns (uint) {
-            return node_lookup[nodeId].height;
+        /// @dev Retrieve the right child id of the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeRightChild(Index storage index, bytes32 id) constant returns (bytes32) {
+            return index.nodes[id].right;
         }
 
-        function getNodeParent(bytes32 nodeId) constant returns (bytes32) {
-            return node_lookup[nodeId].parent;
-        }
+        /// @dev Retrieve the node id of the next node in the tree.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getPreviousNode(Index storage index, bytes32 id) constant returns (bytes32) {
+            Node storage currentNode = index.nodes[id];
 
-        function getNodeLeftChild(bytes32 nodeId) constant returns (bytes32) {
-            return node_lookup[nodeId].left;
-        }
-
-        function getNodeRightChild(bytes32 nodeId) constant returns (bytes32) {
-            return node_lookup[nodeId].right;
-        }
-
-        function getPreviousNode(bytes32 nodeId) constant returns (bytes32) {
-            var currentNode = node_lookup[nodeId];
-
-            if (currentNode.nodeId == 0x0) {
+            if (currentNode.id == 0x0) {
                 // Unknown node, just return 0x0;
                 return 0x0;
             }
 
-            Node child;
+            Node memory child;
 
             if (currentNode.left != 0x0) {
                 // Trace left to latest child in left tree.
-                child = node_lookup[currentNode.left];
+                child = index.nodes[currentNode.left];
 
                 while (child.right != 0) {
-                    child = node_lookup[child.right];
+                    child = index.nodes[child.right];
                 }
-                return child.nodeId;
+                return child.id;
             }
 
             if (currentNode.parent != 0x0) {
                 // Now we trace back up through parent relationships, looking
                 // for a link where the child is the right child of it's
                 // parent.
-                var parent = node_lookup[currentNode.parent];
+                Node storage parent = index.nodes[currentNode.parent];
                 child = currentNode;
 
                 while (true) {
-                    if (parent.right == child.nodeId) {
-                        return parent.nodeId;
+                    if (parent.right == child.id) {
+                        return parent.id;
                     }
 
                     if (parent.parent == 0x0) {
                         break;
                     }
                     child = parent;
-                    parent = node_lookup[parent.parent];
+                    parent = index.nodes[parent.parent];
                 }
             }
 
@@ -120,42 +122,45 @@ contract Grove {
             return 0x0;
         }
 
-        function getNextNode(bytes32 nodeId) constant returns (bytes32) {
-            var currentNode = node_lookup[nodeId];
+        /// @dev Retrieve the node id of the previous node in the tree.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNextNode(Index storage index, bytes32 id) constant returns (bytes32) {
+            Node storage currentNode = index.nodes[id];
 
-            if (currentNode.nodeId == 0x0) {
+            if (currentNode.id == 0x0) {
                 // Unknown node, just return 0x0;
                 return 0x0;
             }
 
-            Node child;
+            Node memory child;
 
             if (currentNode.right != 0x0) {
                 // Trace right to earliest child in right tree.
-                child = node_lookup[currentNode.right];
+                child = index.nodes[currentNode.right];
 
                 while (child.left != 0) {
-                    child = node_lookup[child.left];
+                    child = index.nodes[child.left];
                 }
-                return child.nodeId;
+                return child.id;
             }
 
             if (currentNode.parent != 0x0) {
                 // if the node is the left child of it's parent, then the
                 // parent is the next one.
-                var parent = node_lookup[currentNode.parent];
+                Node storage parent = index.nodes[currentNode.parent];
                 child = currentNode;
 
                 while (true) {
-                    if (parent.left == child.nodeId) {
-                        return parent.nodeId;
+                    if (parent.left == child.id) {
+                        return parent.id;
                     }
 
                     if (parent.parent == 0x0) {
                         break;
                     }
                     child = parent;
-                    parent = node_lookup[parent.parent];
+                    parent = index.nodes[parent.parent];
                 }
 
                 // Now we need to trace all the way up checking to see if any parent is the 
@@ -165,21 +170,20 @@ contract Grove {
             return 0x0;
         }
 
-        function insert(bytes32 indexName, bytes32 id, int value) public {
-                bytes32 indexId = getIndexId(msg.sender, indexName);
-                if (index_lookup[indexId] == 0x0) {
-                    index_lookup[indexId] = indexName;
-                }
-                bytes32 nodeId = getNodeId(indexId, id);
 
-                if (node_lookup[nodeId].nodeId == nodeId) {
+        /// @dev Updates or Inserts the id into the index at its appropriate location based on the value provided.
+        /// @param index The index that the node is part of.
+        /// @param id The unique identifier of the data element the index node will represent.
+        /// @param value The value of the data element that represents it's total ordering with respect to other elementes.
+        function insert(Index storage index, bytes32 id, int value) public {
+                if (index.nodes[id].id == id) {
                     // A node with this id already exists.  If the value is
                     // the same, then just return early, otherwise, remove it
                     // and reinsert it.
-                    if (node_lookup[nodeId].value == value) {
+                    if (index.nodes[id].value == value) {
                         return;
                     }
-                    remove(indexName, id);
+                    remove(index, id);
                 }
 
                 uint leftHeight;
@@ -187,64 +191,61 @@ contract Grove {
 
                 bytes32 previousNodeId = 0x0;
 
-                bytes32 rootNodeId = index_to_root[indexId];
-
-                if (rootNodeId == 0x0) {
-                    rootNodeId = nodeId;
-                    index_to_root[indexId] = nodeId;
+                if (index.root == 0x0) {
+                    index.root = id;
                 }
-                var currentNode = node_lookup[rootNodeId];
+                Node storage currentNode = index.nodes[index.root];
 
                 // Do insertion
                 while (true) {
-                    if (currentNode.indexId == 0x0) {
+                    if (currentNode.id == 0x0) {
                         // This is a new unpopulated node.
-                        currentNode.nodeId = nodeId;
-                        currentNode.parent = previousNodeId;
-                        currentNode.indexId = indexId;
                         currentNode.id = id;
+                        currentNode.parent = previousNodeId;
                         currentNode.value = value;
                         break;
                     }
 
                     // Set the previous node id.
-                    previousNodeId = currentNode.nodeId;
+                    previousNodeId = currentNode.id;
 
                     // The new node belongs in the right subtree
                     if (value >= currentNode.value) {
                         if (currentNode.right == 0x0) {
-                            currentNode.right = nodeId;
+                            currentNode.right = id;
                         }
-                        currentNode = node_lookup[currentNode.right];
+                        currentNode = index.nodes[currentNode.right];
                         continue;
                     }
 
                     // The new node belongs in the left subtree.
                     if (currentNode.left == 0x0) {
-                        currentNode.left = nodeId;
+                        currentNode.left = id;
                     }
-                    currentNode = node_lookup[currentNode.left];
+                    currentNode = index.nodes[currentNode.left];
                 }
 
                 // Rebalance the tree
-                _rebalanceTree(currentNode.nodeId);
+                _rebalanceTree(index, currentNode.id);
         }
 
-        function exists(bytes32 indexId, bytes32 id) constant returns (bool) {
-            bytes32 nodeId = getNodeId(indexId, id);
-            return (node_lookup[nodeId].nodeId == nodeId);
+        /// @dev Checks whether a node for the given unique identifier exists within the given index.
+        /// @param index The index that should be searched
+        /// @param id The unique identifier of the data element to check for.
+        function exists(Index storage index, bytes32 id) constant returns (bool) {
+            return (index.nodes[id].id == id);
         }
 
-        function remove(bytes32 indexName, bytes32 id) public {
-            bytes32 indexId = getIndexId(msg.sender, indexName);
-            bytes32 nodeId = getNodeId(indexId, id);
-            
-            Node replacementNode;
-            Node parent;
-            Node child;
+        /// @dev Remove the node for the given unique identifier from the index.
+        /// @param index The index that should be removed
+        /// @param id The unique identifier of the data element to remove.
+        function remove(Index storage index, bytes32 id) public {
+            Node storage replacementNode;
+            Node storage parent;
+            Node storage child;
             bytes32 rebalanceOrigin;
 
-            var nodeToDelete = node_lookup[nodeId];
+            Node storage nodeToDelete = index.nodes[id];
 
             if (nodeToDelete.id != id) {
                 // The id does not exist in the tree.
@@ -256,35 +257,35 @@ contract Grove {
                 // it's tree by either the previous or next node.
                 if (nodeToDelete.left != 0x0) {
                     // This node is guaranteed to not have a right child.
-                    replacementNode = node_lookup[getPreviousNode(nodeToDelete.nodeId)];
+                    replacementNode = index.nodes[getPreviousNode(index, nodeToDelete.id)];
                 }
                 else {
                     // This node is guaranteed to not have a left child.
-                    replacementNode = node_lookup[getNextNode(nodeToDelete.nodeId)];
+                    replacementNode = index.nodes[getNextNode(index, nodeToDelete.id)];
                 }
                 // The replacementNode is guaranteed to have a parent.
-                parent = node_lookup[replacementNode.parent];
+                parent = index.nodes[replacementNode.parent];
 
                 // Keep note of the location that our tree rebalancing should
                 // start at.
-                rebalanceOrigin = replacementNode.nodeId;
+                rebalanceOrigin = replacementNode.id;
 
                 // Join the parent of the replacement node with any subtree of
                 // the replacement node.  We can guarantee that the replacement
                 // node has at most one subtree because of how getNextNode and
                 // getPreviousNode are used.
-                if (parent.left == replacementNode.nodeId) {
+                if (parent.left == replacementNode.id) {
                     parent.left = replacementNode.right;
                     if (replacementNode.right != 0x0) {
-                        child = node_lookup[replacementNode.right];
-                        child.parent = parent.nodeId;
+                        child = index.nodes[replacementNode.right];
+                        child.parent = parent.id;
                     }
                 }
-                if (parent.right == replacementNode.nodeId) {
+                if (parent.right == replacementNode.id) {
                     parent.right = replacementNode.left;
                     if (replacementNode.left != 0x0) {
-                        child = node_lookup[replacementNode.left];
-                        child.parent = parent.nodeId;
+                        child = index.nodes[replacementNode.left];
+                        child.parent = parent.id;
                     }
                 }
 
@@ -293,57 +294,55 @@ contract Grove {
                 // parent, the left child, and the right child.
                 replacementNode.parent = nodeToDelete.parent;
                 if (nodeToDelete.parent != 0x0) {
-                    parent = node_lookup[nodeToDelete.parent];
-                    if (parent.left == nodeToDelete.nodeId) {
-                        parent.left = replacementNode.nodeId;
+                    parent = index.nodes[nodeToDelete.parent];
+                    if (parent.left == nodeToDelete.id) {
+                        parent.left = replacementNode.id;
                     }
-                    if (parent.right == nodeToDelete.nodeId) {
-                        parent.right = replacementNode.nodeId;
+                    if (parent.right == nodeToDelete.id) {
+                        parent.right = replacementNode.id;
                     }
                 }
                 else {
-                    // If the node we are deleting is the root node so update
-                    // the indexId to root node mapping.
-                    index_to_root[indexId] = replacementNode.nodeId;
+                    // If the node we are deleting is the root node update the
+                    // index root node pointer.
+                    index.root = replacementNode.id;
                 }
 
                 replacementNode.left = nodeToDelete.left;
                 if (nodeToDelete.left != 0x0) {
-                    child = node_lookup[nodeToDelete.left];
-                    child.parent = replacementNode.nodeId;
+                    child = index.nodes[nodeToDelete.left];
+                    child.parent = replacementNode.id;
                 }
 
                 replacementNode.right = nodeToDelete.right;
                 if (nodeToDelete.right != 0x0) {
-                    child = node_lookup[nodeToDelete.right];
-                    child.parent = replacementNode.nodeId;
+                    child = index.nodes[nodeToDelete.right];
+                    child.parent = replacementNode.id;
                 }
             }
             else if (nodeToDelete.parent != 0x0) {
                 // The node being deleted is a leaf node so we only erase it's
                 // parent linkage.
-                parent = node_lookup[nodeToDelete.parent];
+                parent = index.nodes[nodeToDelete.parent];
 
-                if (parent.left == nodeToDelete.nodeId) {
+                if (parent.left == nodeToDelete.id) {
                     parent.left = 0x0;
                 }
-                if (parent.right == nodeToDelete.nodeId) {
+                if (parent.right == nodeToDelete.id) {
                     parent.right = 0x0;
                 }
 
                 // keep note of where the rebalancing should begin.
-                rebalanceOrigin = parent.nodeId;
+                rebalanceOrigin = parent.id;
             }
             else {
                 // This is both a leaf node and the root node, so we need to
                 // unset the root node pointer.
-                index_to_root[indexId] = 0x0;
+                index.root = 0x0;
             }
 
             // Now we zero out all of the fields on the nodeToDelete.
             nodeToDelete.id = 0x0;
-            nodeToDelete.nodeId = 0x0;
-            nodeToDelete.indexId = 0x0;
             nodeToDelete.value = 0;
             nodeToDelete.parent = 0x0;
             nodeToDelete.left = 0x0;
@@ -351,7 +350,7 @@ contract Grove {
 
             // Walk back up the tree rebalancing
             if (rebalanceOrigin != 0x0) {
-                _rebalanceTree(rebalanceOrigin);
+                _rebalanceTree(index, rebalanceOrigin);
             }
         }
 
@@ -379,40 +378,50 @@ contract Grove {
             }
 
             // Invalid operator.
-            __throw();
+            throw;
         }
 
-        function _getMaximum(bytes32 nodeId) internal returns (int) {
-                var currentNode = node_lookup[nodeId];
+        function _getMaximum(Index storage index, bytes32 id) internal returns (int) {
+                Node storage currentNode = index.nodes[id];
 
                 while (true) {
                     if (currentNode.right == 0x0) {
                         return currentNode.value;
                     }
-                    currentNode = node_lookup[currentNode.right];
+                    currentNode = index.nodes[currentNode.right];
                 }
         }
 
-        function _getMinimum(bytes32 nodeId) internal returns (int) {
-                var currentNode = node_lookup[nodeId];
+        function _getMinimum(Index storage index, bytes32 id) internal returns (int) {
+                Node storage currentNode = index.nodes[id];
 
                 while (true) {
                     if (currentNode.left == 0x0) {
                         return currentNode.value;
                     }
-                    currentNode = node_lookup[currentNode.left];
+                    currentNode = index.nodes[currentNode.left];
                 }
         }
 
-        function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32) {
-                bytes32 rootNodeId = index_to_root[indexId];
+
+        /** @dev Query the index for the edge-most node that satisfies the
+         *  given query.  For >, >=, and ==, this will be the left-most node
+         *  that satisfies the comparison.  For < and <= this will be the
+         *  right-most node that satisfies the comparison.
+         */
+        /// @param index The index that should be queried
+        /** @param operator One of '>', '>=', '<', '<=', '==' to specify what
+         *  type of comparison operator should be used.
+         */
+        function query(Index storage index, bytes2 operator, int value) public returns (bytes32) {
+                bytes32 rootNodeId = index.root;
                 
                 if (rootNodeId == 0x0) {
                     // Empty tree.
                     return 0x0;
                 }
 
-                var currentNode = node_lookup[rootNodeId];
+                Node storage currentNode = index.nodes[rootNodeId];
 
                 while (true) {
                     if (_compare(currentNode.value, operator, value)) {
@@ -422,28 +431,28 @@ contract Grove {
                             // Need to keep traversing right until this is no
                             // longer true.
                             if (currentNode.right == 0x0) {
-                                return currentNode.nodeId;
+                                return currentNode.id;
                             }
-                            if (_compare(_getMinimum(currentNode.right), operator, value)) {
+                            if (_compare(_getMinimum(index, currentNode.right), operator, value)) {
                                 // There are still nodes to the right that
                                 // match.
-                                currentNode = node_lookup[currentNode.right];
+                                currentNode = index.nodes[currentNode.right];
                                 continue;
                             }
-                            return currentNode.nodeId;
+                            return currentNode.id;
                         }
 
                         if ((operator == GT) || (operator == GTE) || (operator == EQ)) {
                             // Need to keep traversing left until this is no
                             // longer true.
                             if (currentNode.left == 0x0) {
-                                return currentNode.nodeId;
+                                return currentNode.id;
                             }
-                            if (_compare(_getMaximum(currentNode.left), operator, value)) {
-                                currentNode = node_lookup[currentNode.left];
+                            if (_compare(_getMaximum(index, currentNode.left), operator, value)) {
+                                currentNode = index.nodes[currentNode.left];
                                 continue;
                             }
-                            return currentNode.nodeId;
+                            return currentNode.id;
                         }
                     }
 
@@ -453,7 +462,7 @@ contract Grove {
                             // so return null.
                             return 0x0;
                         }
-                        currentNode = node_lookup[currentNode.left];
+                        currentNode = index.nodes[currentNode.left];
                         continue;
                     }
 
@@ -463,7 +472,7 @@ contract Grove {
                             // so return null.
                             return 0x0;
                         }
-                        currentNode = node_lookup[currentNode.right];
+                        currentNode = index.nodes[currentNode.right];
                         continue;
                     }
 
@@ -472,7 +481,7 @@ contract Grove {
                             if (currentNode.right == 0x0) {
                                 return 0x0;
                             }
-                            currentNode = node_lookup[currentNode.right];
+                            currentNode = index.nodes[currentNode.right];
                             continue;
                         }
 
@@ -480,45 +489,45 @@ contract Grove {
                             if (currentNode.left == 0x0) {
                                 return 0x0;
                             }
-                            currentNode = node_lookup[currentNode.left];
+                            currentNode = index.nodes[currentNode.left];
                             continue;
                         }
                     }
                 }
         }
 
-        function _rebalanceTree(bytes32 nodeId) internal {
+        function _rebalanceTree(Index storage index, bytes32 id) internal {
             // Trace back up rebalancing the tree and updating heights as
             // needed..
-            var currentNode = node_lookup[nodeId];
+            Node storage currentNode = index.nodes[id];
 
             while (true) {
-                int balanceFactor = _getBalanceFactor(currentNode.nodeId);
+                int balanceFactor = _getBalanceFactor(index, currentNode.id);
 
                 if (balanceFactor == 2) {
                     // Right rotation (tree is heavy on the left)
-                    if (_getBalanceFactor(currentNode.left) == -1) {
+                    if (_getBalanceFactor(index, currentNode.left) == -1) {
                         // The subtree is leaning right so it need to be
                         // rotated left before the current node is rotated
                         // right.
-                        _rotateLeft(currentNode.left);
+                        _rotateLeft(index, currentNode.left);
                     }
-                    _rotateRight(currentNode.nodeId);
+                    _rotateRight(index, currentNode.id);
                 }
 
                 if (balanceFactor == -2) {
                     // Left rotation (tree is heavy on the right)
-                    if (_getBalanceFactor(currentNode.right) == 1) {
+                    if (_getBalanceFactor(index, currentNode.right) == 1) {
                         // The subtree is leaning left so it need to be
                         // rotated right before the current node is rotated
                         // left.
-                        _rotateRight(currentNode.right);
+                        _rotateRight(index, currentNode.right);
                     }
-                    _rotateLeft(currentNode.nodeId);
+                    _rotateLeft(index, currentNode.id);
                 }
 
                 if ((-1 <= balanceFactor) && (balanceFactor <= 1)) {
-                    _updateNodeHeight(currentNode.nodeId);
+                    _updateNodeHeight(index, currentNode.id);
                 }
 
                 if (currentNode.parent == 0x0) {
@@ -527,34 +536,34 @@ contract Grove {
                     break;
                 }
 
-                currentNode = node_lookup[currentNode.parent];
+                currentNode = index.nodes[currentNode.parent];
             }
         }
 
-        function _getBalanceFactor(bytes32 nodeId) internal returns (int) {
-                var node = node_lookup[nodeId];
+        function _getBalanceFactor(Index storage index, bytes32 id) internal returns (int) {
+                Node storage node = index.nodes[id];
 
-                return int(node_lookup[node.left].height) - int(node_lookup[node.right].height);
+                return int(index.nodes[node.left].height) - int(index.nodes[node.right].height);
         }
 
-        function _updateNodeHeight(bytes32 nodeId) internal {
-                var node = node_lookup[nodeId];
+        function _updateNodeHeight(Index storage index, bytes32 id) internal {
+                Node storage node = index.nodes[id];
 
-                node.height = max(node_lookup[node.left].height, node_lookup[node.right].height) + 1;
+                node.height = max(index.nodes[node.left].height, index.nodes[node.right].height) + 1;
         }
 
-        function _rotateLeft(bytes32 nodeId) internal {
-            var originalRoot = node_lookup[nodeId];
+        function _rotateLeft(Index storage index, bytes32 id) internal {
+            Node storage originalRoot = index.nodes[id];
 
             if (originalRoot.right == 0x0) {
                 // Cannot rotate left if there is no right originalRoot to rotate into
                 // place.
-                __throw();
+                throw;
             }
 
             // The right child is the new root, so it gets the original
             // `originalRoot.parent` as it's parent.
-            var newRoot = node_lookup[originalRoot.right];
+            Node storage newRoot = index.nodes[originalRoot.right];
             newRoot.parent = originalRoot.parent;
 
             // The original root needs to have it's right child nulled out.
@@ -563,15 +572,15 @@ contract Grove {
             if (originalRoot.parent != 0x0) {
                 // If there is a parent node, it needs to now point downward at
                 // the newRoot which is rotating into the place where `node` was.
-                var parent = node_lookup[originalRoot.parent];
+                Node storage parent = index.nodes[originalRoot.parent];
 
                 // figure out if we're a left or right child and have the
                 // parent point to the new node.
-                if (parent.left == originalRoot.nodeId) {
-                    parent.left = newRoot.nodeId;
+                if (parent.left == originalRoot.id) {
+                    parent.left = newRoot.id;
                 }
-                if (parent.right == originalRoot.nodeId) {
-                    parent.right = newRoot.nodeId;
+                if (parent.right == originalRoot.id) {
+                    parent.right = newRoot.id;
                 }
             }
 
@@ -579,36 +588,36 @@ contract Grove {
             if (newRoot.left != 0) {
                 // If the new root had a left child, that moves to be the
                 // new right child of the original root node
-                var leftChild = node_lookup[newRoot.left];
-                originalRoot.right = leftChild.nodeId;
-                leftChild.parent = originalRoot.nodeId;
+                Node storage leftChild = index.nodes[newRoot.left];
+                originalRoot.right = leftChild.id;
+                leftChild.parent = originalRoot.id;
             }
 
             // Update the newRoot's left node to point at the original node.
-            originalRoot.parent = newRoot.nodeId;
-            newRoot.left = originalRoot.nodeId;
+            originalRoot.parent = newRoot.id;
+            newRoot.left = originalRoot.id;
 
             if (newRoot.parent == 0x0) {
-                index_to_root[newRoot.indexId] = newRoot.nodeId;
+                index.root = newRoot.id;
             }
 
             // TODO: are both of these updates necessary?
-            _updateNodeHeight(originalRoot.nodeId);
-            _updateNodeHeight(newRoot.nodeId);
+            _updateNodeHeight(index, originalRoot.id);
+            _updateNodeHeight(index, newRoot.id);
         }
 
-        function _rotateRight(bytes32 nodeId) internal {
-            var originalRoot = node_lookup[nodeId];
+        function _rotateRight(Index storage index, bytes32 id) internal {
+            Node storage originalRoot = index.nodes[id];
 
             if (originalRoot.left == 0x0) {
                 // Cannot rotate right if there is no left node to rotate into
                 // place.
-                __throw();
+                throw;
             }
 
             // The left child is taking the place of node, so we update it's
             // parent to be the original parent of the node.
-            var newRoot = node_lookup[originalRoot.left];
+            Node storage newRoot = index.nodes[originalRoot.left];
             newRoot.parent = originalRoot.parent;
 
             // Null out the originalRoot.left
@@ -617,37 +626,32 @@ contract Grove {
             if (originalRoot.parent != 0x0) {
                 // If the node has a parent, update the correct child to point
                 // at the newRoot now.
-                var parent = node_lookup[originalRoot.parent];
+                Node storage parent = index.nodes[originalRoot.parent];
 
-                if (parent.left == originalRoot.nodeId) {
-                    parent.left = newRoot.nodeId;
+                if (parent.left == originalRoot.id) {
+                    parent.left = newRoot.id;
                 }
-                if (parent.right == originalRoot.nodeId) {
-                    parent.right = newRoot.nodeId;
+                if (parent.right == originalRoot.id) {
+                    parent.right = newRoot.id;
                 }
             }
 
             if (newRoot.right != 0x0) {
-                var rightChild = node_lookup[newRoot.right];
+                Node storage rightChild = index.nodes[newRoot.right];
                 originalRoot.left = newRoot.right;
-                rightChild.parent = originalRoot.nodeId;
+                rightChild.parent = originalRoot.id;
             }
 
             // Update the new root's right node to point to the original node.
-            originalRoot.parent = newRoot.nodeId;
-            newRoot.right = originalRoot.nodeId;
+            originalRoot.parent = newRoot.id;
+            newRoot.right = originalRoot.id;
 
             if (newRoot.parent == 0x0) {
-                index_to_root[newRoot.indexId] = newRoot.nodeId;
+                index.root = newRoot.id;
             }
 
             // Recompute heights.
-            _updateNodeHeight(originalRoot.nodeId);
-            _updateNodeHeight(newRoot.nodeId);
-        }
-
-        function __throw() internal {
-            int[] x;
-            x[1];
+            _updateNodeHeight(index, originalRoot.id);
+            _updateNodeHeight(index, newRoot.id);
         }
 }

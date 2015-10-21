@@ -11,12 +11,10 @@ from .utils import (
 
 
 class Scheduler(object):
-    logger = get_logger('scheduler')
-
-    def __init__(self, alarm, pool_manager, grove, block_sage=None):
+    def __init__(self, alarm, pool_manager, block_sage=None):
+        self.logger = get_logger('scheduler')
         self.alarm = alarm
         self.pool_manager = pool_manager
-        self.grove = grove
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -49,8 +47,7 @@ class Scheduler(object):
 
     def schedule_upcoming_calls(self):
         upcoming_calls = enumerate_upcoming_calls(
-            self.grove,
-            self.alarm.getGroveIndexId.call(),
+            self.alarm,
             self.block_sage.current_block_number,
         )
         for call_key in upcoming_calls:
@@ -58,7 +55,9 @@ class Scheduler(object):
                 continue
 
             scheduled_call = ScheduledCall(
-                self.alarm, self.pool_manager, call_key, self.block_sage,
+                self.alarm,
+                call_key,
+                block_sage=self.block_sage,
             )
 
             if scheduled_call.is_cancelled:

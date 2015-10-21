@@ -1,38 +1,37 @@
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction, wait_for_block
+from populus.utils import wait_for_transaction
 
 
 deploy_contracts = [
     "Alarm",
-    "Grove",
     "PassesUInt",
 ]
 
 
-def test_call_fee(geth_node, rpc_client, deployed_contracts):
+def test_call_fee(deploy_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.PassesUInt
 
-    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
     alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, 3)
-    wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    wait_for_transaction(deploy_client, txn_hash)
 
-    assert client_contract.value.call() == 0
+    assert client_contract.value() == 0
 
-    callKey = alarm.getLastCallKey.call()
-    assert callKey is not None
+    call_key = alarm.getLastCallKey()
+    assert call_key is not None
 
     owner = '0xd3cda913deb6f67967b99d67acdfa1712c293601'
 
-    assert alarm.getCallFee.call(callKey) == 0
-    assert alarm.accountBalances.call(owner) == 0
+    assert alarm.getCallFee(call_key) == 0
+    assert alarm.getAccountBalance(owner) == 0
 
-    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
-    call_txn_hash = alarm.doCall.sendTransaction(callKey)
-    wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    deploy_client.wait_for_block(alarm.getCallTargetBlock(call_key), 120)
+    call_txn_hash = alarm.doCall.sendTransaction(call_key)
+    wait_for_transaction(deploy_client, call_txn_hash)
 
-    balance = alarm.accountBalances.call(owner)
+    balance = alarm.getAccountBalance(owner)
     assert balance > 0
-    assert alarm.getCallFee.call(callKey) == balance
+    assert alarm.getCallFee(call_key) == balance

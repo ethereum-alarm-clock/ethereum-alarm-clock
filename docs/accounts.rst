@@ -18,8 +18,8 @@ Checking account balance
 Your account balance can be checked by accessing the public mapping of accounts
 to balances.
 
-* **Solidity Function Signature:** ``accountBalances(address accountAddress) returns (uint)``
-* **ABI Signature:** ``0x6ff96d17``
+* **Solidity Function Signature:** ``getAccountBalance(address accountAddress) returns (uint)``
+* **ABI Signature:** ``TODO``
 
 Calling this function will return the balance in wei for the provided address.
 

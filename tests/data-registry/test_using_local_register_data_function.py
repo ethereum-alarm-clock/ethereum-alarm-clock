@@ -3,16 +3,19 @@ from populus.utils import wait_for_transaction
 
 deploy_contracts = [
     "Alarm",
-    "Grove",
     "TestDataRegistry",
 ]
 
 
-def test_registering_using_local_abstraction(geth_node, deployed_contracts):
+def test_registering_using_local_abstraction(deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.TestDataRegistry
 
     assert client_contract.wasSuccessful.call() == 0
+
+    # This is for a weird bug that I'm not sure how to fix.
+    evm = alarm._meta.rpc_client.evm
+    evm.mine()
 
     txn_hash = client_contract.registerData.sendTransaction(
         alarm._meta.address,

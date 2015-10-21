@@ -1,7 +1,15 @@
 contract AlarmTestAPI {
+        // account functiosn
         function withdraw(uint value) public;
-        function accountBalances(address account) public returns (uint);
+        function getAccountBalance(address account) public returns (uint);
+
+        // call scheduling
         function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
+
+        // Pool functions
+        function depositBond() public;
+        function enterPool() public;
+        function exitPool() public;
 }
 
 
@@ -74,9 +82,14 @@ contract TestDataRegistry {
 contract NoArgs {
         bool public value;
         uint8 gracePeriod = 255;
+        uint delta = 40;
 
         function setGracePeriod(uint8 v) public {
             gracePeriod = v;
+        }
+
+        function setDelta(uint v) public {
+            delta = v;
         }
 
         function doIt() public {
@@ -91,7 +104,7 @@ contract NoArgs {
                 to.call(bytes4(sha3("registerData()")));
 
                 AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, gracePeriod, 0);
+                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + delta, gracePeriod, 0);
         }
 }
 
@@ -101,13 +114,8 @@ contract Fails {
         bytes32 public dataHash;
 
         function doIt() public {
-                __throw();
+                throw;
                 value = true;
-        }
-
-        function __throw() internal {
-                int[] x;
-                x[1];
         }
 
         function scheduleIt(address to) public {
@@ -221,7 +229,7 @@ contract WithdrawsDuringCall {
         }
 
         function getAlarmBalance() public returns (uint) {
-                return alarm.accountBalances(address(this));
+                return alarm.getAccountBalance(address(this));
         }
 
         bool public wasCalled;
@@ -305,29 +313,22 @@ contract InfiniteLoop {
 }
 
 
-contract TestCallerPoolAPI {
-        function depositBond() public;
-        function enterPool() public;
-        function exitPool() public;
-}
-
-
 contract JoinsPool {
-        TestCallerPoolAPI callerPool;
+        AlarmTestAPI alarm;
 
         function setCallerPool(address to) public {
-                callerPool = TestCallerPoolAPI(to);
+                alarm = AlarmTestAPI(to);
         }
 
         function deposit(uint value) public {
-                callerPool.depositBond.value(value)();
+                alarm.depositBond.value(value)();
         }
 
         function enter() public {
-                callerPool.enterPool();
+                alarm.enterPool();
         }
 
         function exit() public {
-                callerPool.exitPool();
+                alarm.exitPool();
         }
 }

@@ -1,36 +1,35 @@
 from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction, wait_for_block
+from populus.utils import wait_for_transaction
 
 
 deploy_contracts = [
     "Alarm",
-    "Grove",
     "NoArgs",
 ]
 
 
-def test_getting_gas_used(geth_node, rpc_client, deployed_contracts):
+def test_getting_gas_used(deploy_client, deployed_contracts):
     alarm = deployed_contracts.Alarm
     client_contract = deployed_contracts.NoArgs
 
-    deposit_amount = get_max_gas(rpc_client) * rpc_client.get_gas_price() * 20
+    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
     alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
-    wait_for_transaction(client_contract._meta.rpc_client, txn_hash)
+    wait_for_transaction(deploy_client, txn_hash)
 
-    assert client_contract.value.call() is False
+    assert client_contract.value() is False
 
-    callKey = alarm.getLastCallKey.call()
-    assert callKey is not None
+    call_key = alarm.getLastCallKey()
+    assert call_key is not None
 
-    assert alarm.getCallGasUsed.call(callKey) == 0
+    assert alarm.getCallGasUsed(call_key) == 0
 
-    wait_for_block(rpc_client, alarm.getCallTargetBlock.call(callKey), 120)
-    call_txn_hash = alarm.doCall.sendTransaction(callKey)
-    wait_for_transaction(alarm._meta.rpc_client, call_txn_hash)
+    deploy_client.wait_for_block(alarm.getCallTargetBlock(call_key), 120)
+    call_txn_hash = alarm.doCall.sendTransaction(call_key)
+    wait_for_transaction(deploy_client, call_txn_hash)
 
-    call_txn = alarm._meta.rpc_client.get_transaction_by_hash(call_txn_hash)
+    call_txn = deploy_client.get_transaction_by_hash(call_txn_hash)
 
-    assert client_contract.value.call() is True
-    assert alarm.getCallGasPrice.call(callKey) == int(call_txn['gasPrice'], 16)
+    assert client_contract.value() is True
+    assert alarm.getCallGasPrice(call_key) == int(call_txn['gasPrice'], 16)

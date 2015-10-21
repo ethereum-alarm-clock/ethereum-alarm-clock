@@ -26,7 +26,7 @@ Abstract Alarm Contract Source Code
         /*
          *  Account Management API
          */
-        function accountBalances(address account) public returns (uint);
+        function getAccountBalance(address account) public returns (uint);
 
         event Deposit(address indexed _from, address indexed accountAddress, uint value);
         function deposit(address accountAddress) public;

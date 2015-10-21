@@ -22,7 +22,7 @@ contract Alarm {
 
                 callDatabase.callerPool.freezePeriod = 80;
                 callDatabase.callerPool.rotationDelay = 80;
-                callDatabase.callerPool.overlapSize = 80;
+                callDatabase.callerPool.overlapSize = 256;
         }
 
         ScheduledCallLib.CallDatabase callDatabase;
@@ -371,12 +371,10 @@ contract Alarm {
         }
 
         function getNextCall(uint blockNumber) constant returns (bytes32) {
-                // TODO: tests
                 return GroveLib.query(callDatabase.callIndex, ">=", int(blockNumber));
         }
 
         function getNextCallSibling(bytes32 callKey) constant returns (bytes32) {
-                // TODO: tests
                 return GroveLib.getNextNode(callDatabase.callIndex, callKey);
         }
 }

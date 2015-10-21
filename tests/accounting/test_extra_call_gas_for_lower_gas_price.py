@@ -35,4 +35,4 @@ def test_extra_call_gas_constant_when_gas_price_lower(deploy_client, deployed_co
 
     assert recorded_gas_used >= actual_gas_used
 
-    assert abs(recorded_gas_used - actual_gas_used) in {0, 86}
+    assert abs(recorded_gas_used - actual_gas_used) in {0, 64}

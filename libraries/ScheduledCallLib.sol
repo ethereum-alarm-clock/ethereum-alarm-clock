@@ -155,9 +155,8 @@ library ScheduledCallLib {
     /*
      *  API used by Alarm service
      */
-
-    // TODO: these functions should be put in the ScheduledCallLib and
-    // reworked since they used to be in the CallerPool contract.
+    // The number of blocks that each caller in the pool has to complete their
+    // call.
     uint constant CALL_WINDOW_SIZE = 16;
 
     function getGenerationIdForCall(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
@@ -185,12 +184,8 @@ library ScheduledCallLib {
                     return 0x0;
             }
 
-
-            // Pool used is based on the starting block for the call.  This
-            // allows us to know that the pool cannot change for at least
-            // POOL_FREEZE_NUM_BLOCKS which is kept greater than the max
-            // grace period.
-            // TODO: this comment needs to be rewritten
+            // Lookup the pool that full contains the call window for this
+            // call.
             uint generationId = ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod);
             if (generationId == 0) {
                     // No pool currently in operation.
@@ -319,21 +314,10 @@ library ScheduledCallLib {
     // This number represents the constant gas cost of the addition
     // operations that occur in `doCall` that cannot be tracked with
     // msg.gas.
-    // TODO: recompute this value
-    //uint constant EXTRA_CALL_GAS = 151098;
-    //uint constant EXTRA_CALL_GAS = 160574;
-    //uint constant EXTRA_CALL_GAS = 160143;
-    //uint constant EXTRA_CALL_GAS = 160229;
-    //uint constant EXTRA_CALL_GAS = 153037;
-    //uint constant EXTRA_CALL_GAS = 153145;
-    //uint constant EXTRA_CALL_GAS = 153321;
-    uint constant EXTRA_CALL_GAS = 153343;
+    uint constant EXTRA_CALL_GAS = 153321;
 
     // This number represents the overall overhead involved in executing a
     // scheduled call.
-    // TODO: recompute this value
-    //uint constant CALL_OVERHEAD = 144982;
-    //uint constant CALL_OVERHEAD = 127077;
     uint constant CALL_OVERHEAD = 120104;
 
     event _CallExecuted(address indexed executedBy, bytes32 indexed callKey);

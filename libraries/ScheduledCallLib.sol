@@ -158,6 +158,12 @@ library ScheduledCallLib {
 
     // TODO: these functions should be put in the ScheduledCallLib and
     // reworked since they used to be in the CallerPool contract.
+    uint constant CALL_WINDOW_SIZE = 16;
+
+    function getGenerationIdForCall(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
+            Call call = self.calls[callKey];
+            return ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod);
+    }
 
     function getDesignatedCaller(CallDatabase storage self, bytes32 callKey, uint blockNumber) constant returns (address) {
             /*
@@ -171,8 +177,8 @@ library ScheduledCallLib {
             }
 
             // Check if we are in free-for-all window.
-            uint numWindows = call.gracePeriod / 4;
-            uint blockWindow = (blockNumber - call.targetBlock) / 4;
+            uint numWindows = call.gracePeriod / CALL_WINDOW_SIZE;
+            uint blockWindow = (blockNumber - call.targetBlock) / CALL_WINDOW_SIZE;
 
             if (blockWindow + 2 > numWindows) {
                     // We are within the free-for-all period.
@@ -231,8 +237,8 @@ library ScheduledCallLib {
             uint bonusAmount;
             address fromCaller;
 
-            uint numWindows = call.gracePeriod / 4;
-            uint blockWindow = (block.number - call.targetBlock) / 4;
+            uint numWindows = call.gracePeriod / CALL_WINDOW_SIZE;
+            uint blockWindow = (block.number - call.targetBlock) / CALL_WINDOW_SIZE;
 
             // Check if we are within the free-for-all period.  If so, we
             // award from all pool members.
@@ -399,7 +405,7 @@ library ScheduledCallLib {
                             return;
                     }
 
-                    uint blockWindow = (block.number - call.targetBlock) / 4;
+                    uint blockWindow = (block.number - call.targetBlock) / CALL_WINDOW_SIZE;
                     if (blockWindow > 0) {
                             // Someone missed their call so this caller
                             // gets to claim their bond for picking up
@@ -517,6 +523,14 @@ library ScheduledCallLib {
         _CallRejected(callKey, reason);
     }
 
+    function getCallWindowSize() public returns (uint) {
+        return CALL_WINDOW_SIZE;
+    }
+
+    function getMinimumGracePeriod() public returns (uint) {
+        return 4 * CALL_WINDOW_SIZE;
+    }
+
     function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public returns (bytes15) {
             /*
              * Primary API for scheduling a call.  Prior to calling this
@@ -543,7 +557,7 @@ library ScheduledCallLib {
                     return "DUPLICATE";
             }
 
-            if (gracePeriod < 16) {
+            if (gracePeriod < getMinimumGracePeriod()) {
                     return "GRACE_TOO_SHORT";
             }
 

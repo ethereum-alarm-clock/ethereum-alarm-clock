@@ -42,7 +42,7 @@ library ResourcePoolLib {
                  *  Creat a new pool generation with all of the current
                  *  generation's members copied over in random order.
                  */
-                var previousGeneration = self.generations[self._id];
+                Generation storage previousGeneration = self.generations[self._id];
 
                 self._id += 1;
                 Generation storage nextGeneration = self.generations[self._id];
@@ -82,17 +82,22 @@ library ResourcePoolLib {
         function getGenerationForWindow(Pool storage self, uint leftBound, uint rightBound) constant returns (uint) {
             // TODO: tests
                 var left = GroveLib.query(self.generationStart, "<=", int(leftBound));
+
+                if (left != 0x0) {
+                    Generation memory leftCandidate = self.generations[StringLib.bytesToUInt(left)];
+                    if (leftCandidate.startAt <= leftBound && (leftCandidate.endAt >= rightBound || leftCandidate.endAt == 0)) {
+                        return leftCandidate.id;
+                    }
+                }
+
                 var right = GroveLib.query(self.generationEnd, ">=", int(rightBound));
-
-                Generation memory leftCandidate = self.generations[StringLib.bytesToUInt(GroveLib.getNodeId(self.generationStart, left))];
-                Generation memory rightCandidate = self.generations[StringLib.bytesToUInt(GroveLib.getNodeId(self.generationEnd, right))];
-
-                if (leftCandidate.startAt <= leftBound && (leftCandidate.endAt <= rightBound || leftCandidate.endAt == 0)) {
-                    return leftCandidate.id;
+                if (right != 0x0) {
+                    Generation memory rightCandidate = self.generations[StringLib.bytesToUInt(right)];
+                    if (rightCandidate.startAt <= leftBound && (rightCandidate.endAt >= rightBound || rightCandidate.endAt == 0)) {
+                        return rightCandidate.id;
+                    }
                 }
-                if (rightCandidate.startAt <= leftBound && (rightCandidate.endAt <= rightBound || rightCandidate.endAt == 0)) {
-                    return rightCandidate.id;
-                }
+
                 return 0;
         }
 
@@ -182,7 +187,7 @@ library ResourcePoolLib {
             var nextGenerationId = getNextGenerationId(self);
             if (nextGenerationId != 0) {
                 var nextGeneration = self.generations[nextGenerationId];
-                if (nextGeneration.startAt - self.freezePeriod >= block.number) {
+                if (block.number + self.freezePeriod >= nextGeneration.startAt) {
                     // Next generation starts too soon.
                     return false;
                 }

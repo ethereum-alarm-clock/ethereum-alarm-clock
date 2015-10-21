@@ -20,9 +20,9 @@ contract Alarm {
                 callDatabase.unauthorizedRelay = new Relay();
                 callDatabase.authorizedRelay = new Relay();
 
-                callDatabase.callerPool.freezePeriod = 40;
-                callDatabase.callerPool.rotationDelay = 40;
-                callDatabase.callerPool.overlapSize = 40;
+                callDatabase.callerPool.freezePeriod = 80;
+                callDatabase.callerPool.rotationDelay = 80;
+                callDatabase.callerPool.overlapSize = 80;
         }
 
         ScheduledCallLib.CallDatabase callDatabase;
@@ -128,6 +128,14 @@ contract Alarm {
                 return callDatabase.callerPool.generations[generationId].members.length;
         }
 
+        function getGenerationStartAt(uint generationId) constant returns (uint) {
+                return callDatabase.callerPool.generations[generationId].startAt;
+        }
+
+        function getGenerationEndAt(uint generationId) constant returns (uint) {
+                return callDatabase.callerPool.generations[generationId].endAt;
+        }
+
         function getCurrentGenerationId() constant returns (uint) {
                 return ResourcePoolLib.getCurrentGenerationId(callDatabase.callerPool);
         }
@@ -136,8 +144,20 @@ contract Alarm {
                 return ResourcePoolLib.getNextGenerationId(callDatabase.callerPool);
         }
 
+        function isInPool() constant returns (bool) {
+                return ResourcePoolLib.isInPool(callDatabase.callerPool, msg.sender);
+        }
+
         function isInPool(address callerAddress) constant returns (bool) {
                 return ResourcePoolLib.isInPool(callDatabase.callerPool, callerAddress);
+        }
+
+        function isInGeneration(uint generationId) constant returns (bool) {
+                return isInGeneration(msg.sender, generationId);
+        }
+
+        function isInGeneration(address callerAddress, uint generationId) constant returns (bool) {
+                return ResourcePoolLib.isInGeneration(callDatabase.callerPool, callerAddress, generationId);
         }
 
         /*
@@ -296,6 +316,10 @@ contract Alarm {
         /*
          *  Call Scheduling API
          */
+        function getMinimumGracePeriod() constant returns (uint) {
+                return ScheduledCallLib.getMinimumGracePeriod();
+        }
+
         function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public {
                 /*
                  *  Schedule call with gracePeriod defaulted to 255 and nonce
@@ -337,6 +361,14 @@ contract Alarm {
         /*
          *  Next Call API
          */
+        function getCallWindowSize() constant returns (uint) {
+                return ScheduledCallLib.getCallWindowSize();
+        }
+
+        function getGenerationIdForCall(bytes32 callKey) constant returns (uint) {
+                return ScheduledCallLib.getGenerationIdForCall(callDatabase, callKey);
+        }
+
         function getDesignatedCaller(bytes32 callKey, uint blockNumber) constant returns (address) {
                 return ScheduledCallLib.getDesignatedCaller(callDatabase, callKey, blockNumber);
         }

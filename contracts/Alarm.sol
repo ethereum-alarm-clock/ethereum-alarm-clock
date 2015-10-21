@@ -375,11 +375,6 @@ contract Alarm {
                 return GroveLib.query(callDatabase.callIndex, ">=", int(blockNumber));
         }
 
-        function getPreviousCall(uint blockNumber) constant returns (bytes32) {
-                // TODO: tests
-                return GroveLib.query(callDatabase.callIndex, "<=", int(blockNumber));
-        }
-
         function getNextCallSibling(bytes32 callKey) constant returns (bytes32) {
                 // TODO: tests
                 return GroveLib.getNextNode(callDatabase.callIndex, callKey);

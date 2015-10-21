@@ -1,48 +1,49 @@
-from populus.utils import wait_for_transaction, wait_for_block
+from populus.utils import wait_for_transaction
 
 
 deploy_contracts = [
-    "CallerPool",
+    "Alarm",
 ]
 
 
-def test_exiting_pool(geth_node, geth_coinbase, rpc_client, deployed_contracts):
-    caller_pool = deployed_contracts.CallerPool
+def test_exiting_pool(deploy_client, deployed_contracts):
+    alarm = deployed_contracts.Alarm
+    coinbase = deploy_client.get_coinbase()
 
-    assert caller_pool.callerBonds.call(geth_coinbase) == 0
-    deposit_amount = caller_pool.getMinimumBond.call() * 10
+    assert alarm.getBondBalance(coinbase) == 0
+    deposit_amount = alarm.getMinimumBond() * 10
 
-    txn_1_hash = caller_pool.depositBond.sendTransaction(value=deposit_amount)
-    wait_for_transaction(rpc_client, txn_1_hash)
+    txn_1_hash = alarm.depositBond.sendTransaction(value=deposit_amount)
+    wait_for_transaction(deploy_client, txn_1_hash)
 
-    assert caller_pool.getActivePoolKey.call() == 0
-    assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is False
-    assert caller_pool.canEnterPool.call(geth_coinbase) is True
-    assert caller_pool.canExitPool.call(geth_coinbase) is False
+    assert alarm.getCurrentGenerationId() == 0
+    assert alarm.getNextGenerationId() == 0
+    assert alarm.isInPool(coinbase) is False
+    assert alarm.canEnterPool(coinbase) is True
+    assert alarm.canExitPool(coinbase) is False
 
-    wait_for_transaction(rpc_client, caller_pool.enterPool.sendTransaction())
-    first_pool_key = caller_pool.getNextPoolKey.call()
-    wait_for_block(rpc_client, first_pool_key, 180)
+    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
+    first_generation_id = alarm.getNextGenerationId()
+    deploy_client.wait_for_block(alarm.getGenerationStartAt(first_generation_id), 180)
 
-    assert caller_pool.getActivePoolKey.call() == first_pool_key
-    assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
-    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
-    assert caller_pool.canEnterPool.call(geth_coinbase) is False
-    assert caller_pool.canExitPool.call(geth_coinbase) is True
+    assert alarm.getCurrentGenerationId() == first_generation_id
+    assert alarm.getNextGenerationId() == 0
+    assert alarm.isInPool(coinbase) is True
+    assert alarm.isInGeneration(coinbase, first_generation_id) is True
+    assert alarm.canEnterPool(coinbase) is False
+    assert alarm.canExitPool(coinbase) is True
 
-    wait_for_transaction(rpc_client, caller_pool.exitPool.sendTransaction())
-    second_pool_key = caller_pool.getNextPoolKey.call()
+    wait_for_transaction(deploy_client, alarm.exitPool.sendTransaction())
+    second_generation_id = alarm.getNextGenerationId()
 
-    assert second_pool_key > first_pool_key
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is True
-    assert caller_pool.isInPool.call(geth_coinbase, first_pool_key) is True
+    assert second_generation_id > first_generation_id
+    assert alarm.isInPool(coinbase) is True
+    assert alarm.isInGeneration(coinbase, first_generation_id) is True
 
-    wait_for_block(rpc_client, second_pool_key, 180)
+    deploy_client.wait_for_block(alarm.getGenerationEndAt(first_generation_id), 180)
 
-    assert caller_pool.getActivePoolKey.call() == second_pool_key
-    assert caller_pool.getNextPoolKey.call() == 0
-    assert caller_pool.isInAnyPool.call(geth_coinbase) is False
-    assert caller_pool.canEnterPool.call(geth_coinbase) is True
-    assert caller_pool.canExitPool.call(geth_coinbase) is False
+    assert alarm.getCurrentGenerationId() == second_generation_id
+    assert alarm.getNextGenerationId() == 0
+    assert alarm.isInPool(coinbase) is False
+    assert alarm.canEnterPool(coinbase) is True
+    assert alarm.canExitPool(coinbase) is False

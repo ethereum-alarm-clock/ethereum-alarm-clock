@@ -21,11 +21,18 @@ required to be able to enter the caller pool.
 Check Bond Balance
 ^^^^^^^^^^^^^^^^^^
 
-Use the ``callerBonds`` function to check the bond balance for the provided
+Use the ``getBondBalance`` function to check the bond balance for the provided
 address.
 
-* **Solidity Function Signature:** ``callerBonds(address callerAddress) returns (uint)``
-* **ABI Signature:** ``0xc861cd66``
+* **Solidity Function Signature:** ``getBondBalance(address callerAddress) returns (uint)``
+* **ABI Signature:** ``0x33613cbe``
+
+Or to check the balance of the sender of the transaction.
+
+
+* **Solidity Function Signature:** ``getBondBalance() returns (uint)``
+* **ABI Signature:** ``0x3cbfed74``
+
 
 Deposit Bond
 ^^^^^^^^^^^^
@@ -57,12 +64,10 @@ Get Designated Caller
 Use the ``getDesignatedCaller`` function to retrieve which caller address, if
 any, is designated as the caller for a given block and scheduled call.
 
-* **Solidity Function Signature:** ``getDesignatedCaller(bytes32 callKey, uint targetBlock, uint8 gracePeriod, uint blockNumber) public returns (address)``
-* **ABI Signature:** ``0xe8543d0d``
+* **Solidity Function Signature:** ``getDesignatedCaller(bytes32 callKey, uint256 blockNumber)``
+* **ABI Signature:** ``0x3c941423``
 
 * **callKey:** specifies the scheduled call.
-* **targetBlock:** the target block for the specified call.
-* **gracePeriod:** the grace period for the specified call.
 * **blockNumber:** the block number (during the call window) in question.
 
 This returns the address of the caller who is designated for this block, or
@@ -73,56 +78,53 @@ Pool Information
 
 The following functions are available to query information about call pools.
 
-Pool History
-^^^^^^^^^^^^
+Pool Generations
+^^^^^^^^^^^^^^^^
 
-Use the ``poolHistory`` function to lookup historical caller pools.
+Use the ``getCurrentGenerationId`` function to lookup the id of the pool
+generation that is currently active. (returns 0 if no generations exist)
 
-* **Solidity Function Signature:** ``poolHistory(uint index) returns (uint)``
-* **ABI Signature:** ``0x910789c4``
+* **Solidity Function Signature:** ``getCurrentGenerationId() returns (uint)``
+* **ABI Signature:** ``0xb0171fa4``
 
-This function can be used to return the nth caller pool, where index is the
-0-indexed number of the desired caller pool.  Returns the ``poolKey`` which can
-be used to reference the caller pool.  The ``poolKey`` is also the block number
-that the pool became active.
+Use the ``getNextGenerationId`` function to lookup the generation that is
+queued to become active.  Returns ``0x0`` if there is no next generation
+queued.
+
+* **Solidity Function Signature:** ``getNextGenerationId() returns (uint)``
+* **ABI Signature:** ``0xa502aae8``
+
+Use the ``getGenerationStartAt`` function to lookup the block on which a given
+generation will become active.
+
+* **Solidity Function Signature:** ``getGenerationStartAt(uint generationId) returns (uint)``
+* **ABI Signature:** ``0xf8b11853``
+
+Use the ``getGenerationEndAt`` function to lookup the block on which a given
+generation will end and become inactive.  Returns ``0`` if the generation is
+still open ended.
+
+* **Solidity Function Signature:** ``getGenerationEndAt(uint generationId) returns (uint)``
+* **ABI Signature:** ``0x306b031d``
+
+Use the ``getGenerationSize`` function to query the number of members in a
+given generation.
+
+* **Solidity Function Signature:** ``getGenerationSize(uint generationId) returns (uint)``
+* **ABI Signature:** ``0xb3559460``
+
 
 Get Pool Key for Block
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Use the ``getPoolKeyForBlock`` function to return the ``poolKey`` that should
-be used for the given block number.
+Use the ``getGenerationIdForCall`` function to return the ``generationId`` that
+should be used for the given call key.  This can be helpful to determine
+whether your call execution script should pay attention to specific calls if
+you are in the process of entering or exiting the pool.
 
-* **Solidity Function Signature:** ``getPoolKeyForBlock(uint blockNumber) returns (uint)``
-* **ABI Signature:** ``0xaec918c7``
+* **Solidity Function Signature:** ``getGenerationIdForCall(bytes32 callKey) returns (uint)``
+* **ABI Signature:** ``0xdb681e54``
 
-Get Active Pool Key
-^^^^^^^^^^^^^^^^^^^
-
-Use the ``getActivePoolKey`` function to retrieve the ``poolKey`` for the
-caller pool that is currently active.
-
-* **Solidity Function Signature:** ``getActivePoolKey() returns (uint)``
-* **ABI Signature:** ``0xa6814e8e``
-
-
-Get Next Pool Key
-^^^^^^^^^^^^^^^^^
-
-Use the ``getNextPoolKey`` function to retrieve the ``poolKey`` that is
-currently queued up next.
-
-* **Solidity Function Signature:** ``getNextPoolKey() returns (uint)``
-* **ABI Signature:** ``0xc4afc3fb``
-
-Returns ``0`` if there is no caller pool queued.
-
-Get Pool Size
-^^^^^^^^^^^^^
-
-Use the ``getPoolSize`` function to lookup the size of a given pool.
-
-* **Solidity Function Signature:** ``getPoolSize(uint poolKey) returns (uint)``
-* **ABI Signature:** ``0x6595f73a``
 
 Pool Membership
 ---------------
@@ -130,22 +132,33 @@ Pool Membership
 The following functions can be used to query about an address's pool
 membership.
 
-Is In Any Pool
-^^^^^^^^^^^^^^
-
-Use the ``isInAnyPool`` function to query whether an address is in either the
-currently active caller pool or the queued caller pool.
-
-* **Solidity Function Signature:** ``isInAnyPool(address callerAddress) returns (bool)``
-* **ABI Signature:** ``0x84c92c9a``
-
 Is In Pool
 ^^^^^^^^^^
 
-Use the ``isInPool`` function to query whether an address is in a specific pool.
+Use the ``isInPool`` function to query whether an address is in either the
+currently active generation or the queued generation.
 
-* **Solidity Function Signature:** ``isInPool(address callerAddress, uint poolKey) returns (bool)``
-* **ABI Signature:** ``0x19f74e1f``
+* **Solidity Function Signature:** ``isInPool(address callerAddress) returns (bool)``
+* **ABI Signature:** ``0x8baced64``
+
+Or to check whether the current calling address is in the pool.
+
+* **Solidity Function Signature:** ``isInPool() returns (bool)``
+* **ABI Signature:** ``0x1ae460e5``
+
+Is In Generation
+^^^^^^^^^^^^^^^^
+
+Use the ``isInGeneration`` function to query whether an address is in a
+specific generation.
+
+* **Solidity Function Signature:** ``isInGeneration(address callerAddress, uint256 generationId) returns (bool)``
+* **ABI Signature:** ``0x7772a380``
+
+Or to query whether the current calling address is in the pool.
+
+* **Solidity Function Signature:** ``isInGeneration(uint256 generationId) returns (bool)``
+* **ABI Signature:** ``0xa6c01cfd``
 
 
 Entering and Exiting Pools
@@ -158,11 +171,16 @@ the call pool.
 Can Enter Pool
 ^^^^^^^^^^^^^^
 
-Use the ``canEnterPool`` function to query whether or not you are allowed to
+Use the ``canEnterPool`` function to query whether a given address is allowed to
 enter the caller pool.
 
-* **Solidity Function Signature:** ``canEnterPool() returns (bool)``
+* **Solidity Function Signature:** ``canEnterPool(address callerAddress) returns (bool)``
 * **ABI Signature:** ``0x8dd5e298``
+
+Or to query whether the current calling address is allowed.
+
+* **Solidity Function Signature:** ``canEnterPool() returns (bool)``
+* **ABI Signature:** ``0xc630f92b``
 
 
 Can Exit Pool
@@ -171,8 +189,13 @@ Can Exit Pool
 Use the ``canExitPool`` function to query whether or not you are allowed to
 exit the caller pool.
 
-* **Solidity Function Signature:** ``canExitPool() returns (bool)``
+* **Solidity Function Signature:** ``canExitPool(address callerAddress) returns (bool)``
 * **ABI Signature:** ``0xb010d94a``
+
+Or to query whether the current calling address is allowed.
+
+* **Solidity Function Signature:** ``canExitPool(address callerAddress) returns (bool)``
+* **ABI Signature:** ``0x5a5383ac``
 
 
 Enter Pool

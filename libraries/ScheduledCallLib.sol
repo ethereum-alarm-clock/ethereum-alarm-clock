@@ -244,8 +244,8 @@ library ScheduledCallLib {
             // award from all pool members.
             if (blockWindow + 2 > numWindows) {
                     address firstCaller = getDesignatedCaller(self, callKey, call.targetBlock);
-                    for (i = call.targetBlock; i <= call.targetBlock + call.gracePeriod; i += 4) {
-                            fromCaller = getDesignatedCaller(self, callKey, call.targetBlock);
+                    for (i = call.targetBlock; i <= call.targetBlock + call.gracePeriod; i += CALL_WINDOW_SIZE) {
+                            fromCaller = getDesignatedCaller(self, callKey, i);
                             if (fromCaller == firstCaller && i != call.targetBlock) {
                                     // We have already gone through all of
                                     // the pool callers so we should break

@@ -128,7 +128,7 @@ class PoolManager(object):
 
     @property
     def pool_freeze_duration(self):
-        return self.alarm.getPoolFreezeDuration()
+        return self.alarm.getPoolFreezePeriod()
 
     @property
     def pool_rotation_delay(self):

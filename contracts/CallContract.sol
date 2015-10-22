@@ -65,7 +65,7 @@ contract ScheduledBlockCall {
                             return;
                     }
 
-                    uint blockWindow = (block.number - call.targetBlock) / CALL_WINDOW_SIZE;
+                    uint blockWindow = (block.number - targetBlock) / CALL_WINDOW_SIZE;
                     if (blockWindow > 0) {
                             // Someone missed their call so this caller
                             // gets to claim their bond for picking up

@@ -23,10 +23,10 @@ alarm_addresses = (
     ('0.1.0', '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'),
     ('0.2.0', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
     ('0.3.0', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
-    ('0.4.0 (latest)', '0xbcbf4d2ce032769be810890bc1bf3b23a56eab62'),
+    ('0.4.0 (latest)', '0x30c9e568f133adce1f1ea91e189613223fc461b9'),
 )
 
-DEFAULT_ADDRESS = '0xbcbf4d2ce032769be810890bc1bf3b23a56eab62'
+DEFAULT_ADDRESS = '0x30c9e568f133adce1f1ea91e189613223fc461b9'
 
 rpc_client = Client('127.0.0.1', '8545')
 

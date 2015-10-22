@@ -7,7 +7,7 @@ import "libraries/AccountingLib.sol";
 /*
  *  Version 0.4.0-rc1
  *
- *  address: 0xbcbf4d2ce032769be810890bc1bf3b23a56eab62
+ *  address: 0x30c9e568f133adce1f1ea91e189613223fc461b9
  */
 contract Alarm {
         /*

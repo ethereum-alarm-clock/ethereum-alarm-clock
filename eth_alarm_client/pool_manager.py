@@ -57,7 +57,7 @@ class PoolManager(object):
         # If there is no next pool, snooze for about 1/2 of the minimum number
         # of blocks before something interesting could happen.
         return 0.8 * self.block_sage.estimated_time_to_block(
-            block_sage.current_block_number + (
+            self.block_sage.current_block_number + (
                 (self.pool_freeze_duration + self.pool_rotation_delay) / 2
             )
         )

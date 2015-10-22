@@ -225,10 +225,10 @@ def pool_deposit(async, address, value):
     msg = (
         "Do you want to deposit {0} into the bond balance for the CallerPool "
         "contract at `{1}` for the address `{2}`"
-    ).format(value, caller_pool._meta.address, pool_manager.coinbase)
+    ).format(value, alarm._meta.address, pool_manager.coinbase)
 
     if click.confirm(msg):
-        txn_hash = caller_pool.depositBond.sendTransaction(value=value)
+        txn_hash = alarm.depositBond.sendTransaction(value=value)
     else:
         click.echo("Deposit cancelled")
         click.exit(1)

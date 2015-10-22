@@ -6,6 +6,9 @@ import "libraries/StringLib.sol";
 // @title ResourcePoolLib - Library for a set of resources that are ready for use.
 // @author Piper Merriam <pipermerriam@gmail.com>
 library ResourcePoolLib {
+        /*
+         *  Address: 0xc895c144d0b0f88417cf9e14e03e6abc82c0af3f
+         */
         struct Pool {
                 uint rotationDelay;
                 uint overlapSize;
@@ -36,8 +39,9 @@ library ResourcePoolLib {
                 address[] members;
         }
 
+        /// @dev Creates the next generation for the given pool.  All members from the current generation are carried over (with their order randomized).  The current generation will have it's endAt block set.
+        /// @param self The pool to operate on.
         function createNextGeneration(Pool storage self) public returns (uint) {
-            // TODO: tests
                 /*
                  *  Creat a new pool generation with all of the current
                  *  generation's members copied over in random order.
@@ -79,6 +83,10 @@ library ResourcePoolLib {
                 return nextGeneration.id;
         }
 
+        /// @dev Returns the first generation id that fully contains the block window provided.
+        /// @param self The pool to operate on.
+        /// @param leftBound The left bound for the block window (inclusive)
+        /// @param rightBound The right bound for the block window (inclusive)
         function getGenerationForWindow(Pool storage self, uint leftBound, uint rightBound) constant returns (uint) {
             // TODO: tests
                 var left = GroveLib.query(self.generationStart, "<=", int(leftBound));
@@ -101,6 +109,8 @@ library ResourcePoolLib {
                 return 0;
         }
 
+        /// @dev Returns the first generation in the future that has not yet started.
+        /// @param self The pool to operate on.
         function getNextGenerationId(Pool storage self) constant returns (uint) {
             // TODO: tests
                 var next = GroveLib.query(self.generationStart, ">", int(block.number));
@@ -110,6 +120,8 @@ library ResourcePoolLib {
                 return StringLib.bytesToUInt(next);
         }
 
+        /// @dev Returns the first generation that is currently active.
+        /// @param self The pool to operate on.
         function getCurrentGenerationId(Pool storage self) constant returns (uint) {
             // TODO: tests
                 var next = GroveLib.query(self.generationEnd, ">", int(block.number));
@@ -127,6 +139,10 @@ library ResourcePoolLib {
         /*
          *  Pool membership API
          */
+        /// @dev Returns a boolean for whether the given address is in the given generation.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address to check membership of
+        /// @param generationId The id of the generation to check.
         function isInGeneration(Pool storage self, address resourceAddress, uint generationId) constant returns (bool) {
             // TODO: tests
             if (generationId == 0) {
@@ -141,30 +157,50 @@ library ResourcePoolLib {
             return false;
         }
 
+        /// @dev Returns a boolean for whether the given address is in the current generation.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address to check membership of
         function isInCurrentGeneration(Pool storage self, address resourceAddress) constant returns (bool) {
             // TODO: tests
             return isInGeneration(self, resourceAddress, getCurrentGenerationId(self));
         }
 
+        /// @dev Returns a boolean for whether the given address is in the next queued generation.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address to check membership of
         function isInNextGeneration(Pool storage self, address resourceAddress) constant returns (bool) {
             // TODO: tests
             return isInGeneration(self, resourceAddress, getNextGenerationId(self));
         }
 
+        /// @dev Returns a boolean for whether the given address is in either the current generation or the next queued generation.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address to check membership of
         function isInPool(Pool storage self, address resourceAddress) constant returns (bool) {
             // TODO: tests
             return (isInCurrentGeneration(self, resourceAddress) || isInNextGeneration(self, resourceAddress));
         }
 
-        event _AddedToGeneration(address indexed callerAddress, uint indexed generationId);
-        function AddedToGeneration(address callerAddress, uint generationId) public {
-                _AddedToGeneration(callerAddress, generationId);
-        }
-        event _RemovedFromGeneration(address indexed callerAddress, uint indexed generationId);
-        function RemovedFromGeneration(address callerAddress, uint generationId) public {
-                _RemovedFromGeneration(callerAddress, generationId);
+        event _AddedToGeneration(address indexed resourceAddress, uint indexed generationId);
+        /// @dev Function to expose the _AddedToGeneration event to contracts.
+        /// @param resourceAddress The address that was added
+        /// @param generationId The id of the generation.
+        function AddedToGeneration(address resourceAddress, uint generationId) public {
+                _AddedToGeneration(resourceAddress, generationId);
         }
 
+        event _RemovedFromGeneration(address indexed resourceAddress, uint indexed generationId);
+        /// @dev Function to expose the _AddedToGeneration event to contracts.
+        /// @param resourceAddress The address that was removed.
+        /// @param generationId The id of the generation.
+        function RemovedFromGeneration(address resourceAddress, uint generationId) public {
+                _RemovedFromGeneration(resourceAddress, generationId);
+        }
+
+        /// @dev Returns a boolean as to whether the provided address is allowed to enter the pool at this time.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address in question
+        /// @param minimumBond The minimum bond amount that should be required for entry.
         function canEnterPool(Pool storage self, address resourceAddress, uint minimumBond) constant returns (bool) {
             /*
              *  - bond
@@ -196,6 +232,10 @@ library ResourcePoolLib {
             return true;
         }
 
+        /// @dev Adds the address to pool by adding them to the next generation (as well as creating it if it doesn't exist).
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address to be added to the pool
+        /// @param minimumBond The minimum bond amount that should be required for entry.
         function enterPool(Pool storage self, address resourceAddress, uint minimumBond) public returns (uint) {
             if (!canEnterPool(self, resourceAddress, minimumBond)) {
                 throw;
@@ -212,6 +252,9 @@ library ResourcePoolLib {
             return nextGenerationId;
         }
 
+        /// @dev Returns a boolean as to whether the provided address is allowed to exit the pool at this time.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address in question
         function canExitPool(Pool storage self, address resourceAddress) constant returns (bool) {
             if (!isInCurrentGeneration(self, resourceAddress)) {
                 // Not in the pool.
@@ -234,6 +277,10 @@ library ResourcePoolLib {
             return isInNextGeneration(self, resourceAddress);
         }
 
+
+        /// @dev Removes the address from the pool by removing them from the next generation (as well as creating it if it doesn't exist)
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address in question
         function exitPool(Pool storage self, address resourceAddress) public returns (uint) {
             if (!canExitPool(self, resourceAddress)) {
                 throw;
@@ -248,6 +295,10 @@ library ResourcePoolLib {
             return nextGenerationId;
         }
 
+        /// @dev Removes the address from a generation's members array. Returns boolean as to whether removal was successful.
+        /// @param self The pool to operate on.
+        /// @param generationId The id of the generation to operate on.
+        /// @param resourceAddress The address to be removed.
         function removeFromGeneration(Pool storage self, uint generationId, address resourceAddress) public returns (bool){
             Generation storage generation = self.generations[generationId];
             // now remove the address
@@ -265,6 +316,10 @@ library ResourcePoolLib {
          *  Bonding
          */
 
+        /// @dev Subtracts the amount from an account's bond balance.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address of the account
+        /// @param value The value to subtract.
         function deductFromBond(Pool storage self, address resourceAddress, uint value) public {
                 /*
                  *  deduct funds from a bond value without risk of an
@@ -277,6 +332,10 @@ library ResourcePoolLib {
                 self.bonds[resourceAddress] -= value;
         }
 
+        /// @dev Adds the amount to an account's bond balance.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address of the account
+        /// @param value The value to add.
         function addToBond(Pool storage self, address resourceAddress, uint value) public {
                 /*
                  *  Add funds to a bond value without risk of an
@@ -289,6 +348,10 @@ library ResourcePoolLib {
                 self.bonds[resourceAddress] += value;
         }
 
+        /// @dev Withdraws a bond amount from an address's bond account, sending them the corresponding amount in ether.
+        /// @param self The pool to operate on.
+        /// @param resourceAddress The address of the account
+        /// @param value The value to withdraw.
         function withdrawBond(Pool storage self, address resourceAddress, uint value, uint minimumBond) public {
                 /*
                  *  Only if you are not in either of the current call pools.

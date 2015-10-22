@@ -3,6 +3,10 @@
 /// @title String Utils - String utility functions
 /// @author Piper Merriam - <pipermerriam@gmail.com>
 library StringLib {
+    /*
+     *  Address: 0x4f830b115c86d93a1a4e324548ef80b0f2dd4c76
+     */
+
     /// @dev Converts an unsigned integert to its string representation.
     /// @param v The number to be converted.
     function uintToBytes(uint v) constant returns (bytes32 ret) {

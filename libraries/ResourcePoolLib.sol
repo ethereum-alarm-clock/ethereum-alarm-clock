@@ -7,7 +7,7 @@ import "libraries/StringLib.sol";
 // @author Piper Merriam <pipermerriam@gmail.com>
 library ResourcePoolLib {
         /*
-         *  Address: 0xc895c144d0b0f88417cf9e14e03e6abc82c0af3f
+         *  Address: 0xd6bbd16eaa6ea3f71a458bffc64c0ca24fc8c58e
          */
         struct Pool {
                 uint rotationDelay;

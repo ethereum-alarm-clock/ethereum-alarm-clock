@@ -5,9 +5,9 @@ import "libraries/AccountingLib.sol";
 
 
 /*
- *  Version 0.4.0-rc1
+ *  Version 0.4.0
  *
- *  address: 0x30c9e568f133adce1f1ea91e189613223fc461b9
+ *  address: 0x07307d0b136a79bac718f43388aed706389c4588
  */
 contract Alarm {
         /*

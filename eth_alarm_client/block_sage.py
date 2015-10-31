@@ -113,7 +113,11 @@ class BlockSage(object):
             time.sleep(sleep_time)
             if self.rpc_client.get_block_number() > self.current_block_number:
                 # Update block time.
-                next_block_timestamp = int(self.rpc_client.get_block_by_number(self.current_block_number + 1)['timestamp'], 16)
+                next_block = self.rpc_client.get_block_by_number(self.current_block_number + 1)
+                if next_block is None:
+                    logger.warning("Got `None` while fetching block %s", self.current_block_number + 1)
+                    continue
+                next_block_timestamp = int(next_block['timestamp'], 16)
                 self.block_time = next_block_timestamp - self.current_block_timestamp
 
                 # Grab current block data

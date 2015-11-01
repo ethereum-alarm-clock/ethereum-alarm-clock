@@ -7,17 +7,7 @@ contract AlarmAPI {
 
 
 library CallLib {
-        function registerData(bytes data) public returns (bytes callData){
-            callData.length = data.length - 4;
-            if (data.length > 4) {
-                    for (uint i = 0; i < callData.length; i++) {
-                            callData[i] = data[i + 4];
-                    }
-            }
-            return callData;
-        }
-
-        function sendSafe(address toAddress, uint value) internal {
+        function sendSafe(address toAddress, uint value) public {
                 if (value > address(this).balance) {
                         value = address(this).balance;
                 }
@@ -66,9 +56,19 @@ contract FutureCall {
         bytes4 public abiSignature;
         bytes public callData;
 
-        function registerData() public onlyscheduler {
-                callData = CallLib.registerData(msg.data);
+        function registerData() public {
+            if (callData.length > 0) {
+                    // Data can only be registered once.
+                    throw;
+            }
+            callData.length = msg.data.length - 4;
+            if (msg.data.length > 4) {
+                    for (uint i = 0; i < callData.length; i++) {
+                            callData[i] = msg.data[i + 4];
+                    }
+            }
         }
+
 
         function () {
                 // Fallback to allow sending funds to this contract.
@@ -81,7 +81,7 @@ contract FutureCall {
 
         // API for inherited contracts
         function beforeExecute(address executor) internal returns (bool);
-        function logExecution(address executor) internal;
+        function logExecution(address executor, uint payment, uint fee, bool success) internal;
         function afterExecute(address executor) internal;
         function getOverhead() constant returns (uint);
         function getExtraGas() constant returns (uint);
@@ -107,7 +107,7 @@ contract FutureCall {
             bool success = contractAddress.call.gas(msg.gas - getOverhead())(abiSignature, callData);
 
             // Compute the scalar (0 - 200) for the fee.
-            uint feeScalar = CallLib.getCallFeeScalar(anchorGasPrice, msg.gasprice);
+            uint feeScalar = CallLib.getCallFeeScalar(anchorGasPrice, tx.gasprice);
 
             uint payment = getPayment() * feeScalar / 100; 
             uint fee = getFee() * feeScalar / 100;
@@ -116,7 +116,7 @@ contract FutureCall {
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
             // happen after this line.
-            uint gasCost = msg.gasprice * (gasBefore - msg.gas + getExtraGas());
+            uint gasCost = tx.gasprice * (gasBefore - msg.gas + getExtraGas());
 
             // Now we need to pay the executor as well as keep fee.
             sendSafe(executor, payment + gasCost);
@@ -129,7 +129,7 @@ contract FutureCall {
 
         event Cancelled(address indexed cancelledBy);
 
-        function cancel(address sender) onlyscheduler {
+        function cancel(address sender) public onlyscheduler {
                 Cancelled(sender);
                 suicide(sender);
         }
@@ -169,26 +169,27 @@ contract FutureBlockCall is FutureCall {
                 return baseFee;
         }
 
-        function beforeExecute(address executor) internal {
+        function beforeExecute(address executor) internal returns (bool) {
                 // Need to do do all the before-call validation.
+                return false;
         }
 
-        event CallExecuted(address indexed executor, uint payment);
+        event CallExecuted(address indexed executor, uint payment, uint fee, bool success);
 
-        function logExecution(address executor, uint payment) internal {
-                CallExecuted(executor, payment);
+        function logExecution(address executor, uint payment, uint fee, bool success) internal {
+                CallExecuted(executor, payment, fee, success);
         }
 
         function afterExecute(address executor) internal {
             suicide(schedulerAddress);
         }
 
-        function getOverhead() returns (uint) {
+        function getOverhead() constant returns (uint) {
                 // TODO
                 return 200000;
         }
 
-        function getExtraGas() returns (uint) {
+        function getExtraGas() constant returns (uint) {
                 // TODO
                 return 100000;
         }

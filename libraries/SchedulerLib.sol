@@ -27,14 +27,12 @@ library SchedulerLib {
         Relay unauthorizedRelay;
         Relay authorizedRelay;
 
-        bytes32 lastCallKey;
+        address lastCall;
 
         ResourcePoolLib.Pool callerPool;
         GroveLib.Index callIndex;
 
         AccountingLib.Bank gasBank;
-
-        mapping (bytes32 => address) calls;
 
         mapping (bytes32 => bool) accountAuthorizations;
     }
@@ -61,17 +59,17 @@ library SchedulerLib {
     // call.
     uint constant CALL_WINDOW_SIZE = 16;
 
-    function getGenerationIdForCall(CallDatabase storage self, bytes32 callKey) constant returns (uint) {
-            FutureBlockCall call = FutureBlockCall(self.calls[callKey]);
+    function getGenerationIdForCall(CallDatabase storage self, address callAddress) constant returns (uint) {
+            FutureBlockCall call = FutureBlockCall(callAddress);
             return ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod());
     }
 
-    function getDesignatedCaller(CallDatabase storage self, bytes32 callKey, uint blockNumber) constant returns (address) {
+    function getDesignatedCaller(CallDatabase storage self, address callAddress, uint blockNumber) constant returns (address) {
             /*
              *  Returns the caller from the current call pool who is
              *  designated as the executor of this call.
              */
-            FutureBlockCall call = FutureBlockCall(self.calls[callKey]);
+            FutureBlockCall call = FutureBlockCall(callAddress);
             if (blockNumber < call.targetBlock() || blockNumber > call.targetBlock() + call.gracePeriod()) {
                     // blockNumber not within call window.
                     return 0x0;
@@ -99,9 +97,9 @@ library SchedulerLib {
             return generation.members[(offset + blockWindow) % generation.members.length];
     }
 
-    event _AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, bytes32 callKey, uint blockNumber, uint bonusAmount);
-    function AwardedMissedBlockBonus(address fromCaller, address toCaller, uint generationId, bytes32 callKey, uint blockNumber, uint bonusAmount) public {
-        _AwardedMissedBlockBonus(fromCaller, toCaller, generationId, callKey, blockNumber, bonusAmount);
+    event _AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, address callAddress, uint blockNumber, uint bonusAmount);
+    function AwardedMissedBlockBonus(address fromCaller, address toCaller, uint generationId, address callAddress, uint blockNumber, uint bonusAmount) public {
+        _AwardedMissedBlockBonus(fromCaller, toCaller, generationId, callAddress, blockNumber, bonusAmount);
     }
 
     function getMinimumBond() constant returns (uint) {
@@ -126,24 +124,24 @@ library SchedulerLib {
             return bonusAmount;
     }
 
-    function awardMissedBlockBonus(CallDatabase storage self, address toCaller, bytes32 callKey) public {
-            var call = self.calls[callKey];
+    function awardMissedBlockBonus(CallDatabase storage self, address toCaller, address callAddress) public {
+            FutureBlockCall call = FutureBlockCall(callAddress);
 
-            var generation = self.callerPool.generations[ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock, call.targetBlock + call.gracePeriod)];
+            var generation = self.callerPool.generations[ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod())];
             uint i;
             uint bonusAmount;
             address fromCaller;
 
-            uint numWindows = call.gracePeriod / CALL_WINDOW_SIZE;
-            uint blockWindow = (block.number - call.targetBlock) / CALL_WINDOW_SIZE;
+            uint numWindows = call.gracePeriod() / CALL_WINDOW_SIZE;
+            uint blockWindow = (block.number - call.targetBlock()) / CALL_WINDOW_SIZE;
 
             // Check if we are within the free-for-all period.  If so, we
             // award from all pool members.
             if (blockWindow + 2 > numWindows) {
-                    address firstCaller = getDesignatedCaller(self, callKey, call.targetBlock);
-                    for (i = call.targetBlock; i <= call.targetBlock + call.gracePeriod; i += CALL_WINDOW_SIZE) {
-                            fromCaller = getDesignatedCaller(self, callKey, i);
-                            if (fromCaller == firstCaller && i != call.targetBlock) {
+                    address firstCaller = getDesignatedCaller(self, callAddress, call.targetBlock());
+                    for (i = call.targetBlock(); i <= call.targetBlock() + call.gracePeriod(); i += CALL_WINDOW_SIZE) {
+                            fromCaller = getDesignatedCaller(self, callAddress, i);
+                            if (fromCaller == firstCaller && i != call.targetBlock()) {
                                     // We have already gone through all of
                                     // the pool callers so we should break
                                     // out of the loop.
@@ -155,7 +153,7 @@ library SchedulerLib {
                             bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
 
                             // Log the bonus was awarded.
-                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callKey, block.number, bonusAmount);
+                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callAddress, block.number, bonusAmount);
                     }
                     return;
             }
@@ -175,7 +173,7 @@ library SchedulerLib {
                             bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
 
                             // Log the bonus was awarded.
-                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callKey, block.number, bonusAmount);
+                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callAddress, block.number, bonusAmount);
 
                             // Remove the caller from the next pool.
                             if (ResourcePoolLib.getNextGenerationId(self.callerPool) == 0) {
@@ -236,7 +234,7 @@ library SchedulerLib {
             FutureBlockCall call = new FutureBlockCall(address(this), schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
 
             // Put the call into the grove index.
-            GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock));
+            GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock()));
 
             return 0x0;
     }

@@ -119,9 +119,13 @@ contract FutureCall {
         }
 
         function () {
-                if (msg.data.length > 0) {
+                if(msg.data.length > 0){
                         call.callData = msg.data;
                 }
+                if (true)
+                        return;
+                else
+                        return;
                 // Fallback to allow sending funds to this contract.
         }
 
@@ -172,6 +176,8 @@ contract FutureCall {
 contract FutureBlockCall is FutureCall {
         uint public targetBlock;
         uint8 public gracePeriod;
+
+        event ItHappened(address sender);
         
         function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
                 owner = msg.sender;

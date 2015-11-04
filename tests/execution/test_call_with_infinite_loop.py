@@ -4,8 +4,9 @@ deploy_contracts = [
 ]
 
 
-def test_execution_of_call_that_throws_exception(deploy_client, deployed_contracts,
-                                                 deploy_future_block_call):
+def test_execution_of_call_that_contains_infinite_loop(deploy_client,
+                                                       deployed_contracts,
+                                                       deploy_future_block_call):
     client_contract = deployed_contracts.TestErrors
     call = deploy_future_block_call(client_contract.doInfinite)
 

@@ -92,6 +92,12 @@ contract TestDataRegistry {
 
 
 contract TestCallExecution {
+        bool public v_bool;
+
+        function setBool() public {
+            v_bool = true;
+        }
+
         uint public v_uint;
 
         function setUInt(uint v) public {

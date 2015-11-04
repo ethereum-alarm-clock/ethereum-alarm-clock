@@ -1,6 +1,7 @@
 import "libraries/GroveLib.sol";
 import "libraries/ResourcePoolLib.sol";
 import "libraries/AccountingLib.sol";
+import "libraries/CallLib.sol";
 
 
 library SchedulerLib {
@@ -8,8 +9,6 @@ library SchedulerLib {
      *  Address: 0x5c3623dcef2d5168dbe3e8cc538788cd8912d898
      */
     struct CallDatabase {
-        address lastCall;
-
         ResourcePoolLib.Pool callerPool;
         GroveLib.Index callIndex;
 
@@ -171,14 +170,9 @@ library SchedulerLib {
     // TODO: use a real value for this number
     uint constant MINIMUM_CALL_GAS = 200000;
 
-    event _CallScheduled(address indexed callAddress);
-    function CallScheduled(address callAddress) public {
-        _CallScheduled(callAddress);
-    }
-    event _CallRejected(address indexed schedulerAddress, bytes32 reason);
-    function CallRejected(address schedulerAddress, bytes32 reason) public {
-        _CallRejected(schedulerAddress, reason);
-    }
+    event CallScheduled(address callAddress);
+
+    event CallRejected(address indexed schedulerAddress, bytes32 reason);
 
     function getCallWindowSize() public returns (uint) {
         return CALL_WINDOW_SIZE;
@@ -200,7 +194,7 @@ library SchedulerLib {
         return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint suggestedGas, uint basePayment, uint baseFee) public returns (address) {
+    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -218,26 +212,32 @@ library SchedulerLib {
         else if (gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
         }
-        else if (msg.value < 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
+        else if (endowment < 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
             reason = "INSUFFICIENT_FUNDS";
         }
 
         if (reason != 0x0) {
-            _CallRejected(schedulerAddress, reason);
-            AccountingLib.sendRobust(msg.sender, msg.value);
+            CallRejected(schedulerAddress, reason);
+            AccountingLib.sendRobust(schedulerAddress, endowment);
             return;
         }
 
-        FutureBlockCall call = new FutureBlockCall(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
+        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
 
         // Put the call into the grove index.
         GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock()));
+
+        CallScheduled(address(call));
 
         return address(call);
     }
 
     function execute(CallDatabase storage self, address callAddress, address executor) {
         uint startGas = msg.gas;
+
+        if (!GroveLib.exists(self.callIndex, bytes32(callAddress))) {
+                return;
+        }
 
         FutureBlockCall call = FutureBlockCall(callAddress);
         
@@ -254,5 +254,30 @@ library SchedulerLib {
                 return;
         }
         call.execute(startGas, executor);
+    }
+}
+
+
+contract Scheduler {
+    SchedulerLib.CallDatabase callDatabase;
+
+    function getDefaultPayment() constant returns (uint) {
+            return 200 finney;
+    }
+
+    function getDefaultFee() constant returns (uint) {
+            return 100 finney;
+    }
+
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {
+            return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());
+    }
+
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {
+            return SchedulerLib.scheduleCall(callDatabase, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);
+    }
+
+    function execute(address callAddress) {
+            SchedulerLib.execute(callDatabase, callAddress, msg.sender);
     }
 }

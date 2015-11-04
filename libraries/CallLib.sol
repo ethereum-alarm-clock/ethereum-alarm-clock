@@ -55,11 +55,7 @@ library CallLib {
                 }
         }
 
-        event CallExecuted(address indexed executor, uint payment, uint fee, bool success);
-
-        function logExecution(address executor, uint payment, uint fee, bool success) public {
-                CallExecuted(executor, payment, fee, success);
-        }
+        event CallExecuted(address indexed executor, uint gasCost, uint payment, uint fee, bool success);
 
         function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
             // Make the call
@@ -71,11 +67,13 @@ library CallLib {
             uint payment = basePayment * feeScalar / 100; 
             uint fee = baseFee * feeScalar / 100;
 
-            logExecution(executor, payment, fee, success);
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
             // happen after this line.
             uint gasCost = tx.gasprice * (startGas - msg.gas + extraGas);
+
+            // Log execution
+            CallExecuted(executor, gasCost, payment, fee, success);
 
             // Now we need to pay the executor as well as keep fee.
             sendSafe(executor, payment + gasCost);
@@ -121,6 +119,9 @@ contract FutureCall {
         }
 
         function () {
+                if (msg.data.length > 0) {
+                        call.callData = msg.data;
+                }
                 // Fallback to allow sending funds to this contract.
         }
 

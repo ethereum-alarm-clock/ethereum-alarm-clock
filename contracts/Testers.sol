@@ -36,8 +36,20 @@ contract TestDataRegistry {
             }
         }
 
-        function registerBytes(address to, bytes32 v) public {
+        function registerBytes32(address to, bytes32 v) public {
             bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerBytes(address to, bytes v) public {
+            bool result = to.call(bytes4(sha3("setBytes(bytes)")), v);
+            //bool result = to.call(bytes4(sha3("registerData()")), v);
+            //bool result = to.call(v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -57,7 +69,7 @@ contract TestDataRegistry {
         }
 
         function registerMany(address to, uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f);
+            bool result = to.call(bytes4(sha3("setMany(uint256,int256,uint256,bytes20,address,bytes)")), a, b, c, d, e, f);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -104,6 +116,14 @@ contract TestCallExecution {
             v_bytes32 = v;
         }
 
+        bytes public v_bytes;
+
+        function setBytes(bytes v) public {
+            Bytes(v);
+            Bytes(msg.data);
+            v_bytes = v;
+        }
+
         uint public vm_a;
         int public vm_b;
         uint public vm_c;
@@ -111,11 +131,11 @@ contract TestCallExecution {
         address public vm_e;
         bytes public vm_f;
 
-        event Many(bytes f);
+        event Bytes(bytes f);
 
         function setMany(uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            Many(f);
-            Many(msg.data);
+            Bytes(f);
+            Bytes(msg.data);
             vm_a = a;
             vm_b = b;
             vm_c = c;
@@ -128,7 +148,6 @@ contract TestCallExecution {
 
 contract TestErrors {
         bool public value;
-        bytes32 public dataHash;
 
         function doFail() public {
                 throw;
@@ -136,20 +155,20 @@ contract TestErrors {
         }
 
         function scheduleFail(address to) public {
-                dataHash = sha3();
-                to.call(bytes4(sha3("registerData()")));
-
+                //  TODO: convert to use scheduler
                 AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doFail()")), dataHash, block.number + 40, 255, 0);
+                alarm.scheduleCall(address(this), bytes4(sha3("doFail()")), sha3(), block.number + 40, 255, 0);
         }
 
         function doInfinite() public {
                 while (true) {
                         tx.origin.send(1);
                 }
+                value = true;
         }
 
         function scheduleInfinite(address to) public {
+                //  TODO: convert to use scheduler
                 AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doInfinite()")), sha3(), block.number + 40, 255, 0);
         }

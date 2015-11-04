@@ -1,12 +1,27 @@
-contract AlarmAPI {
-        function getDesignatedCaller(uint leftBound, uint RightBound) returns (bool, address) {
-                // 1. there is a generation for this window.
-                // 2. that generation is non-empty.
-        }
-}
-
-
 library CallLib {
+        struct Call {
+                address contractAddress;
+                bytes4 abiSignature;
+                bytes callData;
+                uint anchorGasPrice;
+                uint suggestedGas;
+        }
+
+        address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
+
+        function extractCallData(Call storage call, bytes data) public {
+            if (call.callData.length > 0) {
+                    // cannot write over call dat
+                    throw;
+            }
+            call.callData.length = data.length - 4;
+            if (data.length > 4) {
+                    for (uint i = 0; i < call.callData.length; i++) {
+                            call.callData[i] = data[i + 4];
+                    }
+            }
+        }
+
         function sendSafe(address toAddress, uint value) public {
                 if (value > address(this).balance) {
                         value = address(this).balance;
@@ -39,36 +54,51 @@ library CallLib {
                         return 200 - 100 * baseGasPrice / (2 * baseGasPrice - gasPrice);
                 }
         }
+
+        event CallExecuted(address indexed executor, uint payment, uint fee, bool success);
+
+        function logExecution(address executor, uint payment, uint fee, bool success) public {
+                CallExecuted(executor, payment, fee, success);
+        }
+
+        function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
+            // Make the call
+            bool success = call.contractAddress.call.gas(msg.gas - overhead)(call.abiSignature, call.callData);
+
+            // Compute the scalar (0 - 200) for the fee.
+            uint feeScalar = getCallFeeScalar(call.anchorGasPrice, tx.gasprice);
+
+            uint payment = basePayment * feeScalar / 100; 
+            uint fee = baseFee * feeScalar / 100;
+
+            logExecution(executor, payment, fee, success);
+            // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
+            // amount that represents the gas usage of the commands that
+            // happen after this line.
+            uint gasCost = tx.gasprice * (startGas - msg.gas + extraGas);
+
+            // Now we need to pay the executor as well as keep fee.
+            sendSafe(executor, payment + gasCost);
+            sendSafe(creator, fee);
+        }
+
+        event Cancelled(address indexed cancelledBy);
+
+        function cancel(address sender) public {
+                Cancelled(sender);
+                suicide(sender);
+        }
 }
 
 
 contract FutureCall {
+        address public owner;
         address public schedulerAddress;
-        address public contractAddress;
 
-        AlarmAPI alarm;
+        CallLib.Call call;
 
-        uint public anchorGasPrice;
-        uint public suggestedGas;
-
-        uint public reward;
-        
-        bytes4 public abiSignature;
-        bytes public callData;
-
-        function registerData() public {
-            if (callData.length > 0) {
-                    // Data can only be registered once.
-                    throw;
-            }
-            callData.length = msg.data.length - 4;
-            if (msg.data.length > 4) {
-                    for (uint i = 0; i < callData.length; i++) {
-                            callData[i] = msg.data[i + 4];
-                    }
-            }
-        }
-
+        uint public basePayment;
+        uint public baseFee;
 
         function () {
                 // Fallback to allow sending funds to this contract.
@@ -79,14 +109,15 @@ contract FutureCall {
         // The author (Piper Merriam) address.
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
+        function registerData() public {
+                CallLib.extractCallData(call, msg.data);
+        }
+
         // API for inherited contracts
-        function beforeExecute(address executor) internal returns (bool);
-        function logExecution(address executor, uint payment, uint fee, bool success) internal;
+        function beforeExecute(address executor) constant returns (bool);
         function afterExecute(address executor) internal;
         function getOverhead() constant returns (uint);
         function getExtraGas() constant returns (uint);
-        function getPayment() constant returns (uint);
-        function getFee() constant returns (uint);
 
         event CallAborted(address executor, bytes32 reason);
 
@@ -94,33 +125,15 @@ contract FutureCall {
                 CallLib.sendSafe(toAddress, value);
         }
 
-        function execute(address executor) public {
-            uint gasBefore = msg.gas;
+        modifier onlyowner { if (msg.sender == owner) _ }
 
-            // The before execute function is where all pre-call validation
-            // needs to occur.
-            if (!beforeExecute(executor)) {
-                return;
-            }
+        function execute() public onlyowner {
+                uint startGas = msg.gas;
+                execute(startGas,  msg.sender);
+        }
 
-            // Make the call
-            bool success = contractAddress.call.gas(msg.gas - getOverhead())(abiSignature, callData);
-
-            // Compute the scalar (0 - 200) for the fee.
-            uint feeScalar = CallLib.getCallFeeScalar(anchorGasPrice, tx.gasprice);
-
-            uint payment = getPayment() * feeScalar / 100; 
-            uint fee = getFee() * feeScalar / 100;
-
-            logExecution(executor, payment, fee, success);
-            // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
-            // amount that represents the gas usage of the commands that
-            // happen after this line.
-            uint gasCost = tx.gasprice * (gasBefore - msg.gas + getExtraGas());
-
-            // Now we need to pay the executor as well as keep fee.
-            sendSafe(executor, payment + gasCost);
-            sendSafe(creator, fee);
+        function execute(uint startGas, address executor) public onlyowner {
+            CallLib.execute(call, startGas, executor, basePayment, baseFee, getOverhead(), getExtraGas());
 
             // Any logic that needs to occur after the call has executed should
             // go in afterExecute
@@ -130,8 +143,7 @@ contract FutureCall {
         event Cancelled(address indexed cancelledBy);
 
         function cancel(address sender) public onlyscheduler {
-                Cancelled(sender);
-                suicide(sender);
+                CallLib.cancel(sender);
         }
 }
 
@@ -139,45 +151,32 @@ contract FutureCall {
 contract FutureBlockCall is FutureCall {
         uint public targetBlock;
         uint8 public gracePeriod;
-
-        uint public basePayment;
-        uint public baseFee;
         
-        function FutureBlockCall(address alarmAddress, address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
-                alarm = AlarmAPI(alarmAddress);
+        function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
+                owner = msg.sender;
 
                 schedulerAddress = _schedulerAddress;
 
                 targetBlock = _targetBlock;
                 gracePeriod = _gracePeriod;
 
-                anchorGasPrice = tx.gasprice;
-                suggestedGas = _suggestedGas;
 
                 basePayment = _basePayment;
                 baseFee = _baseFee;
 
-                contractAddress = _contractAddress;
-                abiSignature = _abiSignature;
+                call.suggestedGas = _suggestedGas;
+                call.anchorGasPrice = tx.gasprice;
+                call.contractAddress = _contractAddress;
+                call.abiSignature = _abiSignature;
         }
 
-        function getPayment() constant returns (uint) {
-                return basePayment;
-        }
+        function beforeExecute(address executor) constant returns (bool) {
+                if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
+                        // Not being called within call window.
+                        return false;
+                }
 
-        function getFee() constant returns (uint) {
-                return baseFee;
-        }
-
-        function beforeExecute(address executor) internal returns (bool) {
-                // Need to do do all the before-call validation.
-                return false;
-        }
-
-        event CallExecuted(address indexed executor, uint payment, uint fee, bool success);
-
-        function logExecution(address executor, uint payment, uint fee, bool success) internal {
-                CallExecuted(executor, payment, fee, success);
+                return true;
         }
 
         function afterExecute(address executor) internal {

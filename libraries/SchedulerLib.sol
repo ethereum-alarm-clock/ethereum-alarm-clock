@@ -3,53 +3,17 @@ import "libraries/ResourcePoolLib.sol";
 import "libraries/AccountingLib.sol";
 
 
-contract Relay {
-        address operator;
-
-        function Relay() {
-                operator = msg.sender;
-        }
-
-        function relayCall(address contractAddress, bytes4 abiSignature, bytes data) public returns (bool) {
-                if (msg.sender != operator) {
-                        throw;
-                }
-                return contractAddress.call(abiSignature, data);
-        }
-}
-
-
 library SchedulerLib {
     /*
      *  Address: 0x5c3623dcef2d5168dbe3e8cc538788cd8912d898
      */
     struct CallDatabase {
-        Relay unauthorizedRelay;
-        Relay authorizedRelay;
-
         address lastCall;
 
         ResourcePoolLib.Pool callerPool;
         GroveLib.Index callIndex;
 
         AccountingLib.Bank gasBank;
-
-        mapping (bytes32 => bool) accountAuthorizations;
-    }
-
-    /*
-     *  Scheduling Authorization API
-     */
-    function addAuthorization(CallDatabase storage self, address schedulerAddress, address contractAddress) public {
-            self.accountAuthorizations[sha3(schedulerAddress, contractAddress)] = true;
-    }
-
-    function removeAuthorization(CallDatabase storage self, address schedulerAddress, address contractAddress) public {
-            self.accountAuthorizations[sha3(schedulerAddress, contractAddress)] = false;
-    }
-
-    function checkAuthorization(CallDatabase storage self, address schedulerAddress, address contractAddress) constant returns (bool) {
-            return self.accountAuthorizations[sha3(schedulerAddress, contractAddress)];
     }
 
     /*
@@ -64,37 +28,44 @@ library SchedulerLib {
             return ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod());
     }
 
-    function getDesignatedCaller(CallDatabase storage self, address callAddress, uint blockNumber) constant returns (address) {
+    function getDesignatedCaller(CallDatabase storage self, uint leftBound, uint rightBound, uint blockNumber) constant returns (bool, address) {
             /*
              *  Returns the caller from the current call pool who is
              *  designated as the executor of this call.
              */
-            FutureBlockCall call = FutureBlockCall(callAddress);
-            if (blockNumber < call.targetBlock() || blockNumber > call.targetBlock() + call.gracePeriod()) {
-                    // blockNumber not within call window.
-                    return 0x0;
+            if (leftBound > rightBound || blockNumber < leftBound ||  blockNumber > rightBound) {
+                    // Invalid call parameters.  blockNumber has to be
+                    // contained in the call window and the call window has to
+                    // be valid.
+                    throw;
             }
 
-            // Check if we are in free-for-all window.
-            uint numWindows = call.gracePeriod() / CALL_WINDOW_SIZE;
-            uint blockWindow = (blockNumber - call.targetBlock()) / CALL_WINDOW_SIZE;
-
-            if (blockWindow + 2 > numWindows) {
-                    // We are within the free-for-all period.
-                    return 0x0;
-            }
 
             // Lookup the pool that full contains the call window for this
             // call.
-            uint generationId = ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod());
+            uint generationId = ResourcePoolLib.getGenerationForWindow(self.callerPool, leftBound, rightBound);
             if (generationId == 0) {
                     // No pool currently in operation.
-                    return 0x0;
+                    return (false, 0x0);
             }
-            var generation = self.callerPool.generations[generationId];
 
-            uint offset = uint(address(call)) % generation.members.length;
-            return generation.members[(offset + blockWindow) % generation.members.length];
+            var generation = self.callerPool.generations[generationId];
+            if (generation.members.length == 0) {
+                    // Current pool is empty
+                    return (false, 0x0);
+            }
+
+            // Check if we are in free-for-all window.
+            uint numWindows = (rightBound - leftBound) / CALL_WINDOW_SIZE;
+            uint blockWindow = (blockNumber - leftBound) / CALL_WINDOW_SIZE;
+
+            if (blockWindow + 2 > numWindows) {
+                    // We are within the free-for-all period.
+                    return (true, 0x0);
+            }
+
+            uint offset = uint(sha3(leftBound, rightBound, blockNumber)) % generation.members.length;
+            return (true, generation.members[(offset + blockWindow) % generation.members.length]);
     }
 
     event _AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, address callAddress, uint blockNumber, uint bonusAmount);
@@ -138,9 +109,10 @@ library SchedulerLib {
             // Check if we are within the free-for-all period.  If so, we
             // award from all pool members.
             if (blockWindow + 2 > numWindows) {
-                    address firstCaller = getDesignatedCaller(self, callAddress, call.targetBlock());
+                    address firstCaller;
+                    (,firstCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), call.targetBlock());
                     for (i = call.targetBlock(); i <= call.targetBlock() + call.gracePeriod(); i += CALL_WINDOW_SIZE) {
-                            fromCaller = getDesignatedCaller(self, callAddress, i);
+                            (,fromCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), i);
                             if (fromCaller == firstCaller && i != call.targetBlock()) {
                                     // We have already gone through all of
                                     // the pool callers so we should break
@@ -191,20 +163,21 @@ library SchedulerLib {
     /*
      *  Call Scheduling API
      */
-    function computeCallKey(address scheduledBy, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) constant returns (bytes32) {
-            return sha3(scheduledBy, contractAddress, abiSignature, dataHash, targetBlock, gracePeriod, nonce);
-    }
-
     // Ten minutes into the future.
     uint constant MAX_BLOCKS_IN_FUTURE = 40;
+
+    // The minimum gas required to execute a scheduled call on a function that
+    // does almost nothing.
+    // TODO: use a real value for this number
+    uint constant MINIMUM_CALL_GAS = 200000;
 
     event _CallScheduled(address indexed callAddress);
     function CallScheduled(address callAddress) public {
         _CallScheduled(callAddress);
     }
-    event _CallRejected(address indexed callAddress, bytes15 reason);
-    function CallRejected(address callAddress, bytes15 reason) public {
-        _CallRejected(callAddress, reason);
+    event _CallRejected(address indexed schedulerAddress, bytes32 reason);
+    function CallRejected(address schedulerAddress, bytes32 reason) public {
+        _CallRejected(schedulerAddress, reason);
     }
 
     function getCallWindowSize() public returns (uint) {
@@ -215,28 +188,71 @@ library SchedulerLib {
         return 4 * CALL_WINDOW_SIZE;
     }
 
-    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint suggestedGas, uint basePayment, uint baseFee) public returns (bytes15) {
-            /*
-             * Primary API for scheduling a call.  Prior to calling this
-             * the data should already have been registered through the
-             * `registerData` API.
-             */
-            if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
-                    // Don't allow scheduling further than
-                    // MAX_BLOCKS_IN_FUTURE
-                    return "TOO_SOON";
-            }
+    function getMinimumCallGas() constant returns (uint) {
+        return MINIMUM_CALL_GAS;
+    }
 
-            if (gracePeriod < getMinimumGracePeriod()) {
-                    return "GRACE_TOO_SHORT";
-            }
+    function getMinimumCallCost(uint basePayment) constant returns (uint) {
+        return getMinimumCallCost(basePayment, basePayment);
+    }
 
-            FutureBlockCall call = new FutureBlockCall(address(this), schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
+    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {
+        return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
+    }
 
-            // Put the call into the grove index.
-            GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock()));
+    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint suggestedGas, uint basePayment, uint baseFee) public returns (address) {
+        /*
+        * Primary API for scheduling a call.
+        *
+        * - No sooner than MAX_BLOCKS_IN_FUTURE
+        * - Grace Period must be longer than the minimum grace period.
+        * - msg.value must be >= MIN_GAS * tx.gasprice + 2 * (baseFee + basePayment)
+        */
+        bytes32 reason;
 
-            return 0x0;
+        if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
+            // Don't allow scheduling further than
+            // MAX_BLOCKS_IN_FUTURE
+            reason = "TOO_SOON";
+        }
+        else if (gracePeriod < getMinimumGracePeriod()) {
+            reason = "GRACE_TOO_SHORT";
+        }
+        else if (msg.value < 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
+            reason = "INSUFFICIENT_FUNDS";
+        }
+
+        if (reason != 0x0) {
+            _CallRejected(schedulerAddress, reason);
+            AccountingLib.sendRobust(msg.sender, msg.value);
+            return;
+        }
+
+        FutureBlockCall call = new FutureBlockCall(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
+
+        // Put the call into the grove index.
+        GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock()));
+
+        return address(call);
+    }
+
+    function execute(CallDatabase storage self, address callAddress, address executor) {
+        uint startGas = msg.gas;
+
+        FutureBlockCall call = FutureBlockCall(callAddress);
+        
+        bool isDesignated;
+        address designatedCaller;
+
+        (isDesignated, designatedCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), block.number);
+        if (isDesignated && designatedCaller != 0x0 && designatedCaller != executor) {
+                // Wrong caller
+                return;
+        }
+
+        if (!call.beforeExecute(executor)) {
+                return;
+        }
+        call.execute(startGas, executor);
     }
 }
-

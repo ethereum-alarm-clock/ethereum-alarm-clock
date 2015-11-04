@@ -1,29 +1,63 @@
-from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
+import pytest
+
+from populus.contracts import (
+    deploy_contract,
+    link_contract_dependency,
+)
+from populus.utils import (
+    get_contract_address_from_txn,
+)
 
 
 deploy_contracts = [
-    "Alarm",
-    "PassesInt",
+    "CallLib",
+    "TestCallExecution",
+    "TestDataRegistry",
 ]
 
 
-def test_executing_scheduled_call_with_int(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.PassesInt
+import pytest
 
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
-    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, -12345)
-    wait_for_transaction(deploy_client, txn_hash)
+@pytest.fixture
+def FutureBlockCall(contracts, deployed_contracts):
+    return link_contract_dependency(contracts.FutureBlockCall, deployed_contracts.CallLib)
 
-    assert client_contract.value() == 0
 
-    call_key = alarm.getLastCallKey()
-    assert call_key is not None
-    deploy_client.wait_for_block(alarm.getCallTargetBlock(call_key), 120)
-    call_txn_hash = alarm.doCall.sendTransaction(call_key)
-    wait_for_transaction(deploy_client, call_txn_hash)
+def deploy_future_block_call(deploy_client,
 
-    assert client_contract.value() == -12345
+
+
+def test_executing_scheduled_call_with_int(deploy_client, deployed_contracts, deploy_coinbase, FutureBlockCall):
+    client_contract = deployed_contracts.TestCallExecution
+    data_register = deployed_contracts.TestDataRegistry
+
+    deposit_amount = deploy_client.get_max_gas() * deploy_client.get_gas_price() * 20
+
+    deploy_txn = deploy_contract(
+        deploy_client,
+        FutureBlockCall,
+        constructor_args=(
+            deploy_coinbase,
+            100,
+            164,
+            client_contract._meta.address,
+            client_contract.setInt.encoded_abi_signature,
+            100000,
+            1,
+            1,
+        ),
+        value=deposit_amount,
+    )
+
+    addr = get_contract_address_from_txn(deploy_client, deploy_txn)
+    call = contracts.FutureBlockCall(addr, deploy_client)
+
+    data_register.registerInt(call._meta.address, 1234567890)
+
+    assert client_contract.v_int() == 0
+
+    call_txn_hash = call.execute()
+    deploy_client.wait_for_transaction(call_txn_hash)
+
+    assert client_contract.v_int() == 1234567890

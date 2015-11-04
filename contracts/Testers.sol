@@ -111,7 +111,11 @@ contract TestCallExecution {
         address public vm_e;
         bytes public vm_f;
 
+        event Many(bytes f);
+
         function setMany(uint a, int b, uint c, bytes20 d, address e, bytes f) public {
+            Many(f);
+            Many(msg.data);
             vm_a = a;
             vm_b = b;
             vm_c = c;

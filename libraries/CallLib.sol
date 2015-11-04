@@ -95,10 +95,30 @@ contract FutureCall {
         address public owner;
         address public schedulerAddress;
 
-        CallLib.Call call;
-
         uint public basePayment;
         uint public baseFee;
+
+        CallLib.Call call;
+
+        function contractAddress() constant returns (address) {
+                return call.contractAddress;
+        }
+
+        function abiSignature() constant returns (bytes4) {
+                return call.abiSignature;
+        }
+
+        function callData() constant returns (bytes) {
+                return call.callData;
+        }
+
+        function anchorGasPrice() constant returns (uint) {
+                return call.anchorGasPrice;
+        }
+
+        function suggestedGas() constant returns (uint) {
+                return call.suggestedGas;
+        }
 
         function () {
                 // Fallback to allow sending funds to this contract.

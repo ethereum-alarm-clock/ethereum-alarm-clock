@@ -22,13 +22,15 @@ library CallLib {
             }
         }
 
-        function sendSafe(address toAddress, uint value) public {
+        function sendSafe(address toAddress, uint value) public returns (uint) {
                 if (value > address(this).balance) {
                         value = address(this).balance;
                 }
                 if (value > 0) {
                         AccountingLib.sendRobust(toAddress, value);
+                        return value;
                 }
+                return 0;
         }
 
         function getCallFeeScalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
@@ -72,12 +74,12 @@ library CallLib {
             // happen after this line.
             uint gasCost = tx.gasprice * (startGas - msg.gas + extraGas);
 
+            // Now we need to pay the executor as well as keep fee.
+            payment = sendSafe(executor, payment + gasCost);
+            fee = sendSafe(creator, fee);
+
             // Log execution
             CallExecuted(executor, gasCost, payment, fee, success);
-
-            // Now we need to pay the executor as well as keep fee.
-            sendSafe(executor, payment + gasCost);
-            sendSafe(creator, fee);
         }
 
         event Cancelled(address indexed cancelledBy);
@@ -164,12 +166,6 @@ contract FutureCall {
             // go in afterExecute
             afterExecute(executor);
         }
-
-        event Cancelled(address indexed cancelledBy);
-
-        function cancel(address sender) public onlyscheduler {
-                CallLib.cancel(sender);
-        }
 }
 
 
@@ -212,12 +208,20 @@ contract FutureBlockCall is FutureCall {
 
         function getOverhead() constant returns (uint) {
                 // TODO
-                return 200000;
+                return 45500;
         }
 
         function getExtraGas() constant returns (uint) {
                 // TODO
-                return 100000;
+                return 16500;
+        }
+
+        uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
+
+        function cancel() public onlyscheduler {
+                if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW || block.number > targetBlock + gracePeriod) {
+                        CallLib.cancel(msg.sender);
+                }
         }
 }
 

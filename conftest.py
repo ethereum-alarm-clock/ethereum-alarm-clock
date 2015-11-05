@@ -69,6 +69,16 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
     return _deploy_future_block_call
 
 
+@pytest.fixture(scope="module")
+def CallLib(deployed_contracts):
+    return deployed_contracts.CallLib
+
+
+@pytest.fixture(scope="module")
+def SchedulerLib(deployed_contracts):
+    return deployed_contracts.SchedulerLib
+
+
 @pytest.fixture(scope="session")
 def denoms():
     from ethereum.utils import denoms as ether_denoms

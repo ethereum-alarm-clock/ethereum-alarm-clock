@@ -174,11 +174,11 @@ library SchedulerLib {
 
     event CallRejected(address indexed schedulerAddress, bytes32 reason);
 
-    function getCallWindowSize() public returns (uint) {
+    function getCallWindowSize() constant returns (uint) {
         return CALL_WINDOW_SIZE;
     }
 
-    function getMinimumGracePeriod() public returns (uint) {
+    function getMinimumGracePeriod() constant returns (uint) {
         return 4 * CALL_WINDOW_SIZE;
     }
 
@@ -232,9 +232,7 @@ library SchedulerLib {
         return address(call);
     }
 
-    function execute(CallDatabase storage self, address callAddress, address executor) {
-        uint startGas = msg.gas;
-
+    function execute(CallDatabase storage self, uint startGas, address callAddress, address executor) {
         if (!GroveLib.exists(self.callIndex, bytes32(callAddress))) {
                 return;
         }
@@ -261,6 +259,10 @@ library SchedulerLib {
 contract Scheduler {
     SchedulerLib.CallDatabase callDatabase;
 
+    function getMinimumGracePeriod() constant returns (uint) {
+            return SchedulerLib.getMinimumGracePeriod();
+    }
+
     function getDefaultPayment() constant returns (uint) {
             return 200 finney;
     }
@@ -273,11 +275,17 @@ contract Scheduler {
             return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());
     }
 
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address) {
+            return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultFee());
+    }
+
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {
             return SchedulerLib.scheduleCall(callDatabase, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);
     }
 
-    function execute(address callAddress) {
-            SchedulerLib.execute(callDatabase, callAddress, msg.sender);
+    function execute(address callAddress) public {
+            uint startGas = msg.gas;
+
+            SchedulerLib.execute(callDatabase, startGas, callAddress, msg.sender);
     }
 }

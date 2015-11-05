@@ -92,6 +92,12 @@ contract TestDataRegistry {
 
 
 contract TestCallExecution {
+        function doLoops(uint iterations) {
+            for (uint i = 0; i < iterations; i++) {
+                address(this).send(1);
+            }
+        }
+
         bool public v_bool;
 
         function setBool() public {
@@ -177,37 +183,6 @@ contract TestErrors {
                 //  TODO: convert to use scheduler
                 AlarmTestAPI alarm = AlarmTestAPI(to);
                 alarm.scheduleCall(address(this), bytes4(sha3("doInfinite()")), sha3(), block.number + 40, 255, 0);
-        }
-}
-
-
-contract WithdrawsDuringCall {
-        /*
-         *  Used to test that the funds of an account are locked during the
-         *  function call to prevent withdrawing funds that are about to be
-         *  used to pay the caller.
-         */
-        AlarmTestAPI alarm;
-        uint public withdrawAmount;
-
-        function WithdrawsDuringCall(address alarmAddress) {
-                alarm = AlarmTestAPI(alarmAddress);
-        }
-
-        function getAlarmBalance() public returns (uint) {
-                return alarm.getAccountBalance(address(this));
-        }
-
-        bool public wasCalled;
-
-        function doIt() public {
-                wasCalled = true;
-                withdrawAmount = getAlarmBalance();
-        }
-
-        function scheduleIt() public {
-                address(alarm).call(bytes4(sha3("registerData()")));
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
         }
 }
 

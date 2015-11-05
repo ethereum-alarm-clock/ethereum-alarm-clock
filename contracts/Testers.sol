@@ -16,6 +16,10 @@ contract AlarmTestAPI {
 contract TestDataRegistry {
         uint8 public wasSuccessful = 0;
 
+        function reset() public {
+            wasSuccessful = 0;
+        }
+
         function registerUInt(address to, uint v) public {
             bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
@@ -47,9 +51,7 @@ contract TestDataRegistry {
         }
 
         function registerBytes(address to, bytes v) public {
-            bool result = to.call(bytes4(sha3("setBytes(bytes)")), v);
-            //bool result = to.call(bytes4(sha3("registerData()")), v);
-            //bool result = to.call(v);
+            bool result = to.call(bytes4(sha3("registerData()")), v.length, v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -69,7 +71,7 @@ contract TestDataRegistry {
         }
 
         function registerMany(address to, uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            bool result = to.call(bytes4(sha3("setMany(uint256,int256,uint256,bytes20,address,bytes)")), a, b, c, d, e, f);
+            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f.length, f);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -92,6 +94,18 @@ contract TestDataRegistry {
 
 
 contract TestCallExecution {
+        uint8 public wasSuccessful;
+
+        function doExecution(address to, address callAddress) {
+            bool result = to.call(bytes4(sha3("execute(address)")), callAddress);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
         function doLoops(uint iterations) {
             for (uint i = 0; i < iterations; i++) {
                 address(this).send(1);

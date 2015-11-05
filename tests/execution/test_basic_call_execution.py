@@ -1,21 +1,30 @@
 import pytest
 
+from ethereum import abi
+from ethereum import utils
+
 
 deploy_contracts = [
     "CallLib",
     "TestCallExecution",
-    "TestDataRegistry",
 ]
 
 
 def test_execution_of_call_with_single_int(deploy_client, deployed_contracts,
                                            deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setInt)
 
-    data_register.registerInt(call._meta.address, -1234567890)
+    signature = call.registerData.encoded_abi_signature
+    data = abi.encode_single(abi.process_type('int256'), -1234567890)
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
+    )
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
 
     assert client_contract.v_int() == 0
 
@@ -28,11 +37,18 @@ def test_execution_of_call_with_single_int(deploy_client, deployed_contracts,
 def test_execution_of_call_with_single_uint(deploy_client, deployed_contracts,
                                             deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setUInt)
 
-    data_register.registerUInt(call._meta.address, 1234567890)
+    signature = call.registerData.encoded_abi_signature
+    data = abi.encode_single(abi.process_type('uint256'), 1234567890)
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
+    )
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
 
     assert client_contract.v_uint() == 0
 
@@ -47,11 +63,18 @@ def test_execution_of_call_with_single_address(deploy_client,
                                                deploy_coinbase,
                                                deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setAddress)
 
-    data_register.registerAddress(call._meta.address, deploy_coinbase)
+    signature = call.registerData.encoded_abi_signature
+    data = abi.encode_single(abi.process_type('address'), deploy_coinbase[2:])
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
+    )
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
 
     assert client_contract.v_address() == '0x0000000000000000000000000000000000000000'
 
@@ -66,12 +89,19 @@ def test_execution_of_call_with_single_bytes32(deploy_client,
                                                deploy_coinbase,
                                                deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setBytes32)
 
     value = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f'
-    data_register.registerBytes32(call._meta.address, value)
+    signature = call.registerData.encoded_abi_signature
+    data = abi.encode_single(abi.process_type('bytes32'), value)
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
+    )
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
 
     assert client_contract.v_bytes32() is None
 
@@ -81,30 +111,48 @@ def test_execution_of_call_with_single_bytes32(deploy_client,
     assert client_contract.v_bytes32() == value
 
 
-@pytest.mark.skipif(True, reason="Passing bytes currently isn't working")
+@pytest.mark.skipif(True, reason="bytes doesn't work")
 def test_execution_of_call_with_single_bytes(deploy_client,
                                              deployed_contracts,
                                              deploy_coinbase,
-                                             deploy_future_block_call):
+                                             deploy_future_block_call,
+                                             CallLib):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setBytes)
 
-    value = (
-            '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
+    value = 'abcd'
+
+    signature = call.registerData.encoded_abi_signature
+    data = abi.encode_single(abi.process_type('bytes'), value)
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
     )
-    data_register.registerBytes(call._meta.address, value)
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
 
     assert client_contract.v_bytes() == ''
+    assert call.callData() == data
 
-    call_txn_hash = call.execute()
+    #call_txn_hash = call.execute()
+    call_txn_hash = client_contract.setBytes(value)
     txn_r = deploy_client.wait_for_transaction(call_txn_hash)
+    txn = deploy_client.get_transaction_by_hash(call_txn_hash)
+
+    assert txn['input'] == txn_data
+
+    call_logs = CallLib.CallExecuted.get_transaction_logs(call_txn_hash)
+    call_data = [CallLib.CallExecuted.get_log_data(l) for l in call_logs]
+
+    bytes_logs = client_contract.Bytes.get_transaction_logs(call_txn_hash)
+    bytes_data = [client_contract.Bytes.get_log_data(l) for l in bytes_logs]
 
     assert client_contract.v_bytes() == value
 
 
-@pytest.mark.skipif(True, reason="Passing bytes currently isn't working")
+@pytest.mark.skipif(True, reason="bytes doesn't work")
 def test_execution_of_call_with_many_values(deploy_client,
                                             deployed_contracts,
                                             deploy_coinbase,
@@ -120,9 +168,7 @@ def test_execution_of_call_with_many_values(deploy_client,
         987654321,
         '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13',
         deploy_coinbase,
-        (
-            '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
-        ),
+        'abcdefg',
     )
     data_register.registerMany(call._meta.address, *values)
 

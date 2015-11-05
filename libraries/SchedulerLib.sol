@@ -279,6 +279,10 @@ contract Scheduler {
             return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultFee());
     }
 
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address) {
+            return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultFee());
+    }
+
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {
             return SchedulerLib.scheduleCall(callDatabase, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);
     }

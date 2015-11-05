@@ -37,20 +37,24 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
         get_contract_address_from_txn,
     )
 
-    def _deploy_future_block_call(contract_function, target_block=None,
-                                  grace_period=64, suggested_gas=100000,
-                                  payment=1, fee=1, endowment=None):
+    def _deploy_future_block_call(contract_function, scheduler_address=None,
+                                  target_block=None, grace_period=64,
+                                  suggested_gas=100000, payment=1, fee=1,
+                                  endowment=None):
         if endowment is None:
             endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + fee
 
         if target_block is None:
             target_block = deploy_client.get_block_number() + 40
 
+        if scheduler_address is None:
+            scheduler_address = deploy_coinbase
+
         deploy_txn_hash = deploy_contract(
             deploy_client,
             FutureBlockCall,
             constructor_args=(
-                deploy_coinbase,
+                scheduler_address,
                 target_block,
                 target_block + grace_period,
                 contract_function._contract._meta.address,

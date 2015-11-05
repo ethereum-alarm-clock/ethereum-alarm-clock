@@ -136,7 +136,7 @@ contract FutureCall {
         // The author (Piper Merriam) address.
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
-        function registerData() public {
+        function registerData() public onlyscheduler {
                 CallLib.extractCallData(call, msg.data);
         }
 

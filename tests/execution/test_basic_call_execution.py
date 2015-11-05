@@ -156,9 +156,9 @@ def test_execution_of_call_with_single_bytes(deploy_client,
 def test_execution_of_call_with_many_values(deploy_client,
                                             deployed_contracts,
                                             deploy_coinbase,
-                                            deploy_future_block_call):
+                                            deploy_future_block_call,
+                                            CallLib):
     client_contract = deployed_contracts.TestCallExecution
-    data_register = deployed_contracts.TestDataRegistry
 
     call = deploy_future_block_call(client_contract.setMany)
 
@@ -167,10 +167,31 @@ def test_execution_of_call_with_many_values(deploy_client,
         -1234567890,
         987654321,
         '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13',
-        deploy_coinbase,
+        'd3cda913deb6f67967b99d67acdfa1712c293601',
         'abcdefg',
     )
-    data_register.registerMany(call._meta.address, *values)
+    types = (
+        'uint256',
+        'int256',
+        'uint256',
+        'bytes20',
+        'address',
+        'bytes',
+    )
+
+    signature = call.registerData.encoded_abi_signature
+    data = ''.join((
+        abi.encode_single(abi.process_type(t), v)
+        for t, v in zip(types, values)
+    ))
+    txn_data = ''.join((utils.encode_hex(signature), utils.encode_hex(data)))
+
+    data_txn_hash = deploy_client.send_transaction(
+        to=call._meta.address,
+        data=txn_data,
+    )
+    data_txn_receipt = deploy_client.wait_for_transaction(data_txn_hash)
+
 
     assert client_contract.vm_a() == 0
     assert client_contract.vm_b() == 0
@@ -182,9 +203,12 @@ def test_execution_of_call_with_many_values(deploy_client,
     call_txn_hash = call.execute()
     txn_r = deploy_client.wait_for_transaction(call_txn_hash)
 
+    call_logs = CallLib.CallExecuted.get_transaction_logs(call_txn_hash)
+    call_data = [CallLib.CallExecuted.get_log_data(l) for l in call_logs]
+
     assert client_contract.vm_a() == values[0]
     assert client_contract.vm_b() == values[1]
     assert client_contract.vm_c() == values[2]
     assert client_contract.vm_d() == values[3]
-    assert client_contract.vm_e() == values[4]
+    assert client_contract.vm_e() == '0xd3cda913deb6f67967b99d67acdfa1712c293601'
     assert client_contract.vm_f() == values[5]

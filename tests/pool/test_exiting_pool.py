@@ -1,49 +1,45 @@
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
 ]
 
 
-def test_exiting_pool(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    coinbase = deploy_client.get_coinbase()
+def test_exiting_pool(deploy_client, deployed_contracts, deploy_coinbase):
+    scheduler = deployed_contracts.Scheduler
 
-    assert alarm.getBondBalance(coinbase) == 0
-    deposit_amount = alarm.getMinimumBond() * 10
+    assert scheduler.getBondBalance(deploy_coinbase) == 0
+    deposit_amount = scheduler.getMinimumBond() * 10
 
-    txn_1_hash = alarm.depositBond.sendTransaction(value=deposit_amount)
-    wait_for_transaction(deploy_client, txn_1_hash)
+    txn_1_hash = scheduler.depositBond.sendTransaction(value=deposit_amount)
+    deploy_client.wait_for_transaction(txn_1_hash)
 
-    assert alarm.getCurrentGenerationId() == 0
-    assert alarm.getNextGenerationId() == 0
-    assert alarm.isInPool(coinbase) is False
-    assert alarm.canEnterPool(coinbase) is True
-    assert alarm.canExitPool(coinbase) is False
+    assert scheduler.getCurrentGenerationId() == 0
+    assert scheduler.getNextGenerationId() == 0
+    assert scheduler.isInPool(deploy_coinbase) is False
+    assert scheduler.canEnterPool(deploy_coinbase) is True
+    assert scheduler.canExitPool(deploy_coinbase) is False
 
-    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
-    first_generation_id = alarm.getNextGenerationId()
-    deploy_client.wait_for_block(alarm.getGenerationStartAt(first_generation_id), 180)
+    deploy_client.wait_for_transaction(scheduler.enterPool.sendTransaction())
+    first_generation_id = scheduler.getNextGenerationId()
+    deploy_client.wait_for_block(scheduler.getGenerationStartAt(first_generation_id), 180)
 
-    assert alarm.getCurrentGenerationId() == first_generation_id
-    assert alarm.getNextGenerationId() == 0
-    assert alarm.isInPool(coinbase) is True
-    assert alarm.isInGeneration(coinbase, first_generation_id) is True
-    assert alarm.canEnterPool(coinbase) is False
-    assert alarm.canExitPool(coinbase) is True
+    assert scheduler.getCurrentGenerationId() == first_generation_id
+    assert scheduler.getNextGenerationId() == 0
+    assert scheduler.isInPool(deploy_coinbase) is True
+    assert scheduler.isInGeneration(deploy_coinbase, first_generation_id) is True
+    assert scheduler.canEnterPool(deploy_coinbase) is False
+    assert scheduler.canExitPool(deploy_coinbase) is True
 
-    wait_for_transaction(deploy_client, alarm.exitPool.sendTransaction())
-    second_generation_id = alarm.getNextGenerationId()
+    deploy_client.wait_for_transaction(scheduler.exitPool.sendTransaction())
+    second_generation_id = scheduler.getNextGenerationId()
 
     assert second_generation_id > first_generation_id
-    assert alarm.isInPool(coinbase) is True
-    assert alarm.isInGeneration(coinbase, first_generation_id) is True
+    assert scheduler.isInPool(deploy_coinbase) is True
+    assert scheduler.isInGeneration(deploy_coinbase, first_generation_id) is True
 
-    deploy_client.wait_for_block(alarm.getGenerationEndAt(first_generation_id), 180)
+    deploy_client.wait_for_block(scheduler.getGenerationEndAt(first_generation_id), 180)
 
-    assert alarm.getCurrentGenerationId() == second_generation_id
-    assert alarm.getNextGenerationId() == 0
-    assert alarm.isInPool(coinbase) is False
-    assert alarm.canEnterPool(coinbase) is True
-    assert alarm.canExitPool(coinbase) is False
+    assert scheduler.getCurrentGenerationId() == second_generation_id
+    assert scheduler.getNextGenerationId() == 0
+    assert scheduler.isInPool(deploy_coinbase) is False
+    assert scheduler.canEnterPool(deploy_coinbase) is True
+    assert scheduler.canExitPool(deploy_coinbase) is False

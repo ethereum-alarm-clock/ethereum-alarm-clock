@@ -65,7 +65,7 @@ def test_no_bond_bonus_for_first_call_window(deploy_client, deployed_contracts,
         target_block = call.targetBlock()
         grace_period = call.gracePeriod()
         first_caller = scheduler.getDesignatedCaller(call._meta.address, target_block)[1]
-        if first_caller == deploy_coinbase[2:]:
+        if first_caller == deploy_coinbase:
             break
     else:
         raise ValueError("Was never first caller")

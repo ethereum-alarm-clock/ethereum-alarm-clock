@@ -1,38 +1,47 @@
 from ethereum import utils
-from populus.utils import wait_for_transaction
 
 from eth_alarm_client.utils import enumerate_upcoming_calls
 
 
 deploy_contracts = [
-    "Alarm",
-    "SpecifyBlock",
+    "Scheduler",
+    "TestCallExecution",
 ]
 
 
-def test_enumerate_upcoming_tree_positions(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.SpecifyBlock
+def test_enumerate_upcoming_tree_positions(deploy_client, deployed_contracts,
+                                           denoms, get_call):
+    scheduler = deployed_contracts.Scheduler
+    client_contract = deployed_contracts.TestCallExecution
 
     anchor_block = deploy_client.get_block_number()
 
     blocks = (1, 4, 4, 8, 15, 25, 25, 25, 30, 40, 50, 60)
 
-    call_keys = []
+    calls = []
 
     for n in blocks:
-        txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 100 + n)
-        wait_for_transaction(deploy_client, txn_hash)
+        scheduling_txn = scheduler.scheduleCall(
+            client_contract._meta.address,
+            client_contract.setBool.encoded_abi_signature,
+            anchor_block + 100 + n,
+            1000000,
+            value=10 * denoms.ether,
+            gas=3000000,
+        )
+        scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+        call = get_call(scheduling_txn)
 
-        last_call_key = alarm.getLastCallKey()
-        assert last_call_key is not None
+        calls.append(call)
 
-        call_keys.append(last_call_key)
-
-    expected_calls = tuple(utils.encode_hex(c) for c in call_keys[1:10])
-
+    expected_calls = tuple(call._meta.address for call in calls[1:10])
     actual_calls = tuple(
-        utils.encode_hex(c)
-        for c in enumerate_upcoming_calls(alarm, anchor_block + 100 + 4)
+        c for c in enumerate_upcoming_calls(scheduler, anchor_block + 100 + 4)
+    )
+    assert actual_calls == expected_calls
+
+    expected_calls = tuple(call._meta.address for call in calls[10:])
+    actual_calls = tuple(
+        c for c in enumerate_upcoming_calls(scheduler, anchor_block + 100 + 41)
     )
     assert actual_calls == expected_calls

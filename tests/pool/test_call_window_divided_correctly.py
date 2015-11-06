@@ -81,20 +81,20 @@ def test_call_window_divided_between_callers(deploy_client, deployed_contracts,
 
     assert caller_a != caller_b
 
-    assert {deploy_coinbase[2:], joiner._meta.address[2:], '0000000000000000000000000000000000000000'} == set(callers)
+    assert {deploy_coinbase, joiner._meta.address, '0x0000000000000000000000000000000000000000'} == set(callers)
 
     call_on_block = None
     call_window_size = scheduler.getCallWindowSize()
 
     for i, caller in enumerate(callers):
         if i / call_window_size + 2 > len(callers) / call_window_size:
-            assert caller == '0000000000000000000000000000000000000000'
+            assert caller == '0x0000000000000000000000000000000000000000'
         elif (i / call_window_size) % 2 == 0:
             assert caller == caller_a
         else:
             assert caller == caller_b
 
-        if call_on_block is None and i > call_window_size and caller == deploy_coinbase[2:]:
+        if call_on_block is None and i > call_window_size and caller == deploy_coinbase:
             call_on_block = target_block + i
 
     assert call_on_block is not None

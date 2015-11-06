@@ -33,6 +33,10 @@ contract Scheduler {
         return 100 finney;
     }
 
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {
+        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultFee());
+    }
+
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {
         return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());
     }

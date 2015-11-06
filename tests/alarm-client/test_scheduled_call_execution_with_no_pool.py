@@ -1,10 +1,5 @@
 import pytest
 import time
-from populus.contracts import get_max_gas
-from populus.utils import (
-    wait_for_transaction,
-    wait_for_block,
-)
 
 from eth_alarm_client import (
     PoolManager,
@@ -13,35 +8,41 @@ from eth_alarm_client import (
 
 
 deploy_contracts = [
-    "Alarm",
-    "SpecifyBlock",
+    "Scheduler",
+    "TestCallExecution",
 ]
 
 
 @pytest.fixture(autouse=True)
-def alarm_client_logging_config(monkeypatch):
+def scheduler_client_logging_config(monkeypatch):
     # Set to DEBUG for a better idea of what is going on in this test.
     monkeypatch.setenv('LOG_LEVEL', 'ERROR')
 
 
-def test_scheduled_call_execution_without_pool(geth_node, geth_node_config, deploy_client, deployed_contracts, contracts):
-    alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.SpecifyBlock
-
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
+def test_scheduled_call_execution_without_pool(geth_node, geth_node_config,
+                                               deploy_client,
+                                               deployed_contracts, contracts,
+                                               denoms, get_call, get_execution_data):
+    scheduler = deployed_contracts.Scheduler
+    client_contract = deployed_contracts.TestCallExecution
 
     target_block = deploy_client.get_block_number() + 45
 
-    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, target_block)
-    wait_for_transaction(deploy_client, txn_hash)
+    scheduling_txn = scheduler.scheduleCall(
+        client_contract._meta.address,
+        client_contract.setBool.encoded_abi_signature,
+        target_block,
+        1000000,
+        value=10 * denoms.ether,
+        gas=3000000,
+    )
+    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+    call = get_call(scheduling_txn)
+    call_address = call._meta.address
 
-    call_key = alarm.getLastCallKey()
-    assert call_key is not None
-
-    scheduled_call = ScheduledCall(alarm, call_key)
+    scheduled_call = ScheduledCall(scheduler, call_address)
     block_sage = scheduled_call.block_sage
-    pool_manager = PoolManager(alarm, block_sage=block_sage)
+    pool_manager = PoolManager(scheduler, block_sage=block_sage)
 
     time.sleep(1)
 
@@ -50,10 +51,10 @@ def test_scheduled_call_execution_without_pool(geth_node, geth_node_config, depl
 
     # let the scheduled call do it's thing.
     assert block_sage.current_block_number < target_block
+    assert scheduled_call.has_been_suicided is False
 
     wait_till = scheduled_call.target_block + 10
-    wait_for_block(
-        deploy_client,
+    deploy_client.wait_for_block(
         wait_till,
         2 * block_sage.estimated_time_to_block(wait_till),
     )
@@ -67,7 +68,7 @@ def test_scheduled_call_execution_without_pool(geth_node, geth_node_config, depl
     assert scheduled_call.txn_receipt
     assert scheduled_call.txn
 
-    assert alarm.checkIfCalled(scheduled_call.call_key)
-    assert scheduled_call.was_called
-    assert scheduled_call.target_block <= scheduled_call.called_at_block
-    assert scheduled_call.called_at_block <= scheduled_call.target_block + scheduled_call.grace_period
+    execute_data = get_execution_data(scheduled_call.txn_hash)
+    assert execute_data['success'] is True
+
+    assert scheduled_call.has_been_suicided is True

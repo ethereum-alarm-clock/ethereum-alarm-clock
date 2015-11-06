@@ -15,12 +15,12 @@ class BlockSage(object):
     current_block_timestamp = None
     heartbeat = None
 
-    def __init__(self, rpc_client, heartbeat=4):
+    def __init__(self, blockchain_client, heartbeat=4):
         self.logger = get_logger('blocksage')
-        self.rpc_client = rpc_client
+        self.blockchain_client = blockchain_client
 
-        self.current_block_number = rpc_client.get_block_number()
-        self.current_block = rpc_client.get_block_by_number(
+        self.current_block_number = blockchain_client.get_block_number()
+        self.current_block = blockchain_client.get_block_by_number(
             self.current_block_number, False,
         )
         self.current_block_timestamp = int(self.current_block['timestamp'], 16)
@@ -46,9 +46,20 @@ class BlockSage(object):
 
     @block_time.setter
     def block_time(self, value):
-        self._sleep_time = self._block_time = (
-            ((self._block_sample_window - 1) * self._block_time + value) / self._block_sample_window
-        )
+        # current average
+        a = self._block_time
+        # new sample value
+        v = value
+        # sample size
+        n = self._block_sample_window
+
+        # compute running average
+        self._block_time = max((
+            ((n - 1) * a + v) / n
+        ), 1)
+
+        # update the sleep time
+        self._sleep_time = self._block_time
 
     def estimated_time_to_block(self, block_number):
         return self.block_time * max(0, block_number - self.current_block_number)
@@ -103,15 +114,15 @@ class BlockSage(object):
         """
         Monitor the latest block number as well as the time between blocks.
         """
-        self.current_block_number = self.rpc_client.get_block_number()
-        self.current_block = self.rpc_client.get_block_by_number(self.current_block_number, False)
+        self.current_block_number = self.blockchain_client.get_block_number()
+        self.current_block = self.blockchain_client.get_block_by_number(self.current_block_number, False)
         self.current_block_timestamp = int(self.current_block['timestamp'], 16)
 
         while self._run:
             self.do_heartbeat()
             sleep_time = self.sleep_time
             time.sleep(sleep_time)
-            if self.rpc_client.get_block_number() > self.current_block_number:
+            if self.blockchain_client.get_block_number() > self.current_block_number:
                 # Update block time.
                 next_block = self.rpc_client.get_block_by_number(self.current_block_number + 1)
                 if next_block is None:
@@ -121,8 +132,8 @@ class BlockSage(object):
                 self.block_time = next_block_timestamp - self.current_block_timestamp
 
                 # Grab current block data
-                self.current_block_number = self.rpc_client.get_block_number()
-                self.current_block = self.rpc_client.get_block_by_number(self.current_block_number, False)
+                self.current_block_number = self.blockchain_client.get_block_number()
+                self.current_block = self.blockchain_client.get_block_by_number(self.current_block_number, False)
                 self.current_block_timestamp = int(self.current_block['timestamp'], 16)
                 self.logger.debug(
                     "Block Number: %s - Block Time: %s",
@@ -137,3 +148,4 @@ class BlockSage(object):
                         self.current_block_number,
                         time.time() - self.current_block_timestamp,
                     )
+                    time.sleep(1)

@@ -10,9 +10,14 @@ from .utils import (
     get_logger
 )
 
+from .contracts import FutureBlockCall
+
 
 EMPTY_ADDRESS = '0x0000000000000000000000000000000000000000'
 CANCELLATION_WINDOW = 8
+
+MAX_CALL_OVERHEAD_GAS = 200000
+DEFAULT_CALL_GAS = 1000000
 
 
 class ScheduledCall(object):
@@ -26,12 +31,13 @@ class ScheduledCall(object):
     def __init__(self, scheduler, call_address, block_sage=None):
         self.call_address = call_address
         self.scheduler = scheduler
+        self.call = FutureBlockCall(call_address, self.blockchain_client)
         self.logger = get_logger('call-{0}'.format(self.call_address))
 
         if block_sage is None:
-            block_sage = BlockSage(self.rpc_client)
+            block_sage = BlockSage(self.blockchain_client)
         self.block_sage = block_sage
-        if self.rpc_client.get_block_number() < self.target_block - 80:
+        if self.blockchain_client.get_block_number() < self.target_block - 80:
             self.logger.warning(
                 "It is not advisable to work with a ScheduledCall until the "
                 "40-80 blocks before its target block"
@@ -51,13 +57,19 @@ class ScheduledCall(object):
         return self.block_sage.current_block_number >= self.last_block
 
     @property
-    def scheduler_can_pay(self):
-        # TODO: compute payment + fee + suggestedGas * gasPrice
-        assert False
-        max_cost = self.scheduler.getCallMaxCost(self.call_address)
+    def call_gas(self):
+        if self.suggested_gas:
+            return MAX_CALL_OVERHEAD_GAS + self.suggested_gas
+        else:
+            return MAX_CALL_OVERHEAD_GAS + DEFAULT_CALL_GAS
 
-        # Require 105% of max gas to be sure.
-        return self.scheduler_account_balance >= max_cost * 1.05
+    @property
+    def scheduler_can_pay(self):
+        gas_cost = self.call_gas * self.blockchain_client.get_gas_price()
+        max_payment = 2 * self.base_payment
+        max_fee = 2 * self.base_fee
+
+        return gas_cost + max_payment + max_fee < self.balance
 
     def stop(self):
         self._run = False
@@ -98,7 +110,7 @@ class ScheduledCall(object):
             # Wait for the transaction receipt.
             try:
                 self.logger.debug("Waiting for transaction: %s", txn_hash)
-                txn_receipt = self.rpc_client.wait_for_transaction(
+                txn_receipt = self.blockchain_client.wait_for_transaction(
                     txn_hash,
                     self.block_sage.estimated_time_to_block(self.last_block) * 2,
                 )
@@ -108,7 +120,7 @@ class ScheduledCall(object):
                 self.logger.info("Transaction accepted.")
                 self.txn_hash = txn_hash
                 self.txn_receipt = txn_receipt
-                self.txn = self.rpc_client.get_transaction_by_hash(txn_hash)
+                self.txn = self.blockchain_client.get_transaction_by_hash(txn_hash)
                 break
 
     def execute_async(self):
@@ -132,19 +144,19 @@ class ScheduledCall(object):
     #  Meta Properties
     #
     @property
-    def rpc_client(self):
-        return self.scheduler._meta.rpc_client
+    def blockchain_client(self):
+        return self.scheduler._meta.blockchain_client
 
     @cached_property
     def coinbase(self):
-        return self.rpc_client.get_coinbase()
+        return self.blockchain_client.get_coinbase()
 
     @property
-    def scheduler_account_balance(self):
+    def balance(self):
         """
         The account balance of the scheduler for this call.
         """
-        return self.scheduler.getAccountBalance(self.scheduled_by)
+        return self.blockchain_client.get_balance(self.call_address)
 
     @cached_property
     def last_block(self):
@@ -163,7 +175,7 @@ class ScheduledCall(object):
         Mapping of block number to designated caller address.
         """
         return {
-            block_number: self.scheduler.getDesignatedCaller(self.call_address, block_number)
+            block_number: self.scheduler.getDesignatedCaller(self.call_address, block_number)[1]
             for block_number
             in range(self.target_block, self.last_block + 1)
         }
@@ -206,81 +218,40 @@ class ScheduledCall(object):
     #
     @cached_property
     def contract_address(self):
-        return self.scheduler.getCallContractAddress(self.call_address)
+        return self.call.contractAddress()
 
     @cached_property
     def scheduled_by(self):
-        return self.scheduler.getCallScheduledBy(self.call_address)
-
-    @cache_once(0)
-    def called_at_block(self):
-        return self.scheduler.getCallCalledAtBlock(self.call_address)
+        return self.call.schedulerAddress()
 
     @cached_property
     def target_block(self):
-        return self.scheduler.getCallTargetBlock(self.call_address)
+        return self.call.targetBlock()
 
     @cached_property
     def grace_period(self):
-        return self.scheduler.getCallGracePeriod(self.call_address)
+        return self.call.gracePeriod()
 
     @cached_property
-    def base_gas_price(self):
-        return self.scheduler.getCallBaseGasPrice(self.call_address)
+    def anchor_gas_price(self):
+        return self.call.anchorGasPrice()
 
-    @cache_once(0)
-    def gas_price(self):
-        return self.scheduler.getCallGasPrice(self.call_address)
+    @cached_property
+    def suggested_gas(self):
+        return self.call.suggestedGas()
 
-    @cache_once(0)
-    def gas_used(self):
-        return self.scheduler.getCallGasUsed(self.call_address)
+    @cached_property
+    def base_payment(self):
+        return self.call.basePayment()
 
-    @cache_once(0)
-    def payout(self):
-        return self.scheduler.getCallPayout(self.call_address)
-
-    @cache_once(0)
-    def fee(self):
-        return self.scheduler.getCallFee(self.call_address)
+    @cached_property
+    def base_fee(self):
+        return self.call.baseFee()
 
     @cached_property
     def abi_signature(self):
-        return self.scheduler.getCallABISignature(self.call_address)
-
-    _is_cancelled = None
+        return self.call.abiSignature()
 
     @property
-    def is_cancelled(self):
-        """
-        This value can be cached as soon as it is either truthy or passed the
-        cancellation window.
-        """
-        if self._is_cancelled is not None:
-            return self._is_cancelled
-
-        value = self.scheduler.checkIfCancelled(self.call_address)
-        if value or self.block_sage.current_block_number > self.target_block - CANCELLATION_WINDOW:
-            self._is_cancelled = value
-        return value
-
-    @cache_once(False)
-    def was_called(self):
-        return self.scheduler.checkIfCalled(self.call_address)
-
-    _was_successful = None
-
-    @property
-    def was_successful(self):
-        """
-        Cached once `was_called` returns true.
-        """
-        if self._was_successful is None:
-            if not self.was_called:
-                return False
-            self._was_successful = self.scheduler.checkIfSuccess(self.call_address)
-        return bool(self._was_successful)
-
-    @cached_property
-    def data_hash(self):
-        return self.scheduler.getCallDataHash(self.call_address)
+    def has_been_suicided(self):
+        return len(self.blockchain_client.get_code(self.call_address)) <= 2

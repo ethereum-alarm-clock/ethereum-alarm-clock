@@ -10,6 +10,20 @@ deploy_contracts = [
 ]
 
 
+def test_execution_of_call_with_single_bool(deploy_client, deployed_contracts,
+                                            deploy_future_block_call):
+    client_contract = deployed_contracts.TestCallExecution
+
+    call = deploy_future_block_call(client_contract.setBool)
+
+    assert client_contract.v_bool() is False
+
+    call_txn_hash = call.execute()
+    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
+
+    assert client_contract.v_bool() is True
+
+
 def test_execution_of_call_with_single_int(deploy_client, deployed_contracts,
                                            deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution

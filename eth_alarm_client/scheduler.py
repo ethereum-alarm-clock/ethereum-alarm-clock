@@ -17,18 +17,18 @@ class Scheduler(object):
         self.pool_manager = pool_manager
 
         if block_sage is None:
-            block_sage = BlockSage(self.rpc_client)
+            block_sage = BlockSage(self.blockchain_client)
         self.block_sage = block_sage
 
         self.active_calls = {}
 
     @property
-    def rpc_client(self):
-        return self.scheduler._meta.rpc_client
+    def blockchain_client(self):
+        return self.scheduler._meta.blockchain_client
 
     @cached_property
     def coinbase(self):
-        return self.rpc_client.get_coinbase()
+        return self.blockchain_client.get_coinbase()
 
     def monitor_async(self):
         self._run = True
@@ -50,6 +50,7 @@ class Scheduler(object):
             self.scheduler,
             self.block_sage.current_block_number,
         )
+
         for call_address in upcoming_calls:
             if call_address in self.active_calls:
                 continue
@@ -60,24 +61,23 @@ class Scheduler(object):
                 block_sage=self.block_sage,
             )
 
-            if scheduled_call.is_cancelled:
+            if scheduled_call.has_been_suicided:
                 continue
 
-            self.logger.info("Tracking call: %s", scheduled_call.hex_call_address[:5])
+            self.logger.info("Tracking call: %s", scheduled_call.call_address)
             scheduled_call.execute_async()
             self.active_calls[call_address] = scheduled_call
 
     def cleanup_finished_calls(self):
         for call_address, scheduled_call in tuple(self.active_calls.items()):
-            hex_call_address = scheduled_call.hex_call_address[:5]
 
             if scheduled_call.txn_hash:
-                self.logger.info("Removing finished call: %s", hex_call_address)
+                self.logger.info("Removing finished call: %s", call_address)
                 self.active_calls.pop(call_address)
-            elif scheduled_call.target_block + scheduled_call.grace_period < self.block_sage.current_block_number:
+            elif scheduled_call.last_block < self.block_sage.current_block_number:
                 scheduled_call.stop()
-                self.logger.info("Removing expired call: %s", hex_call_address)
+                self.logger.info("Removing expired call: %s", call_address)
                 self.active_calls.pop(call_address)
             elif not scheduled_call._thread.is_alive():
-                self.logger.info("Removing dead call: %s", hex_call_address)
+                self.logger.info("Removing dead call: %s", call_address)
                 self.active_calls.pop(call_address)

@@ -1,8 +1,6 @@
 import threading
 import time
 
-from populus.utils import wait_for_transaction
-
 from .block_sage import BlockSage
 from .utils import (
     get_logger,
@@ -17,16 +15,16 @@ class PoolManager(object):
         self.scheduler = scheduler
 
         if block_sage is None:
-            block_sage = BlockSage(self.rpc_client)
+            block_sage = BlockSage(self.blockchain_client)
         self.block_sage = block_sage
 
     @property
-    def rpc_client(self):
-        return self.scheduler._meta.rpc_client
+    def blockchain_client(self):
+        return self.scheduler._meta.blockchain_client
 
     @cached_property
     def coinbase(self):
-        return self.rpc_client.get_coinbase()
+        return self.blockchain_client.get_coinbase()
 
     #
     # Main event loop
@@ -84,7 +82,7 @@ class PoolManager(object):
         self.logger.info("Entering caller pool")
         txn_hash = self.enter_pool()
         self.logger.debug("Entered caller pool with txn: %s", txn_hash)
-        wait_for_transaction(self.rpc_client, txn_hash, 60)
+        self.blockchain_client.wait_for_transaction(txn_hash, 60)
         self.logger.info("Entered caller pool at generation #%s", self.next_generation_id)
 
     def manage_bond(self):
@@ -100,7 +98,7 @@ class PoolManager(object):
         #     txn_hash = self.scheduler.deposit(value=deficit)
         #     self.logger.debug("Deposited %s: Txn Hash: %s", deficit, txn_hash)
         #     wait_for_transaction(
-        #         self.rpc_client,
+        #         self.blockchain_client,
         #         txn_hash,
         #         4 * self.block_sage.block_time,
         #     )

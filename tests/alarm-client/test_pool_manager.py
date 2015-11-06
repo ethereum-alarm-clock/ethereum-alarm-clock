@@ -1,29 +1,32 @@
 import time
 
-from populus.utils import wait_for_transaction, wait_for_block
-
 from eth_alarm_client import (
     PoolManager,
 )
 
 
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
 ]
 
 
-def test_pool_manager(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    coinbase = deploy_client.get_coinbase()
+@pytest.fixture(autouse=True)
+def logging_config(monkeypatch):
+    # Set to DEBUG for a better idea of what is going on in this test.
+    monkeypatch.setenv('LOG_LEVEL', 'ERROR')
 
-    deposit_amount = alarm.getMinimumBond.call() * 10
+
+def test_pool_manager(deploy_client, deployed_contracts):
+    scheduler = deployed_contracts.Scheduler
+
+    deposit_amount = scheduler.getMinimumBond.call() * 10
 
     # Put in our bond
-    wait_for_transaction(
-        deploy_client, alarm.depositBond.sendTransaction(value=deposit_amount)
+    deploy_client.wait_for_transaction(
+        scheduler.depositBond.sendTransaction(value=deposit_amount)
     )
 
-    pool_manager = PoolManager(alarm)
+    pool_manager = PoolManager(scheduler)
     block_sage = pool_manager.block_sage
 
     # should be no pools, nor anyone in them.
@@ -42,8 +45,7 @@ def test_pool_manager(deploy_client, deployed_contracts):
     # Wait a few blocks for the pool manager to spin up.
     for _ in range(5):
         deploy_client.evm.mine()
-
-    time.sleep(5)
+        time.sleep(1)
 
     first_generation_id = pool_manager.next_generation_id
 
@@ -59,9 +61,7 @@ def test_pool_manager(deploy_client, deployed_contracts):
     assert pool_manager.can_exit_pool is False
 
     # Wait for the pool to become active.
-    for _ in range(deploy_client.get_block_number(), pool_manager.next_generation_start_at):
-
-        deploy_client.evm.mine()
+    deploy_client.wait_for_block(pool_manager.next_generation_start_at)
 
     # we should now be in the active pool.
     assert pool_manager.current_generation_id == first_generation_id
@@ -75,7 +75,7 @@ def test_pool_manager(deploy_client, deployed_contracts):
     assert pool_manager.can_exit_pool is True
 
     # Now we manually remove ourselves.
-    wait_for_transaction(deploy_client, alarm.exitPool.sendTransaction())
+    deploy_client.wait_for_transaction(scheduler.exitPool.sendTransaction())
 
     second_generation_id = pool_manager.next_generation_id
 
@@ -89,7 +89,7 @@ def test_pool_manager(deploy_client, deployed_contracts):
     assert pool_manager.in_current_generation is True
 
     # Wait for the next pool to become active plus a little.
-    first_generation_end = alarm.getGenerationEndAt(first_generation_id)
+    first_generation_end = scheduler.getGenerationEndAt(first_generation_id)
     deploy_client.wait_for_block(
         first_generation_end,
         block_sage.estimated_time_to_block(first_generation_end) * 2,

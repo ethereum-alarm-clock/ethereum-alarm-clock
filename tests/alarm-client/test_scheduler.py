@@ -1,7 +1,5 @@
 import pytest
 
-from populus.contracts import get_max_gas
-
 from eth_alarm_client import (
     Scheduler,
     PoolManager,
@@ -21,12 +19,13 @@ def logging_config(monkeypatch):
     monkeypatch.setenv('LOG_LEVEL', 'ERROR')
 
 
-def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contracts, contracts,
+def test_scheduler(geth_node, geth_node_config, deploy_client,
+                   deployed_contracts, contracts,
                    get_call, denoms):
     block_sage = BlockSage(deploy_client)
 
     scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.SpecifyBlock
+    client_contract = deployed_contracts.TestCallExecution
 
     anchor_block = deploy_client.get_block_number()
 
@@ -52,9 +51,8 @@ def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contract
     scheduler = Scheduler(scheduler, pool_manager, block_sage=block_sage)
     scheduler.monitor_async()
 
-    final_block = anchor_block + 100 + 70
-    wait_for_block(
-        deploy_client,
+    final_block = anchor_block + 100 + 80
+    deploy_client.wait_for_block(
         final_block,
         2 * block_sage.estimated_time_to_block(final_block),
     )
@@ -62,5 +60,5 @@ def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contract
     scheduler.stop()
     block_sage.stop()
 
-    results = [not deploy_client.get_code(call._meta.address) for call in calls]
-    assert all(results)
+    did_suicide = [len(deploy_client.get_code(call._meta.address)) <= 2 for call in calls]
+    assert all(did_suicide)

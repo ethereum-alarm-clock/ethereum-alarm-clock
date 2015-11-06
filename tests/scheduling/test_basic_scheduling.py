@@ -8,7 +8,7 @@ deploy_contracts = [
 
 def test_basic_call_scheduling(deploy_client, deployed_contracts,
                                deploy_future_block_call, denoms,
-                               FutureBlockCall, CallLib, SchedulerLib):
+                               FutureBlockCall, CallLib, SchedulerLib, get_call):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
@@ -22,22 +22,16 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     )
     scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
 
-    call_scheduled_logs = SchedulerLib.CallScheduled.get_transaction_logs(scheduling_txn)
-    assert len(call_scheduled_logs) == 1
-    call_scheduled_data = SchedulerLib.CallScheduled.get_log_data(call_scheduled_logs[0])
-
-    call_address = call_scheduled_data['callAddress']
-    call = FutureBlockCall(call_address, deploy_client)
+    call = get_call(scheduling_txn)
 
     deploy_client.wait_for_block(call.targetBlock())
 
     assert client_contract.v_bool() is False
 
-    call_txn_hash = scheduler.execute(call_address)
+    call_txn_hash = scheduler.execute(call._meta.address)
     call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
 
-    execute_logs = CallLib.CallExecuted.get_transaction_logs(call_txn_hash)
-    assert len(execute_logs) == 1
-    execute_data = CallLib.CallExecuted.get_log_data(execute_logs[0])
+    execution_data = get_execution_data(call_txn_hash)
 
+    assert execution_data['success'] is True
     assert client_contract.v_bool() is True

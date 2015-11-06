@@ -63,7 +63,7 @@ library SchedulerLib {
                     return (true, 0x0);
             }
 
-            uint offset = uint(sha3(leftBound, rightBound, blockNumber)) % generation.members.length;
+            uint offset = uint(sha3(leftBound, rightBound, generationId, generation.members)) % generation.members.length;
             return (true, generation.members[(offset + blockWindow) % generation.members.length]);
     }
 
@@ -234,6 +234,7 @@ library SchedulerLib {
 
     function execute(CallDatabase storage self, uint startGas, address callAddress, address executor) {
         if (!GroveLib.exists(self.callIndex, bytes32(callAddress))) {
+                CallLib.CallAborted(executor, "UNKNOWN_ADDRESS");
                 return;
         }
 
@@ -245,11 +246,22 @@ library SchedulerLib {
         (isDesignated, designatedCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), block.number);
         if (isDesignated && designatedCaller != 0x0 && designatedCaller != executor) {
                 // Wrong caller
+                CallLib.CallAborted(executor, "WRONG_CALLER");
                 return;
         }
 
         if (!call.beforeExecute(executor)) {
                 return;
+        }
+
+        if (isDesignated) {
+            uint blockWindow = (block.number - call.targetBlock()) / getCallWindowSize();
+            if (blockWindow > 0) {
+                // Someone missed their call so this caller
+                // gets to claim their bond for picking up
+                // their slack.
+                awardMissedBlockBonus(self, executor, callAddress);
+            }
         }
         call.execute(startGas, executor);
     }

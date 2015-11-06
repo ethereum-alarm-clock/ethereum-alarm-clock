@@ -59,6 +59,11 @@ library CallLib {
 
         event CallExecuted(address indexed executor, uint gasCost, uint payment, uint fee, bool success);
 
+        event _CallAborted(address executor, bytes32 reason);
+        function CallAborted(address executor, bytes32 reason) public {
+            _CallAborted(executor, reason);
+        }
+
         function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
             // Make the call
             bool success = call.contractAddress.call.gas(msg.gas - overhead)(call.abiSignature, call.callData);
@@ -146,8 +151,6 @@ contract FutureCall {
         function getOverhead() constant returns (uint);
         function getExtraGas() constant returns (uint);
 
-        event CallAborted(address executor, bytes32 reason);
-
         function sendSafe(address toAddress, uint value) internal {
                 CallLib.sendSafe(toAddress, value);
         }
@@ -196,6 +199,7 @@ contract FutureBlockCall is FutureCall {
         function beforeExecute(address executor) constant returns (bool) {
                 if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
                         // Not being called within call window.
+                        CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
                         return false;
                 }
 

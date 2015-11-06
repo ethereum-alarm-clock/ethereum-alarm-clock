@@ -1,42 +1,38 @@
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
 ]
 
 
-def test_withdrawing_bond_restricted_when_in_pool(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    coinbase = deploy_client.get_coinbase()
+def test_withdrawing_bond_restricted_when_in_pool(deploy_client, deployed_contracts, deploy_coinbase):
+    scheduler = deployed_contracts.Scheduler
 
-    assert alarm.getBondBalance(coinbase) == 0
-    deposit_amount = alarm.getMinimumBond() * 10
+    assert scheduler.getBondBalance(deploy_coinbase) == 0
+    deposit_amount = scheduler.getMinimumBond() * 10
 
-    txn_1_hash = alarm.depositBond.sendTransaction(value=deposit_amount)
-    wait_for_transaction(deploy_client, txn_1_hash)
+    txn_1_hash = scheduler.depositBond(value=deposit_amount)
+    deploy_client.wait_for_transaction(txn_1_hash)
 
-    assert alarm.getBondBalance(coinbase) == deposit_amount
+    assert scheduler.getBondBalance(deploy_coinbase) == deposit_amount
 
-    assert alarm.isInPool(coinbase) is False
-    assert alarm.canEnterPool(coinbase) is True
-    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
+    assert scheduler.isInPool(deploy_coinbase) is False
+    assert scheduler.canEnterPool(deploy_coinbase) is True
+    deploy_client.wait_for_transaction(scheduler.enterPool())
 
-    txn_2_hash = alarm.withdrawBond.sendTransaction(deposit_amount)
-    wait_for_transaction(deploy_client, txn_2_hash)
+    txn_2_hash = scheduler.withdrawBond(deposit_amount)
+    deploy_client.wait_for_transaction(txn_2_hash)
 
-    assert alarm.isInPool(coinbase) is True
+    assert scheduler.isInPool(deploy_coinbase) is True
 
     # Withdrawl of full amount not allowed
-    assert alarm.getBondBalance(coinbase) == deposit_amount
+    assert scheduler.getBondBalance(deploy_coinbase) == deposit_amount
 
     # wi
-    minimum_bond = alarm.getMinimumBond()
-    txn_3_hash = alarm.withdrawBond.sendTransaction(
+    minimum_bond = scheduler.getMinimumBond()
+    txn_3_hash = scheduler.withdrawBond(
         deposit_amount - 2 * minimum_bond,
     )
-    wait_for_transaction(deploy_client, txn_3_hash)
+    deploy_client.wait_for_transaction(txn_3_hash)
 
     # Withdrawl of amount above minimum bond amount is allowed
-    assert alarm.isInPool(coinbase) is True
-    assert alarm.getBondBalance(coinbase) == 2 * minimum_bond
+    assert scheduler.isInPool(deploy_coinbase) is True
+    assert scheduler.getBondBalance(deploy_coinbase) == 2 * minimum_bond

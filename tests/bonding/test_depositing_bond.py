@@ -1,23 +1,19 @@
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
 ]
 
 
-def test_depositing_bond(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    coinbase = deploy_client.get_coinbase()
+def test_depositing_bond(deploy_client, deployed_contracts, deploy_coinbase):
+    scheduler = deployed_contracts.Scheduler
 
-    assert alarm.getBondBalance.call(coinbase) == 0
+    assert scheduler.getBondBalance.call(deploy_coinbase) == 0
 
-    txn_1_hash = alarm.depositBond.sendTransaction(value=123)
-    wait_for_transaction(deploy_client, txn_1_hash)
+    txn_1_hash = scheduler.depositBond.sendTransaction(value=123)
+    deploy_client.wait_for_transaction(txn_1_hash)
 
-    assert alarm.getBondBalance.call(coinbase) == 123
+    assert scheduler.getBondBalance.call(deploy_coinbase) == 123
 
-    txn_2_hash = alarm.depositBond.sendTransaction(value=456)
-    wait_for_transaction(deploy_client, txn_2_hash)
+    txn_2_hash = scheduler.depositBond.sendTransaction(value=456)
+    deploy_client.wait_for_transaction(txn_2_hash)
 
-    assert alarm.getBondBalance.call(coinbase) == 579
+    assert scheduler.getBondBalance.call(deploy_coinbase) == 579

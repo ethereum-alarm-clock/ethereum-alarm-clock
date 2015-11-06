@@ -1,11 +1,4 @@
-contract AlarmTestAPI {
-        // account functiosn
-        function withdraw(uint value) public;
-        function getAccountBalance(address account) public returns (uint);
-
-        // call scheduling
-        function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
-
+contract SchedulerTestAPI {
         // Pool functions
         function depositBond() public;
         function enterPool() public;
@@ -180,43 +173,31 @@ contract TestErrors {
                 value = true;
         }
 
-        function scheduleFail(address to) public {
-                //  TODO: convert to use scheduler
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doFail()")), sha3(), block.number + 40, 255, 0);
-        }
-
         function doInfinite() public {
                 while (true) {
                         tx.origin.send(1);
                 }
                 value = true;
         }
-
-        function scheduleInfinite(address to) public {
-                //  TODO: convert to use scheduler
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doInfinite()")), sha3(), block.number + 40, 255, 0);
-        }
 }
 
 
 contract JoinsPool {
-        AlarmTestAPI alarm;
+        SchedulerTestAPI scheduler;
 
         function setCallerPool(address to) public {
-                alarm = AlarmTestAPI(to);
+                scheduler = SchedulerTestAPI(to);
         }
 
         function deposit(uint value) public {
-                alarm.depositBond.value(value)();
+                scheduler.depositBond.value(value)();
         }
 
         function enter() public {
-                alarm.enterPool();
+                scheduler.enterPool();
         }
 
         function exit() public {
-                alarm.exitPool();
+                scheduler.exitPool();
         }
 }

@@ -22,8 +22,3 @@ def test_execution_of_call_that_contains_infinite_loop(deploy_client,
     assert len(call_logs) == 1
     log_data = deployed_contracts.CallLib.CallExecuted.get_log_data(call_logs[0])
     assert log_data['success'] is False
-
-    gas_used = int(call_txn_receipt['gasUsed'], 16)
-    gas_price = int(call_txn['gasPrice'], 16)
-
-    assert gas_used * gas_price < log_data['gasCost']

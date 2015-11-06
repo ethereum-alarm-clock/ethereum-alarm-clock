@@ -13,8 +13,8 @@ from .utils import (
 class PoolManager(object):
     logger = get_logger('pool_manager')
 
-    def __init__(self, alarm, block_sage=None):
-        self.alarm = alarm
+    def __init__(self, scheduler, block_sage=None):
+        self.scheduler = scheduler
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -22,7 +22,7 @@ class PoolManager(object):
 
     @property
     def rpc_client(self):
-        return self.alarm._meta.rpc_client
+        return self.scheduler._meta.rpc_client
 
     @cached_property
     def coinbase(self):
@@ -97,7 +97,7 @@ class PoolManager(object):
         # if self.bond_balance < self.minimum_bond * 2:
         #     deficit = self.minimum_bond * 2 - self.bond_balance
         #     self.logger.info("Bond value below threshold.  Depositing %s", deficit)
-        #     txn_hash = self.alarm.deposit(value=deficit)
+        #     txn_hash = self.scheduler.deposit(value=deficit)
         #     self.logger.debug("Deposited %s: Txn Hash: %s", deficit, txn_hash)
         #     wait_for_transaction(
         #         self.rpc_client,
@@ -118,91 +118,91 @@ class PoolManager(object):
         ))
 
     def is_generation_frozen(self, generation_id):
-        generation_start_at = self.alarm.getGenerationStartAt(generation_id)
+        generation_start_at = self.scheduler.getGenerationStartAt(generation_id)
         if self.block_sage.current_block_number < generation_start_at < self.freeze_horizon:
             return True
         return False
 
     def get_generation_size(self, generation_id):
-        return self.alarm.getGenerationSize(generation_id)
+        return self.scheduler.getGenerationSize(generation_id)
 
     @property
     def pool_freeze_duration(self):
-        return self.alarm.getPoolFreezePeriod()
+        return self.scheduler.getPoolFreezePeriod()
 
     @property
     def pool_rotation_delay(self):
-        return self.alarm.getPoolRotationDelay()
+        return self.scheduler.getPoolRotationDelay()
 
     @property
     def pool_overlap_size(self):
-        return self.alarm.getPoolOverlapSize()
+        return self.scheduler.getPoolOverlapSize()
 
     @property
     def minimum_pool_length(self):
         assert False  # TODO
-        return self.alarm.getPoolFreezeDuration()
+        return self.scheduler.getPoolFreezeDuration()
 
     @property
     def current_generation_id(self):
-        return self.alarm.getCurrentGenerationId()
+        return self.scheduler.getCurrentGenerationId()
 
     @property
     def current_generation_start_at(self):
-        return self.alarm.getGenerationStartAt(self.current_generation_id)
+        return self.scheduler.getGenerationStartAt(self.current_generation_id)
 
     @property
     def current_generation_end_at(self):
-        return self.alarm.getGenerationEndAt(self.current_generation_id)
+        return self.scheduler.getGenerationEndAt(self.current_generation_id)
 
     @property
     def next_generation_id(self):
-        return self.alarm.getNextGenerationId()
+        return self.scheduler.getNextGenerationId()
 
     @property
     def next_generation_start_at(self):
-        return self.alarm.getGenerationStartAt(self.next_generation_id)
+        return self.scheduler.getGenerationStartAt(self.next_generation_id)
 
     @property
     def next_generation_end_at(self):
-        return self.alarm.getGenerationEndAt(self.next_generation_id)
+        return self.scheduler.getGenerationEndAt(self.next_generation_id)
 
     @property
     def in_any_pool(self):
-        return self.alarm.isInPool()
+        return self.scheduler.isInPool()
 
     @property
     def in_current_generation(self):
-        return self.alarm.isInGeneration(self.coinbase, self.current_generation_id)
+        return self.scheduler.isInGeneration(self.coinbase, self.current_generation_id)
 
     @property
     def in_next_generation(self):
-        return self.alarm.isInGeneration(self.coinbase, self.next_generation_id)
+        return self.scheduler.isInGeneration(self.coinbase, self.next_generation_id)
 
     @property
     def can_enter_pool(self):
-        return self.alarm.canEnterPool(self.coinbase)
+        return self.scheduler.canEnterPool(self.coinbase)
 
     @property
     def can_exit_pool(self):
-        return self.alarm.canExitPool(self.coinbase)
+        return self.scheduler.canExitPool(self.coinbase)
 
     def enter_pool(self):
-        return self.alarm.enterPool.sendTransaction()
+        return self.scheduler.enterPool()
 
     def exit_pool(self):
-        return self.alarm.exitPool.sendTransaction()
+        return self.scheduler.exitPool()
 
     #
     # Bond API
     #
     @property
     def bond_balance(self):
-        return self.alarm.getBondBalance()
+        return self.scheduler.getBondBalance()
 
     @property
     def minimum_bond(self):
-        return self.alarm.getMinimumBond()
+        return self.scheduler.getMinimumBond()
 
     def deposit(self, value):
-        return self.alarm.deposit.sendTransaction(value=value)
+        return self.scheduler.deposit(value=value)

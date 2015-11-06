@@ -212,12 +212,12 @@ contract FutureBlockCall is FutureCall {
 
         function getOverhead() constant returns (uint) {
                 // TODO
-                return 45500;
+                return 46000;
         }
 
         function getExtraGas() constant returns (uint) {
                 // TODO
-                return 16500;
+                return 17000;
         }
 
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;

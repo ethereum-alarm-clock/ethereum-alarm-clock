@@ -8,7 +8,8 @@ deploy_contracts = [
 
 def test_basic_call_scheduling(deploy_client, deployed_contracts,
                                deploy_future_block_call, denoms,
-                               FutureBlockCall, CallLib, SchedulerLib, get_call):
+                               FutureBlockCall, CallLib, SchedulerLib,
+                               get_call, get_execution_data):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 

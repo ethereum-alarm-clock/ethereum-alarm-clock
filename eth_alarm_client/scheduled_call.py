@@ -3,8 +3,6 @@ import time
 
 from ethereum import utils as ethereum_utils
 
-from populus.utils import wait_for_transaction
-
 from .block_sage import BlockSage
 from .utils import (
     cached_property,
@@ -25,10 +23,10 @@ class ScheduledCall(object):
     txn_receipt = None
     txn = None
 
-    def __init__(self, alarm, call_key, block_sage=None):
-        self.call_key = call_key
-        self.alarm = alarm
-        self.logger = get_logger('call-{0}'.format(self.hex_call_key[:5]))
+    def __init__(self, scheduler, call_address, block_sage=None):
+        self.call_address = call_address
+        self.scheduler = scheduler
+        self.logger = get_logger('call-{0}'.format(self.hex_call_address[:5]))
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -40,8 +38,8 @@ class ScheduledCall(object):
             )
 
     @cached_property
-    def hex_call_key(self):
-        return ethereum_utils.encode_hex(self.call_key)
+    def hex_call_address(self):
+        return ethereum_utils.encode_hex(self.call_address)
 
     #
     # Execution Pre Requesites
@@ -58,7 +56,7 @@ class ScheduledCall(object):
 
     @property
     def scheduler_can_pay(self):
-        max_cost = self.alarm.getCallMaxCost(self.call_key)
+        max_cost = self.scheduler.getCallMaxCost(self.call_address)
 
         # Require 105% of max gas to be sure.
         return self.scheduler_account_balance >= max_cost * 1.05
@@ -100,13 +98,12 @@ class ScheduledCall(object):
 
             # Execute the transaction
             self.logger.info("Attempting to execute call")
-            txn_hash = self.alarm.doCall.sendTransaction(self.call_key)
+            txn_hash = self.scheduler.doCall(self.call_address)
 
             # Wait for the transaction receipt.
             try:
                 self.logger.debug("Waiting for transaction: %s", txn_hash)
-                txn_receipt = wait_for_transaction(
-                    self.rpc_client,
+                txn_receipt = self.rpc_client.wait_for_transaction(
                     txn_hash,
                     self.block_sage.block_time * 10,
                 )
@@ -144,7 +141,7 @@ class ScheduledCall(object):
     #
     @property
     def rpc_client(self):
-        return self.alarm._meta.rpc_client
+        return self.scheduler._meta.rpc_client
 
     @cached_property
     def coinbase(self):
@@ -155,7 +152,7 @@ class ScheduledCall(object):
         """
         The account balance of the scheduler for this call.
         """
-        return self.alarm.getAccountBalance(self.scheduled_by)
+        return self.scheduler.getAccountBalance(self.scheduled_by)
 
     @cached_property
     def last_block(self):
@@ -174,7 +171,7 @@ class ScheduledCall(object):
         Mapping of block number to designated caller address.
         """
         return {
-            block_number: self.alarm.getDesignatedCaller(self.call_key, block_number)
+            block_number: self.scheduler.getDesignatedCaller(self.call_address, block_number)
             for block_number
             in range(self.target_block, self.last_block + 1)
         }
@@ -217,47 +214,47 @@ class ScheduledCall(object):
     #
     @cached_property
     def contract_address(self):
-        return self.alarm.getCallContractAddress(self.call_key)
+        return self.scheduler.getCallContractAddress(self.call_address)
 
     @cached_property
     def scheduled_by(self):
-        return self.alarm.getCallScheduledBy(self.call_key)
+        return self.scheduler.getCallScheduledBy(self.call_address)
 
     @cache_once(0)
     def called_at_block(self):
-        return self.alarm.getCallCalledAtBlock(self.call_key)
+        return self.scheduler.getCallCalledAtBlock(self.call_address)
 
     @cached_property
     def target_block(self):
-        return self.alarm.getCallTargetBlock(self.call_key)
+        return self.scheduler.getCallTargetBlock(self.call_address)
 
     @cached_property
     def grace_period(self):
-        return self.alarm.getCallGracePeriod(self.call_key)
+        return self.scheduler.getCallGracePeriod(self.call_address)
 
     @cached_property
     def base_gas_price(self):
-        return self.alarm.getCallBaseGasPrice(self.call_key)
+        return self.scheduler.getCallBaseGasPrice(self.call_address)
 
     @cache_once(0)
     def gas_price(self):
-        return self.alarm.getCallGasPrice(self.call_key)
+        return self.scheduler.getCallGasPrice(self.call_address)
 
     @cache_once(0)
     def gas_used(self):
-        return self.alarm.getCallGasUsed(self.call_key)
+        return self.scheduler.getCallGasUsed(self.call_address)
 
     @cache_once(0)
     def payout(self):
-        return self.alarm.getCallPayout(self.call_key)
+        return self.scheduler.getCallPayout(self.call_address)
 
     @cache_once(0)
     def fee(self):
-        return self.alarm.getCallFee(self.call_key)
+        return self.scheduler.getCallFee(self.call_address)
 
     @cached_property
     def abi_signature(self):
-        return self.alarm.getCallABISignature(self.call_key)
+        return self.scheduler.getCallABISignature(self.call_address)
 
     _is_cancelled = None
 
@@ -270,14 +267,14 @@ class ScheduledCall(object):
         if self._is_cancelled is not None:
             return self._is_cancelled
 
-        value = self.alarm.checkIfCancelled(self.call_key)
+        value = self.scheduler.checkIfCancelled(self.call_address)
         if value or self.block_sage.current_block_number > self.target_block - CANCELLATION_WINDOW:
             self._is_cancelled = value
         return value
 
     @cache_once(False)
     def was_called(self):
-        return self.alarm.checkIfCalled(self.call_key)
+        return self.scheduler.checkIfCalled(self.call_address)
 
     _was_successful = None
 
@@ -289,9 +286,9 @@ class ScheduledCall(object):
         if self._was_successful is None:
             if not self.was_called:
                 return False
-            self._was_successful = self.alarm.checkIfSuccess(self.call_key)
+            self._was_successful = self.scheduler.checkIfSuccess(self.call_address)
         return bool(self._was_successful)
 
     @cached_property
     def data_hash(self):
-        return self.alarm.getCallDataHash(self.call_key)
+        return self.scheduler.getCallDataHash(self.call_address)

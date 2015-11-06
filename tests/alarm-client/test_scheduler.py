@@ -1,10 +1,6 @@
 import pytest
 
 from populus.contracts import get_max_gas
-from populus.utils import (
-    wait_for_transaction,
-    wait_for_block,
-)
 
 from eth_alarm_client import (
     Scheduler,
@@ -14,42 +10,46 @@ from eth_alarm_client import (
 
 
 deploy_contracts = [
-    "Alarm",
-    "SpecifyBlock",
+    "Scheduler",
+    "TestCallExecution",
 ]
 
 
 @pytest.fixture(autouse=True)
-def alarm_client_logging_config(monkeypatch):
+def logging_config(monkeypatch):
     # Set to DEBUG for a better idea of what is going on in this test.
     monkeypatch.setenv('LOG_LEVEL', 'ERROR')
 
 
-def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contracts, contracts):
+def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contracts, contracts,
+                   get_call, denoms):
     block_sage = BlockSage(deploy_client)
 
-    alarm = deployed_contracts.Alarm
+    scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.SpecifyBlock
-
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
 
     anchor_block = deploy_client.get_block_number()
 
     blocks = (1, 4, 4, 8, 30, 40, 50, 60)
 
-    call_keys = []
+    calls = []
 
     for n in blocks:
-        wait_for_transaction(deploy_client, client_contract.scheduleIt.sendTransaction(alarm._meta.address, anchor_block + 100 + n))
+        scheduling_txn = scheduler.scheduleCall(
+            client_contract._meta.address,
+            client_contract.setBool.encoded_abi_signature,
+            anchor_block + 100 + n,
+            1000000,
+            value=10 * denoms.ether,
+            gas=3000000,
+        )
+        scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+        call = get_call(scheduling_txn)
 
-        last_call_key = alarm.getLastCallKey()
-        assert last_call_key is not None
+        calls.append(call)
 
-        call_keys.append(last_call_key)
-
-    pool_manager = PoolManager(alarm, block_sage)
-    scheduler = Scheduler(alarm, pool_manager, block_sage=block_sage)
+    pool_manager = PoolManager(scheduler, block_sage)
+    scheduler = Scheduler(scheduler, pool_manager, block_sage=block_sage)
     scheduler.monitor_async()
 
     final_block = anchor_block + 100 + 70
@@ -62,5 +62,5 @@ def test_scheduler(geth_node, geth_node_config, deploy_client, deployed_contract
     scheduler.stop()
     block_sage.stop()
 
-    results = [alarm.checkIfCalled(k) for k in call_keys]
+    results = [not deploy_client.get_code(call._meta.address) for call in calls]
     assert all(results)

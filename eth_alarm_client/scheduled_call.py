@@ -26,7 +26,7 @@ class ScheduledCall(object):
     def __init__(self, scheduler, call_address, block_sage=None):
         self.call_address = call_address
         self.scheduler = scheduler
-        self.logger = get_logger('call-{0}'.format(self.hex_call_address[:5]))
+        self.logger = get_logger('call-{0}'.format(self.call_address))
 
         if block_sage is None:
             block_sage = BlockSage(self.rpc_client)
@@ -36,10 +36,6 @@ class ScheduledCall(object):
                 "It is not advisable to work with a ScheduledCall until the "
                 "40-80 blocks before its target block"
             )
-
-    @cached_property
-    def hex_call_address(self):
-        return ethereum_utils.encode_hex(self.call_address)
 
     #
     # Execution Pre Requesites
@@ -56,6 +52,8 @@ class ScheduledCall(object):
 
     @property
     def scheduler_can_pay(self):
+        # TODO: compute payment + fee + suggestedGas * gasPrice
+        assert False
         max_cost = self.scheduler.getCallMaxCost(self.call_address)
 
         # Require 105% of max gas to be sure.
@@ -68,11 +66,8 @@ class ScheduledCall(object):
         if not self.is_designated_caller:
             raise ValueError("Not in the designated callers")
 
-        if self.was_called:
-            raise ValueError("Already Called")
-
-        if self.is_cancelled:
-            raise ValueError("Call was cancelled")
+        if self.has_been_suicided:
+            raise ValueError("Contract Suicided")
 
         if not self.scheduler_can_pay:
             raise ValueError("Scheduler cannot pay")
@@ -93,31 +88,28 @@ class ScheduledCall(object):
                 break
 
             if self.block_sage.current_block_number not in self.callable_blocks:
-                time.sleep(0.1)
+                time.sleep(2)
                 continue
 
             # Execute the transaction
             self.logger.info("Attempting to execute call")
-            txn_hash = self.scheduler.doCall(self.call_address)
+            txn_hash = self.scheduler.execute(self.call_address)
 
             # Wait for the transaction receipt.
             try:
                 self.logger.debug("Waiting for transaction: %s", txn_hash)
                 txn_receipt = self.rpc_client.wait_for_transaction(
                     txn_hash,
-                    self.block_sage.block_time * 10,
+                    self.block_sage.estimated_time_to_block(self.last_block) * 2,
                 )
             except ValueError:
-                self.logger.info("Unable to get transaction receipt: %s", txn_hash)
-                self.validate_call()
-                self.logger.info("Retrying call")
-                continue
-
-            self.logger.info("Transaction accepted.")
-            self.txn_hash = txn_hash
-            self.txn_receipt = txn_receipt
-            self.txn = self.rpc_client.get_transaction_by_hash(txn_hash)
-            break
+                self.logger.error("Unable to get transaction receipt: %s", txn_hash)
+            else:
+                self.logger.info("Transaction accepted.")
+                self.txn_hash = txn_hash
+                self.txn_receipt = txn_receipt
+                self.txn = self.rpc_client.get_transaction_by_hash(txn_hash)
+                break
 
     def execute_async(self):
         self._run = True
@@ -134,7 +126,7 @@ class ScheduledCall(object):
 
         self.logger.info("Waiting for block #%s", self.target_block - buffer)
         while getattr(self, '_run', True) and self.block_sage.current_block_number < self.target_block - buffer:
-            time.sleep(1)
+            time.sleep(self.block_sage.estimated_time_to_block(self.target_block - buffer))
 
     #
     #  Meta Properties

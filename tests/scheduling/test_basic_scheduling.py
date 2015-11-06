@@ -22,7 +22,6 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
         gas=3000000,
     )
     scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
-
     call = get_call(scheduling_txn)
 
     deploy_client.wait_for_block(call.targetBlock())

@@ -3,17 +3,20 @@ Overview
 
 The Ethereum Alarm service is a contract on the ethereum network that
 facilitates scheduling of function calls for a specified block in the future.
-It is designed to require little or no trust between any of the users of the
-service, as well as providing no special access to the creator of the
-contract.
+It is designed to require zero trust between any of the users of the
+service, as well as providing no special access to any party (including the
+author of the service)
+
 
 Scheduling Function Calls
 -------------------------
 
+Scheduling a function call 
 When a contract, or individual wants to schedule a function call with the Alarm
 service it will perform the following steps.
 
-1. Schedule the function call with the service.
+1. Schedule the function call with the service, providing basic information
+   such as what function to call and when it should be called.
 2. Register any call data that will be required to make the function call
    (optional for functions that have no arguments).
 
@@ -61,19 +64,18 @@ this step.
 Execution of scheduled calls
 ----------------------------
 
-Scheduled function calls can ultimately be executed by anyone who wishes to
-initiate the transaction.  This will likely be an automated process that
-monitors for upcoming scheduled calls and executes them at the appropriate
-block.
+Scheduled function calls can be executed by anyone who wishes to initiate the
+transaction.  This will likely be an automated process that monitors for
+upcoming scheduled calls and executes them at the appropriate block.
 
 
-Usage Fees
-^^^^^^^^^^
+Cost
+^^^^
 
 In addition to the gas costs, schedulers are also encouraged to pay the call
 executor as well as the creator of the service for their effort.  This value
 can be specified by the scheduler, meaning that you may choose to offer any
-amount (including zero).
+amount for the execution of your function..
 
 The scheduling function uses the following defaults if specific values are not
 provided.

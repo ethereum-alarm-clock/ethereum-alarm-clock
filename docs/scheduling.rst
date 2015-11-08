@@ -6,8 +6,8 @@ scheduled on any block at least 40 blocks *(~10 minutes)* in the future.
 
 When a call is scheduled, the service deploys a new contract that represents
 the scheduled function call.  This contract is referred to as the **call
-contract**. holds all of the metadata associated with the call as well as the
-funds that will be used to pay for the call.
+contract**. It holds all of the metadata associated with the call as well as
+the funds that will be used to pay for the call.
 
 Lifecycle of a Call Contract
 ----------------------------
@@ -32,15 +32,16 @@ service.  This creates a new **call contract** that represents the function
 call.
 
 * **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x8b676ae8``
 
 The ``scheduleCall`` function takes the following parameters:
 
 **Required Arguments**
 
-* **address contractAddress:** The contract address that the function should be
-  called on.
-* **bytes4 abiSignature:** The 4 byte ABI function signature for the call.
+* **address contractAddress:** The address of the contract for the function
+  call.
+* **bytes4 abiSignature:** The 4 byte ABI signature of the function to be
+  called.
 * **uint targetBlock:** The block number the call should be executed on.
 
 **Optional Arguments**
@@ -60,19 +61,19 @@ invocation signatures.  The default value for each of the optional arguments
 will be used if any of the following signatures are used.
 
 * **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x1991313``
 
 
 * **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x49ae734``
 
 
 * **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x480b70bd``
 
 
 * **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address)``
-* **ABI Signature:** ``TODO``
+* **ABI Signature:** ``0x68402460``
 
 If the ``scheduleCall`` function is being used from within a contract, the
 address of the newly created call contract is returned.  If instead, the
@@ -98,8 +99,8 @@ Contracts can take care of their own call scheduling.
             bytes4 sig = bytes4(sha3("pickWinner()"));
             // approximately 24 hours from now
             uint targetBlock = block.number + 5760;
-            // 0xTODO is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
-            alarm.call(TODO, address(this), sig, targetBlock)
+            // 0x1991313 is the ABI signature computed from `bytes4(sha3("scheduleCall(...)"))`.
+            alarm.call(0x1991313, address(this), sig, targetBlock)
         }
 
         function pickWinner() public {

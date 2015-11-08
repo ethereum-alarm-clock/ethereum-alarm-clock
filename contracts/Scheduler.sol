@@ -183,17 +183,14 @@ contract Scheduler {
      *  Next Call API
      */
     function getCallWindowSize() constant returns (uint) {
-            // TODO: is this function needed
             return SchedulerLib.getCallWindowSize();
     }
 
     function getGenerationIdForCall(address callAddress) constant returns (uint) {
-            // TODO: is this function needed
             return SchedulerLib.getGenerationIdForCall(callDatabase, callAddress);
     }
 
     function getDesignatedCaller(address callAddress, uint blockNumber) constant returns (bool, address) {
-            // TODO: is this function needed
             var call = FutureBlockCall(callAddress);
             return SchedulerLib.getDesignatedCaller(callDatabase, call.targetBlock(), call.targetBlock() + call.gracePeriod(), blockNumber);
     }

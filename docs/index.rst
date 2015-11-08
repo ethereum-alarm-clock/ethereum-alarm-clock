@@ -8,8 +8,10 @@ Welcome to Ethereum Alarm Clock's documentation!
 
 The Ethereum Alarm Clock is a service that allows scheduling of contract
 function calls at a specified block number in the future.  These scheduled
-calls are then executed by other nodes on the ethereum network who are
-reimbursed for their gas costs plus a small payment for the transaction.
+calls are executed by other nodes on the ethereum network in exchange for a
+small payment and reimbursment of gas costs.
+
+The service is completely trustless, open source, and verifiable.
 
 
 Contents:

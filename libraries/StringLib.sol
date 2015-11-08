@@ -4,7 +4,7 @@
 /// @author Piper Merriam - <pipermerriam@gmail.com>
 library StringLib {
     /*
-     *  Address: 0x443b53559d337277373171280ec57029718203fb
+     *  Address: 0xb06732649abb0e2d4fd1988c7cd74aa182c5453e
      */
 
     /// @dev Converts an unsigned integert to its string representation.

@@ -6,7 +6,7 @@ import "libraries/CallLib.sol";
 
 library SchedulerLib {
     /*
-     *  Address: 0x5c3623dcef2d5168dbe3e8cc538788cd8912d898
+     *  Address: 0x873bf63c898791e57fa66e7b9261ea81df0b8044
      */
     struct CallDatabase {
         ResourcePoolLib.Pool callerPool;
@@ -15,9 +15,6 @@ library SchedulerLib {
         AccountingLib.Bank gasBank;
     }
 
-    /*
-     *  API used by Alarm service
-     */
     // The number of blocks that each caller in the pool has to complete their
     // call.
     uint constant CALL_WINDOW_SIZE = 16;

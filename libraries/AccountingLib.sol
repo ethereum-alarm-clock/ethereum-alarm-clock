@@ -4,7 +4,7 @@
 /// @author Piper Merriam - <pipermerriam@gmail.com>
 library AccountingLib {
         /*
-         *  Address: 0x7de615d8a51746a9f10f72a593fb5b3718dc3d52
+         *  Address: 0x947aaa72162d32135d2af1ed0c6d610d541829c3
          */
         struct Bank {
             mapping (address => uint) accountBalances;

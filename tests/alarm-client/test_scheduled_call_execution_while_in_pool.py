@@ -1,12 +1,6 @@
 import pytest
 import time
 
-from populus.contracts import get_max_gas
-from populus.utils import (
-    wait_for_transaction,
-    wait_for_block,
-)
-
 from eth_alarm_client import (
     PoolManager,
     ScheduledCall,
@@ -15,91 +9,97 @@ from eth_alarm_client import (
 
 
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
     "JoinsPool",
-    "SpecifyBlock",
+    "TestCallExecution",
 ]
 
 
 @pytest.fixture(autouse=True)
-def alarm_client_logging_config(monkeypatch):
+def scheduler_client_logging_config(monkeypatch):
     # Set to DEBUG for a better idea of what is going on in this test.
     monkeypatch.setenv('LOG_LEVEL', 'ERROR')
 
 
-def test_scheduled_call_execution_with_pool(geth_node, geth_coinbase, geth_node_config, deploy_client, deployed_contracts, contracts):
-    alarm = deployed_contracts.Alarm
+def test_scheduled_call_execution_with_pool(geth_node, geth_node_config,
+                                            deploy_client, deployed_contracts,
+                                            contracts, deploy_coinbase,
+                                            get_call, denoms, get_execution_data):
+    scheduler = deployed_contracts.Scheduler
     joiner = deployed_contracts.JoinsPool
-    client_contract = deployed_contracts.SpecifyBlock
-
-    coinbase = geth_coinbase
+    client_contract = deployed_contracts.TestCallExecution
 
     block_sage = BlockSage(deploy_client)
 
-    # Put in our deposit with the alarm contract.
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
+    # Let the block sage spin up.
+    time.sleep(4)
 
-    wait_for_transaction(deploy_client, joiner.setCallerPool.sendTransaction(alarm._meta.address))
+    join_txn_hash = joiner.setCallerPool(scheduler._meta.address)
+    deploy_client.wait_for_transaction(join_txn_hash)
 
-    assert alarm.getBondBalance(coinbase) == 0
-    bond_amount = alarm.getMinimumBond() * 10
+    assert scheduler.getBondBalance(deploy_coinbase) == 0
+    bond_amount = scheduler.getMinimumBond() * 10
     # Put in our bond
-    wait_for_transaction(
-        deploy_client, alarm.depositBond.sendTransaction(value=bond_amount)
+    deploy_client.wait_for_transaction(
+        scheduler.depositBond(value=bond_amount)
     )
 
     # Put the contract's bond in
-    wait_for_transaction(
-        deploy_client,
+    deploy_client.wait_for_transaction(
         deploy_client.send_transaction(to=joiner._meta.address, value=bond_amount)
     )
-    wait_for_transaction(
-        deploy_client, joiner.deposit.sendTransaction(bond_amount)
+    deploy_client.wait_for_transaction(
+        joiner.deposit(bond_amount)
     )
 
     # Both join the pool
-    wait_for_transaction(deploy_client, joiner.enter.sendTransaction())
-    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
+    deploy_client.wait_for_transaction(joiner.enter())
+    deploy_client.wait_for_transaction(scheduler.enterPool())
 
     # New pool is formed but not active
-    first_generation_id = alarm.getNextGenerationId()
+    first_generation_id = scheduler.getNextGenerationId()
     assert first_generation_id > 0
 
     # Go ahead and schedule the call.
-    generation_start_at = alarm.getGenerationStartAt(first_generation_id)
+    generation_start_at = scheduler.getGenerationStartAt(first_generation_id)
     target_block = generation_start_at + 5
 
-    txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address, target_block)
-    wait_for_transaction(deploy_client, txn_hash)
+    scheduling_txn = scheduler.scheduleCall(
+        client_contract._meta.address,
+        client_contract.setBool.encoded_abi_signature,
+        target_block,
+        1000000,
+        value=10 * denoms.ether,
+        gas=3000000,
+    )
+    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+    call = get_call(scheduling_txn)
+    call_address = call._meta.address
 
     # Wait for the pool to become active
-    wait_for_block(
-        deploy_client,
+    deploy_client.wait_for_block(
         generation_start_at,
         2 * block_sage.estimated_time_to_block(generation_start_at),
     )
 
     # We should both be in the pool
-    assert alarm.getCurrentGenerationId() == first_generation_id
-    assert alarm.isInGeneration(joiner._meta.address, first_generation_id) is True
-    assert alarm.isInGeneration(coinbase, first_generation_id) is True
+    assert scheduler.getCurrentGenerationId() == first_generation_id
+    assert scheduler.isInGeneration(joiner._meta.address, first_generation_id) is True
+    assert scheduler.isInGeneration(deploy_coinbase, first_generation_id) is True
 
-    call_key = alarm.getLastCallKey()
-    assert call_key is not None
-
-    scheduled_call = ScheduledCall(alarm, call_key, block_sage=block_sage)
-    pool_manager = PoolManager(alarm, block_sage=block_sage)
+    scheduled_call = ScheduledCall(scheduler, call_address, block_sage=block_sage)
+    pool_manager = PoolManager(scheduler, block_sage=block_sage)
 
     scheduled_call.execute_async()
 
-    wait_for_block(
-        deploy_client,
+    assert scheduled_call.has_been_suicided is False
+
+    deploy_client.wait_for_block(
         scheduled_call.target_block,
         2 * block_sage.estimated_time_to_block(scheduled_call.target_block),
     )
 
-    for i in range(alarm.getCallWindowSize() * 2):
+    for i in range(scheduler.getCallWindowSize() * 2):
         if scheduled_call.txn_hash:
             break
         time.sleep(block_sage.block_time)
@@ -108,7 +108,7 @@ def test_scheduled_call_execution_with_pool(geth_node, geth_coinbase, geth_node_
     assert scheduled_call.txn_receipt
     assert scheduled_call.txn
 
-    assert scheduled_call.was_called
-    assert alarm.checkIfCalled(scheduled_call.call_key)
-    assert scheduled_call.target_block <= scheduled_call.called_at_block
-    assert scheduled_call.called_at_block <= scheduled_call.target_block + scheduled_call.grace_period
+    execute_data = get_execution_data(scheduled_call.txn_hash)
+    assert execute_data['success'] is True
+
+    assert scheduled_call.has_been_suicided is True

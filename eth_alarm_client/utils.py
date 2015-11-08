@@ -3,6 +3,8 @@ import logging
 import collections
 from logging import handlers
 
+from .contracts import FutureBlockCall
+
 
 class cached_property(object):
     """
@@ -80,33 +82,53 @@ def get_logger(name, level=None):
     return logger
 
 
+EMPTY_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+
 def enumerate_upcoming_calls(alarm, anchor_block):
     block_cutoff = anchor_block + 40
+    blockchain_client = alarm._meta.blockchain_client
 
-    call_keys = []
+    calls = []
 
     while anchor_block > 0 and anchor_block < block_cutoff:
-        call_key = alarm.getNextCall(anchor_block)
+        call_address = alarm.getNextCall(anchor_block)
 
-        if call_key is None:
+        if call_address == EMPTY_ADDRESS:
             break
 
-        target_block = alarm.getCallTargetBlock(call_key)
+        call = FutureBlockCall(call_address, blockchain_client)
+
+        try:
+            target_block = call.targetBlock()
+        except ValueError:
+            if len(blockchain_client.get_code(call_address)) <= 2:
+                continue
+            raise
+
         if target_block > block_cutoff:
             break
 
-        call_keys.append(call_key)
+        calls.append(call_address)
 
-        sibling_call_key = call_key
-        while sibling_call_key:
-            sibling_call_key = alarm.getNextCallSibling(sibling_call_key)
+        sibling_call_address = call_address
+        while sibling_call_address != EMPTY_ADDRESS:
+            sibling_call_address = alarm.getNextCallSibling(sibling_call_address)
 
-            if sibling_call_key is not None:
-                if alarm.getCallTargetBlock(sibling_call_key) == target_block:
-                    call_keys.append(sibling_call_key)
+            if sibling_call_address != EMPTY_ADDRESS:
+                call = FutureBlockCall(sibling_call_address, alarm._meta.blockchain_client)
+                try:
+                    sibling_target_block = call.targetBlock()
+                except ValueError:
+                    if len(blockchain_client.get_code(sibling_call_address)) <= 2:
+                        continue
+                    raise
+
+                if sibling_target_block == target_block:
+                    calls.append(sibling_call_address)
                 else:
                     break
 
         anchor_block = target_block + 1
 
-    return tuple(call_keys)
+    return tuple(calls)

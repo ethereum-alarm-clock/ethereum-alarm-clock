@@ -1,6 +1,21 @@
 Changelog
 =========
 
+0.5.0
+-----
+
+- Each scheduled call now exists as it's own contract, referred to as a call
+  contract.
+- The authorization API has been removed. It is now possible for the contract
+  being called to look up ``msg.sender`` on the scheduling contract and find
+  out who scheduled the call.
+- The account management API has been removed.  Each call contract now manages
+  it's own gas money, the remainder of which is given back to the scheduler
+  after the call is executed.
+- All of the information that used to be stored about the call execution is now
+  placed in event logs (gasUsed, wasSuccessful, wasCalled, etc)
+
+
 0.4.0
 -----
 

@@ -1,34 +1,29 @@
-from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
-    "NoArgs",
+    "Scheduler",
+    "TestCallExecution",
+    "TestDataRegistry",
 ]
 
 
-def test_minimum_grace_period_enforced(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.NoArgs
+def test_cannot_schedule_with_too_small_grace_perioud(deploy_client, deployed_contracts,
+                                                      deploy_future_block_call, denoms,
+                                                      SchedulerLib):
+    scheduler = deployed_contracts.Scheduler
+    client_contract = deployed_contracts.TestCallExecution
 
-    minimum_grace_period = alarm.getMinimumGracePeriod()
+    scheduling_txn = scheduler.scheduleCall(
+        client_contract._meta.address,
+        client_contract.setBool.encoded_abi_signature,
+        deploy_client.get_block_number() + 41,
+        1000000,
+        scheduler.getMinimumGracePeriod() - 1,
+        value=10 * denoms.ether,
+        gas=3000000,
+    )
+    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
 
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
+    call_rejected_logs = SchedulerLib.CallRejected.get_transaction_logs(scheduling_txn)
+    assert len(call_rejected_logs) == 1
+    call_rejected_data = SchedulerLib.CallRejected.get_log_data(call_rejected_logs[0])
 
-    wait_for_transaction(deploy_client, client_contract.setGracePeriod.sendTransaction(minimum_grace_period - 1))
-    txn_1_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
-    wait_for_transaction(deploy_client, txn_1_hash)
-
-    call_key = alarm.getLastCallKey.call()
-    assert call_key is None
-
-    wait_for_transaction(deploy_client, client_contract.setGracePeriod.sendTransaction(minimum_grace_period))
-    txn_2_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
-    wait_for_transaction(deploy_client, txn_2_hash)
-
-    call_key = alarm.getLastCallKey.call()
-    assert call_key is not None
-
-    alarm.getCallGracePeriod.call(call_key) == 16
+    assert call_rejected_data['reason'] == 'GRACE_TOO_SHORT'

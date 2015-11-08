@@ -12,20 +12,17 @@ calls are then executed by other nodes on the ethereum network who are
 reimbursed for their gas costs plus a small payment for the transaction.
 
 
-
 Contents:
 
 .. toctree::
    overview
-   accounts
-   authorization
    scheduling
+   call_contracts
    pool
    execution
    costs_and_fees
    abi
    pool.api
-   scheduling.api
    events
    changelog
    :maxdepth: 2

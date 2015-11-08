@@ -1,28 +1,28 @@
-from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
-    "SpecifyBlock",
+    "Scheduler",
+    "TestCallExecution",
+    "TestDataRegistry",
 ]
 
 
-def test_cannot_schedule_too_soon(deploy_client, deployed_contracts):
-    alarm = deployed_contracts.Alarm
-    client_contract = deployed_contracts.SpecifyBlock
+def test_cannot_schedule_too_soon(deploy_client, deployed_contracts,
+                                  deploy_future_block_call, denoms,
+                                  FutureBlockCall, SchedulerLib):
+    scheduler = deployed_contracts.Scheduler
+    client_contract = deployed_contracts.TestCallExecution
 
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
+    scheduling_txn = scheduler.scheduleCall(
+        client_contract._meta.address,
+        client_contract.setBool.encoded_abi_signature,
+        deploy_client.get_block_number() + 39,
+        1000000,
+        value=10 * denoms.ether,
+        gas=3000000,
+    )
+    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
 
-    txn_hash = client_contract.scheduleDelta.sendTransaction(alarm._meta.address, 39)
-    wait_for_transaction(deploy_client, txn_hash)
+    call_rejected_logs = SchedulerLib.CallRejected.get_transaction_logs(scheduling_txn)
+    assert len(call_rejected_logs) == 1
+    call_rejected_data = SchedulerLib.CallRejected.get_log_data(call_rejected_logs[0])
 
-    call_key = alarm.getLastCallKey()
-    assert call_key is None
-
-    txn_hash = client_contract.scheduleDelta.sendTransaction(alarm._meta.address, 40)
-    wait_for_transaction(deploy_client, txn_hash)
-
-    call_key = alarm.getLastCallKey()
-    assert call_key is not None
+    assert call_rejected_data['reason'] == 'TOO_SOON'

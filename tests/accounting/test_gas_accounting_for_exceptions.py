@@ -1,24 +1,21 @@
 deploy_contracts = [
     "CallLib",
     "Scheduler",
-    "TestCallExecution",
+    "TestErrors",
 ]
 
 
-def test_execution_fee(deploy_client, deployed_contracts,
-                       deploy_future_block_call, denoms,
-                       FutureBlockCall, CallLib, SchedulerLib):
+def test_gas_accounting_for_call_exception(deploy_client, deployed_contracts,
+                                          deploy_future_block_call, denoms,
+                                          FutureBlockCall, CallLib, SchedulerLib):
     scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
+    client_contract = deployed_contracts.TestErrors
 
     scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
-        client_contract.setBool.encoded_abi_signature,
+        client_contract.doFail.encoded_abi_signature,
         deploy_client.get_block_number() + 45,
         1000000,
-        255,
-        12345,
-        54321,
         value=10 * denoms.ether,
         gas=3000000,
     )
@@ -33,21 +30,20 @@ def test_execution_fee(deploy_client, deployed_contracts,
 
     deploy_client.wait_for_block(call.targetBlock())
 
-    assert deploy_client.get_balance("0xd3cda913deb6f67967b99d67acdfa1712c293601") == 0
-
-    assert client_contract.v_bool() is False
-    assert client_contract.wasSuccessful() == 0
-
-    call_txn_hash = client_contract.doExecution(scheduler._meta.address, call_address)
+    call_txn_hash = scheduler.execute(call_address)
     call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
-
-
-    assert client_contract.wasSuccessful() == 1
-    assert client_contract.v_bool() is True
+    call_txn = deploy_client.get_transaction_by_hash(call_txn_hash)
 
     execute_logs = CallLib.CallExecuted.get_transaction_logs(call_txn_hash)
     assert len(execute_logs) == 1
     execute_data = CallLib.CallExecuted.get_log_data(execute_logs[0])
 
-    assert execute_data['fee'] == 54321
-    assert deploy_client.get_balance("0xd3cda913deb6f67967b99d67acdfa1712c293601") == 54321
+    assert execute_data['success'] is False
+
+    gas_used = int(call_txn_receipt['gasUsed'], 16)
+    gas_price = int(call_txn['gasPrice'], 16)
+    actual_gas_cost = gas_used * gas_price
+    expected_gas_cost = execute_data['gasCost']
+
+    assert actual_gas_cost <= expected_gas_cost
+    assert abs(actual_gas_cost - expected_gas_cost) < 1000

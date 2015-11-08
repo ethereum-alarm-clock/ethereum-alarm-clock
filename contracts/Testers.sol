@@ -1,11 +1,4 @@
-contract AlarmTestAPI {
-        // account functiosn
-        function withdraw(uint value) public;
-        function getAccountBalance(address account) public returns (uint);
-
-        // call scheduling
-        function scheduleCall(address contractAddress, bytes4 signature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
-
+contract SchedulerTestAPI {
         // Pool functions
         function depositBond() public;
         function enterPool() public;
@@ -15,6 +8,10 @@ contract AlarmTestAPI {
 
 contract TestDataRegistry {
         uint8 public wasSuccessful = 0;
+
+        function reset() public {
+            wasSuccessful = 0;
+        }
 
         function registerUInt(address to, uint v) public {
             bool result = to.call(bytes4(sha3("registerData()")), v);
@@ -36,8 +33,18 @@ contract TestDataRegistry {
             }
         }
 
-        function registerBytes(address to, bytes32 v) public {
+        function registerBytes32(address to, bytes32 v) public {
             bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
+        }
+
+        function registerBytes(address to, bytes v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v.length, v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -57,7 +64,7 @@ contract TestDataRegistry {
         }
 
         function registerMany(address to, uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f);
+            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f.length, f);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -79,256 +86,118 @@ contract TestDataRegistry {
 }
 
 
-contract NoArgs {
-        bool public value;
-        uint8 gracePeriod = 255;
-        uint delta = 40;
+contract TestCallExecution {
+        uint8 public wasSuccessful;
 
-        function setGracePeriod(uint8 v) public {
-            gracePeriod = v;
+        function doExecution(address to, address callAddress) {
+            bool result = to.call(bytes4(sha3("execute(address)")), callAddress);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
         }
 
-        function setDelta(uint v) public {
-            delta = v;
+        function doLoops(uint iterations) {
+            for (uint i = 0; i < iterations; i++) {
+                address(this).send(1);
+            }
         }
 
-        function doIt() public {
-                value = true;
+        bool public v_bool;
+
+        function setBool() public {
+            v_bool = true;
         }
 
-        function undoIt() public {
-                value = false;
+        uint public v_uint;
+
+        function setUInt(uint v) public {
+            v_uint = v;
         }
 
-        function scheduleIt(address to) public {
-                to.call(bytes4(sha3("registerData()")));
+        int public v_int;
 
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + delta, gracePeriod, 0);
+        function setInt(int v) public {
+            v_int = v;
+        }
+
+        address public v_address;
+
+        function setAddress(address v) public {
+            v_address = v;
+        }
+
+        bytes32 public v_bytes32;
+
+        function setBytes32(bytes32 v) public {
+            v_bytes32 = v;
+        }
+
+        bytes public v_bytes;
+
+        function setBytes(bytes v) public {
+            Bytes(v);
+            Bytes(msg.data);
+            v_bytes = v;
+        }
+
+        uint public vm_a;
+        int public vm_b;
+        uint public vm_c;
+        bytes20 public vm_d;
+        address public vm_e;
+        bytes public vm_f;
+
+        event Bytes(bytes f);
+
+        function setMany(uint a, int b, uint c, bytes20 d, address e, bytes f) public {
+            Bytes(f);
+            Bytes(msg.data);
+            vm_a = a;
+            vm_b = b;
+            vm_c = c;
+            vm_d = d;
+            vm_e = e;
+            vm_f = f;
         }
 }
 
 
-contract Fails {
+contract TestErrors {
         bool public value;
-        bytes32 public dataHash;
 
-        function doIt() public {
+        function doFail() public {
                 throw;
                 value = true;
         }
 
-        function scheduleIt(address to) public {
-                dataHash = sha3();
-                to.call(bytes4(sha3("registerData()")));
-
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), dataHash, block.number + 40, 255, 0);
-        }
-}
-
-
-contract PassesInt {
-        int public value;
-        bytes32 public dataHash;
-
-        function doIt(int a) public {
-                value = a;
-        }
-
-        function scheduleIt(address to, int a) public {
-                dataHash = sha3(a);
-                to.call(bytes4(sha3("registerData()")), a);
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(int256)")), dataHash, block.number + 40, 255, 0);
-        }
-}
-
-
-contract PassesUInt {
-        uint public value;
-        bytes32 public dataHash;
-
-        function doIt(uint a) public {
-                value = a;
-        }
-
-        function scheduleIt(address to, uint a) public {
-                dataHash = sha3(a);
-                to.call(bytes4(sha3("registerData()")), a);
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(uint256)")), dataHash, block.number + 40, 255, 0);
-        }
-}
-
-
-contract PassesBytes32 {
-        bytes32 public value;
-        bytes32 public dataHash;
-
-        function doIt(bytes32 a) public {
-                value = a;
-        }
-
-        function scheduleIt(address to, bytes32 a) public {
-                dataHash = sha3(a);
-                to.call(bytes4(sha3("registerData()")), a);
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(bytes32)")), dataHash, block.number + 40, 255, 0);
-        }
-}
-
-
-contract PassesAddress {
-        address public value;
-        bytes32 public dataHash;
-        bytes public data;
-
-        function doIt(address a) public {
-                value = a;
-                data = msg.data;
-        }
-
-        function scheduleIt(address to, address a) public {
-                dataHash = sha3(bytes32(a));
-                to.call(bytes4(sha3("registerData()")), a);
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt(address)")), dataHash, block.number + 40, 255, 0);
-        }
-}
-
-
-contract CancelsCall {
-        function doIt() public {
-        }
-
-        function cancelIt(address to, bytes32 callKey) public {
-                to.call(bytes4(sha3("cancelCall(bytes32)")), callKey);
-        }
-
-        function scheduleIt(address to) public {
-                to.call(bytes4(sha3("registerData()")));
-
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
-        }
-}
-
-
-contract WithdrawsDuringCall {
-        /*
-         *  Used to test that the funds of an account are locked during the
-         *  function call to prevent withdrawing funds that are about to be
-         *  used to pay the caller.
-         */
-        AlarmTestAPI alarm;
-        uint public withdrawAmount;
-
-        function setAlarm(address alarmAddress) public {
-                alarm = AlarmTestAPI(alarmAddress);
-        }
-
-        function getAlarmBalance() public returns (uint) {
-                return alarm.getAccountBalance(address(this));
-        }
-
-        bool public wasCalled;
-
-        function doIt() public {
-                wasCalled = true;
-                withdrawAmount = getAlarmBalance();
-                alarm.withdraw(withdrawAmount);
-        }
-
-        function scheduleIt() public {
-                address(alarm).call(bytes4(sha3("registerData()")));
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
-        }
-}
-
-
-contract DepositsFunds {
-        uint public sentSuccessful;
-
-        function doIt(address a, uint value) public {
-                bool result = a.call.value(value)(bytes4(sha3("deposit(address)")), address(this));
-                if (result) {
-                        sentSuccessful = 1;
-                }
-                else {
-                        sentSuccessful = 2;
-                }
-        }
-}
-
-
-contract SpecifyBlock {
-        bool public value;
-
-        function doIt() public {
-                value = true;
-        }
-
-        function scheduleDelta(address to, uint delta) public {
-                scheduleIt(to, block.number + delta);
-        }
-
-        function scheduleIt(address to, uint blockNumber) public {
-                to.call(bytes4(sha3("registerData()")), block.timestamp);
-
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(block.timestamp), blockNumber, 255, 0);
-        }
-}
-
-
-contract AuthorizesOthers {
-        address public calledBy;
-
-        function doIt() public {
-                calledBy = msg.sender;
-        }
-
-        function authorize(address to) public {
-                to.call(bytes4(sha3("addAuthorization(address)")), msg.sender);
-        }
-
-        function unauthorize(address to) public {
-                to.call(bytes4(sha3("removeAuthorization(address)")), msg.sender);
-        }
-}
-
-
-contract InfiniteLoop {
-        function doIt() public {
+        function doInfinite() public {
                 while (true) {
                         tx.origin.send(1);
                 }
-        }
-
-        function scheduleIt(address to) public {
-                AlarmTestAPI alarm = AlarmTestAPI(to);
-                alarm.scheduleCall(address(this), bytes4(sha3("doIt()")), sha3(), block.number + 40, 255, 0);
+                value = true;
         }
 }
 
 
 contract JoinsPool {
-        AlarmTestAPI alarm;
+        SchedulerTestAPI scheduler;
 
         function setCallerPool(address to) public {
-                alarm = AlarmTestAPI(to);
+                scheduler = SchedulerTestAPI(to);
         }
 
         function deposit(uint value) public {
-                alarm.depositBond.value(value)();
+                scheduler.depositBond.value(value)();
         }
 
         function enter() public {
-                alarm.enterPool();
+                scheduler.enterPool();
         }
 
         function exit() public {
-                alarm.exitPool();
+                scheduler.exitPool();
         }
 }

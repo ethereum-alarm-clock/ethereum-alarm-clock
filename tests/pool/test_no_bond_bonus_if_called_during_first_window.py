@@ -1,84 +1,84 @@
-from populus.contracts import get_max_gas
-from populus.utils import wait_for_transaction
-
-
 deploy_contracts = [
-    "Alarm",
+    "Scheduler",
     "JoinsPool",
-    "NoArgs",
+    "TestCallExecution",
 ]
 
 
-def test_call_window_divided_between_callers(deploy_client, deployed_contracts, contracts):
-    alarm = deployed_contracts.Alarm
+def test_no_bond_bonus_for_first_call_window(deploy_client, deployed_contracts,
+                                             contracts, deploy_coinbase,
+                                             get_call, get_execution_data,
+                                             denoms):
+    scheduler = deployed_contracts.Scheduler
     joiner = deployed_contracts.JoinsPool
-    client_contract = deployed_contracts.NoArgs
+    client_contract = deployed_contracts.TestCallExecution
 
-    coinbase = deploy_client.get_coinbase()
+    deploy_client.wait_for_transaction(
+        joiner.setCallerPool(scheduler._meta.address),
+    )
 
-    # Put in our deposit with the alarm contract.
-    deposit_amount = get_max_gas(deploy_client) * deploy_client.get_gas_price() * 20
-    alarm.deposit.sendTransaction(client_contract._meta.address, value=deposit_amount)
-
-    wait_for_transaction(deploy_client, joiner.setCallerPool.sendTransaction(alarm._meta.address))
-
-    assert alarm.getBondBalance(coinbase) == 0
-    deposit_amount = alarm.getMinimumBond() * 10
+    assert scheduler.getBondBalance(deploy_coinbase) == 0
+    deposit_amount = scheduler.getMinimumBond() * 10
     # Put in our bond
-    wait_for_transaction(
-        deploy_client, alarm.depositBond.sendTransaction(value=deposit_amount)
+    deploy_client.wait_for_transaction(
+        scheduler.depositBond(value=deposit_amount)
     )
 
     # Put the contract's bond in
-    wait_for_transaction(
-        deploy_client,
+    deploy_client.wait_for_transaction(
         deploy_client.send_transaction(to=joiner._meta.address, value=deposit_amount)
     )
-    wait_for_transaction(
-        deploy_client, joiner.deposit.sendTransaction(deposit_amount)
+    deploy_client.wait_for_transaction(
+        joiner.deposit(deposit_amount)
     )
 
     # Both join the pool
-    wait_for_transaction(deploy_client, joiner.enter.sendTransaction())
-    wait_for_transaction(deploy_client, alarm.enterPool.sendTransaction())
+    deploy_client.wait_for_transaction(joiner.enter())
+    deploy_client.wait_for_transaction(scheduler.enterPool())
 
     # New pool is formed but not active
-    first_generation_id = alarm.getNextGenerationId()
+    first_generation_id = scheduler.getNextGenerationId()
     assert first_generation_id > 0
 
     # Wait for it to become active
-    deploy_client.wait_for_block(alarm.getGenerationStartAt(first_generation_id), 180)
+    deploy_client.wait_for_block(scheduler.getGenerationStartAt(first_generation_id), 180)
 
     # We should both be in the pool
-    assert alarm.getCurrentGenerationId() == first_generation_id
-    assert alarm.isInGeneration(joiner._meta.address, first_generation_id) is True
-    assert alarm.isInGeneration(coinbase, first_generation_id) is True
+    assert scheduler.getCurrentGenerationId() == first_generation_id
+    assert scheduler.isInGeneration(joiner._meta.address, first_generation_id) is True
+    assert scheduler.isInGeneration(deploy_coinbase, first_generation_id) is True
 
     # Schedule the function call.
     for _ in range(5):
-        txn_hash = client_contract.scheduleIt.sendTransaction(alarm._meta.address)
-        wait_for_transaction(deploy_client, txn_hash)
+        # Schedule the function call.
+        scheduling_txn = scheduler.scheduleCall(
+            client_contract._meta.address,
+            client_contract.setBool.encoded_abi_signature,
+            deploy_client.get_block_number() + 250,
+            1000000,
+            value=10 * denoms.ether,
+            gas=3000000,
+        )
+        scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+        call = get_call(scheduling_txn)
 
-        call_key = alarm.getLastCallKey()
-        assert call_key is not None
-
-        target_block = alarm.getCallTargetBlock(call_key)
-        grace_period = alarm.getCallGracePeriod(call_key)
-        first_caller = alarm.getDesignatedCaller(call_key, target_block)
-        if first_caller == coinbase:
+        target_block = call.targetBlock()
+        grace_period = call.gracePeriod()
+        first_caller = scheduler.getDesignatedCaller(call._meta.address, target_block)[1]
+        if first_caller == deploy_coinbase:
             break
     else:
         raise ValueError("Was never first caller")
 
     deploy_client.wait_for_block(target_block, 240)
 
-    before_balance = alarm.getBondBalance(joiner._meta.address)
-    assert alarm.checkIfCalled(call_key) is False
+    before_balance = scheduler.getBondBalance(joiner._meta.address)
 
-    call_txn_hash = alarm.doCall.sendTransaction(call_key)
-    wait_for_transaction(deploy_client, call_txn_hash)
+    call_txn_hash = scheduler.execute(call._meta.address)
+    deploy_client.wait_for_transaction(call_txn_hash)
 
-    after_balance = alarm.getBondBalance(joiner._meta.address)
-    assert alarm.checkIfCalled(call_key) is True
+    after_balance = scheduler.getBondBalance(joiner._meta.address)
+
+    execution_data = get_execution_data(call_txn_hash)
 
     assert after_balance == before_balance

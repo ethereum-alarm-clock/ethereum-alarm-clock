@@ -17,67 +17,35 @@ The following abstract contracts can be used alongside your contract code to
 interact with the Alarm service.
 
 
-Abstract Alarm Contract Source Code
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Abstract Scheduler Contract Source Code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following abstract solidity contract can be used to interact with the
+scheduling contract from a solidity contract.
+
 
 .. code-block:: solidity
-    contract AlarmAPI {
-        /*
-         *  Account Management API
-         */
-        function getAccountBalance(address accountAddress) constant public returns (uint);
-        function deposit() public;
-        function deposit(address accountAddress) public;
-        function withdraw(uint value) public;
 
-        /*
-         *  Authorization API
-         */
-        function unauthorizedAddress() public returns (address);
-        function authorizedAddress() public returns (address);
-        function addAuthorization(address schedulerAddress) public;
-        function removeAuthorization(address schedulerAddress) public;
-        function checkAuthorization(address schedulerAddress, address contractAddress) public returns (bool);
-
-        /*
-         *  Scheduled Call Meta API
-         */
-        function getLastCallKey() constant returns (bytes32);
-        function getLastDataHash() constant returns (bytes32);
-        function getLastDataLength() constant returns (uint);
-        function getLastData() constant returns (bytes);
-
-        function getCallData(bytes32 callKey) constant returns (bytes);
-        function getCallContractAddress(bytes32 callKey) constant returns (address);
-        function getCallScheduledBy(bytes32 callKey) constant returns (address);
-        function getCallCalledAtBlock(bytes32 callKey) constant returns (uint);
-        function getCallGracePeriod(bytes32 callKey) constant returns (uint);
-        function getCallTargetBlock(bytes32 callKey) constant returns (uint);
-        function getCallBaseGasPrice(bytes32 callKey) constant returns (uint);
-        function getCallGasPrice(bytes32 callKey) constant returns (uint);
-        function getCallGasUsed(bytes32 callKey) constant returns (uint);
-        function getCallABISignature(bytes32 callKey) constant returns (bytes4);
-        function checkIfCalled(bytes32 callKey) constant returns (bool);
-        function checkIfSuccess(bytes32 callKey) constant returns (bool);
-        function checkIfCancelled(bytes32 callKey) constant returns (bool);
-        function getCallDataHash(bytes32 callKey) constant returns (bytes32);
-        function getCallPayout(bytes32 callKey) constant returns (uint);
-        function getCallFee(bytes32 callKey) constant returns (uint);
-        function getCallMaxCost(bytes32 callKey) constant returns (uint);
-
+    contract SchedulerAPI {
         /*
          *  Call Scheduling API
          */
         function getMinimumGracePeriod() constant returns (uint);
-        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock) public;
-        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod) public;
-        function scheduleCall(address contractAddress, bytes4 abiSignature, bytes32 dataHash, uint targetBlock, uint8 gracePeriod, uint nonce) public;
-        function cancelCall(bytes32 callKey) public;
+        function getDefaultPayment() constant returns (uint);
+        function getDefaultFee() constant returns (uint);
+
+        function isKnownCall(address callAddress) constant returns (bool);
+
+        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address);
+        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address);
+        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address);
+        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address);
+        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address);
 
         /*
          *  Call Execution API
          */
-        function doCall(bytes32 callKey) public;
+        function execute(address callAddress) public;
 
         /*
          *  Caller Pool bonding
@@ -123,31 +91,45 @@ Abstract Alarm Contract Source Code
          *  Next Call API
          */
         function getCallWindowSize() constant returns (uint);
-        function getGenerationIdForCall(bytes32 callKey) constant returns (uint);
-        function getDesignatedCaller(bytes32 callKey, uint blockNumber) constant returns (address);
+        function getGenerationIdForCall(address callAddress) constant returns (uint);
+        function getDesignatedCaller(address callAddress, uint blockNumber) constant returns (bool, address);
         function getNextCall(uint blockNumber) constant returns (bytes32);
-        function getNextCallSibling(bytes32 callKey) constant returns (bytes32);
+        function getNextCallSibling(address callAddress) constant returns (bytes32);
     }
 
 
-Register Data is special
-^^^^^^^^^^^^^^^^^^^^^^^^
+Abstract Call Contract Source Code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You may notice that the contract above is missing the ``registerData``
-function.  This is because it is allowed to be called with any call signature
-and solidity has no way of defining such a function.
+The following abstract solidity contract can be used to interact with a call
+contract from a solidity contract.
 
-Registering your data requires use of the ``address.call()`` api.
+.. code-block:: solidity
 
-.. code-block::
+    contract CallContractAPI {
+        uint public targetBlock;
+        uint8 public gracePeriod;
 
-    class Example {
-        function scheduleIt() {
-            address alarm = 0x...;
-            alarm.call(bytes4(sha3("registerData()")), 3, 4, 'test');
-        }
-        ...
+        address public owner;
+        address public schedulerAddress;
+
+        uint public basePayment;
+        uint public baseFee;
+
+        function contractAddress() constant returns (address);
+        function abiSignature() constant returns (bytes4);
+        function callData() constant returns (bytes);
+        function anchorGasPrice() constant returns (uint);
+        function suggestedGas() constant returns (uint);
+
+        function isAlive() constant public;
+
+        // cancel and registerData are only callable by the scheduler of the
+        call contract.
+        function cancel() public onlyscheduler;
+        function registerData() public onlyscheduler;
     }
+
 
 Only use what you need
 ^^^^^^^^^^^^^^^^^^^^^^

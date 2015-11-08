@@ -24,5 +24,6 @@ Contents:
    abi
    pool.api
    events
+   terminology
    changelog
    :maxdepth: 2

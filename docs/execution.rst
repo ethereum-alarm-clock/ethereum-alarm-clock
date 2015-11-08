@@ -32,6 +32,19 @@ When this function is called, the following things happen.
    address.
 
 
+Payment
+^^^^^^^
+
+Each scheduled call sets its own payment value.  This can be looked up with the
+``basePayment`` accessor function.
+
+The final payment value for executing the scheduled call is the ``basePayment``
+multiplied by a scalar value based on the difference between the gas price of
+the executing transaction and the gas price that was used to schedule the
+transaction.  The formula for this scalar is such that the lower the gas price
+of the executing transaction, the higher the payment.
+
+
 Setting transaction gas and gas price
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -44,14 +57,6 @@ and ``baseFee`` amounts with respect to the ether balance of the call contract.
 The provided gas for the transaction should not exceed ``(balance - 2 *
 (basePayment + baseFee)) / gasPrice`` if you want to guarantee that you will be
 fully reimbursed for gas expenditures.
-
-The payment for executing the scheduled call is scaled based on the difference
-between the gas price of the executing transaction and the gas price that was
-used to schedule the transaction.  The formula for this scalar is such that the
-lower the gas price of the executing transaction, the higher thep payment.
-
-You should make sure that the gas price is high enough that the transaction
-will get picked up by miners.
 
 
 Getting your payment

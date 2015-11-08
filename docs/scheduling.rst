@@ -214,8 +214,20 @@ A scheduled call can be cancelled by its scheduler up to 10 blocks
 before it's target block.  To cancel a scheduled call use the ``cancel``
 function.
 
-* **Solidity Function Signature:** ``cancel(bytes32 callKey)``
+* **Solidity Function Signature:** ``cancel(address callAddress)``
 * **ABI Signature:** ``0xea8a1af0``
 
 This will result in the call contract suiciding, and sending any remaining
 funds to the scheduler's address.
+
+
+Looking up a Call
+-----------------
+
+You can lookup whether a particular address is a known scheduled call with the
+``isKnownCall`` function.
+
+* **Solidity Function Signature:** ``isKnownCall(address callAddress) returns (bool)``
+* **ABI Signature:** ``0x523ccfa8``
+
+Returns a boolean as to whether this address represents a known scheduled call.

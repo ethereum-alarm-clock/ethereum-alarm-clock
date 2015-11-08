@@ -67,10 +67,7 @@ library SchedulerLib {
             return (true, generation.members[(offset + blockWindow) % generation.members.length]);
     }
 
-    event _AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, address callAddress, uint blockNumber, uint bonusAmount);
-    function AwardedMissedBlockBonus(address fromCaller, address toCaller, uint generationId, address callAddress, uint blockNumber, uint bonusAmount) public {
-        _AwardedMissedBlockBonus(fromCaller, toCaller, generationId, callAddress, blockNumber, bonusAmount);
-    }
+    event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, address callAddress, uint blockNumber, uint bonusAmount);
 
     function getMinimumBond() constant returns (uint) {
             return tx.gasprice * block.gaslimit;

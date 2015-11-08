@@ -36,7 +36,9 @@ Optionally, these additional pieces of information can be supplied.
 * Number of blocks after the target block during which it still ok to execute
   the call.  (between 64 - 255 blocks) **default: 255**
 * Payment amount in wei that will be paid to the executor of the call.
+  **default: 1 ether**
 * Fee amount in wei that will be paid to the creator of the Alarm service.
+  **default: 100 finey**
 
 The scheduling transaction must also include enough ether to pay for the gas
 costs of the call as well as the payment and fee values.

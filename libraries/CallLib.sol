@@ -89,10 +89,6 @@ library CallLib {
                 Cancelled(sender);
                 suicide(sender);
         }
-
-        function isAlive() constant public {
-                return true;
-        }
 }
 
 
@@ -228,6 +224,10 @@ contract FutureBlockCall is FutureCall {
                 if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW || block.number > targetBlock + gracePeriod) {
                         CallLib.cancel(msg.sender);
                 }
+        }
+
+        function isAlive() constant returns (bool) {
+                return true;
         }
 }
 

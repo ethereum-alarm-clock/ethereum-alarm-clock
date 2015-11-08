@@ -10,10 +10,6 @@ library CallLib {
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         function extractCallData(Call storage call, bytes data) public {
-            if (call.callData.length > 0) {
-                    // cannot write over call dat
-                    throw;
-            }
             call.callData.length = data.length - 4;
             if (data.length > 4) {
                     for (uint i = 0; i < call.callData.length; i++) {
@@ -93,6 +89,10 @@ library CallLib {
                 Cancelled(sender);
                 suicide(sender);
         }
+
+        function isAlive() constant public {
+                return true;
+        }
 }
 
 
@@ -126,14 +126,14 @@ contract FutureCall {
         }
 
         function () {
-                if(msg.data.length > 0){
+                // Fallback to allow sending funds to this contract.
+                // Also allows call data registration.
+                if (msg.sender == schedulerAddress && msg.data.length > 0) {
+                        if (call.callData.length != 0) {
+                            throw;
+                        }
                         call.callData = msg.data;
                 }
-                if (true)
-                        return;
-                else
-                        return;
-                // Fallback to allow sending funds to this contract.
         }
 
         modifier onlyscheduler { if (msg.sender == schedulerAddress) _ }
@@ -142,11 +142,15 @@ contract FutureCall {
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         function registerData() public onlyscheduler {
+                if (call.callData.length > 0) {
+                        // cannot write over call data
+                        throw;
+                }
                 CallLib.extractCallData(call, msg.data);
         }
 
         // API for inherited contracts
-        function beforeExecute(address executor) constant returns (bool);
+        function beforeExecute(address executor) public returns (bool);
         function afterExecute(address executor) internal;
         function getOverhead() constant returns (uint);
         function getExtraGas() constant returns (uint);
@@ -176,8 +180,6 @@ contract FutureBlockCall is FutureCall {
         uint public targetBlock;
         uint8 public gracePeriod;
 
-        event ItHappened(address sender);
-        
         function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
                 owner = msg.sender;
 
@@ -196,7 +198,7 @@ contract FutureBlockCall is FutureCall {
                 call.abiSignature = _abiSignature;
         }
 
-        function beforeExecute(address executor) constant returns (bool) {
+        function beforeExecute(address executor) public returns (bool) {
                 if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
                         // Not being called within call window.
                         CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");

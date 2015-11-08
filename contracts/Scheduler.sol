@@ -26,11 +26,15 @@ contract Scheduler {
     }
 
     function getDefaultPayment() constant returns (uint) {
-        return 200 finney;
+        return 1 ether;
     }
 
     function getDefaultFee() constant returns (uint) {
         return 100 finney;
+    }
+
+    function isKnownCall(address callAddress) constant returns (bool) {
+        return SchedulerLib.isKnownCall(callDatabase, callAddress);
     }
 
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {

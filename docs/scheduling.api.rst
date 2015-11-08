@@ -1,67 +1,31 @@
-Scheduled Call API
-==================
-
-The Alarm service exposes getter functions for all call information that may be
-important to those scheduling or executing calls.
+Call Contract API
+=================
 
 
-Properties of a Scheduled Call
-------------------------------
+Properties of a Call Contract
+-----------------------------
 
-* **bytes32 callKey:** the unique identifier for this function call.
+A call contract for a scheduled call has the following publicly accessible
+values.
+
+
 * **address contractAddress:** the address of the contract the function should be called on.
-* **address scheduledBy:** the address who scheduled the call.
-* **uint calledAtBlock:** the block number on which the function was called.
-  (``0`` if the call has not yet been executed.)
+* **address schedulerAddress:** the address who scheduled the call.
 * **uint targetBlock:** the block that the function should be called on.
 * **uint8 gracePeriod:** the number of blocks after the ``targetBlock`` during
   which it is stll ok to execute the call.
-* **uint nonce:** value to differentiate multiple *identical* calls that should
-  happen simultaneously.
-* **uint baseGasPrice:** the gas price that was used when the call was
+* **uint anchorGasPrice:** the gas price that was used when the call was
   scheduled.
-* **uint gasPrice:** the gas price that was used when the call was executed.
-  (``0`` if the call has not yet been executed.)
-* **uint gasUsed:** the amount of gas that was used to execute the function
-  call (``0`` if the call has not yet been executed.)
-* **uint payout:** the amount in wei that was paid to the address that executed
-  the function call. (``0`` if the call has not yet been executed.)
-* **uint fee:** the amount in wei that was kept to pay the creator of the Alarm
-  service. (``0`` if the call has not yet been executed.)
-* **bytes4 sig:** the 4 byte ABI function signature of the function on the
+* **uint suggestedGas:** a suggestion to the call executor as to how much gas
+  the called function is expected to need.
+* **uint basePayment:** the amount in wei that will be paid to the address that
+  executes the function call.
+* **uint baseFee:** the amount in wei that will be paid the creator of the
+  Alarm service.
+* **bytes4 abiSignature:** the 4 byte ABI function signature of the function on the
   ``contractAddress`` for this call.
-* **bool isCancelled:** whether the call was cancelled.
-* **bool wasCalled:** whether the call was called.
-* **bool wasSuccessful:** whether the call was successful.
-* **bytes32 dataHash:** the ``sha3`` hash of the data that should be used for
-  this call.
+* **bytes callData:** the data that will be passed to the called function.
 
-
-Call Key
-^^^^^^^^
-
-**bytes32 callKey**
-
-The following functions are available on the Alarm service.  The vast majority
-of them take the **callKey** which is an identifier used to reference a
-scheduled call.
-
-The **callKey** is computed as ``sha3(scheduledBy, contractAddress, signature, dataHash, targetBlock, gracePeriod, nonce)`` where:
-
-* **scheduledBy:** the ``address`` that scheduled the call.
-* **contractAddress:** the ``address`` of the contract that the function should
-  be called on when this call is executed.
-* **signature:** the ``byte4`` ABI function signature of the function that
-  should be called.
-* **dataHash:** the ``bytes32`` sha3 hash of the call data that should be used
-  for this scheduled call.
-* **targetBlock:** the ``uint256`` block number that this call should be executed on.
-* **gracePeriod:** the ``uint8`` number of blocks after ``targetBlock`` during
-  which it is still ok to execute this scheduled call.
-* **nonce:** the ``uint256`` value that can be used to distinguish between
-  multiple calls with identical data that should occur during the same time.
-  This value only matters if you are registering multiple calls for which all
-  of the other fields are the same.
 
 Contract Address
 ^^^^^^^^^^^^^^^^
@@ -69,45 +33,22 @@ Contract Address
 **address contractAddress**
 
 The address of the contract that the scheduled function call should be executed
-on.  Retrieved with the ``getCallContractAddress`` function.
+on.  Retrieved with the ``contractAddress`` function.
 
-* **Solidity Function Signature:** ``getCallContractAddress(bytes32 callKey) returns (address)``
-* **ABI Signature:** ``0x9c975df``
+* **Solidity Function Signature:** ``contractAddress() returns (address)``
+* **ABI Signature:** ``0xf6b4dfb4``
 
 
-Scheduled By
-^^^^^^^^^^^^
+Scheduler Address
+^^^^^^^^^^^^^^^^^
 
-**address scheduledBy**
+**address schedulerAddress**
 
-The address of the contract that the scheduled function call should be executed
-on.  Retrieved with the ``getCallScheduledBy`` function.
+The address that the scheduled function call.  Retrieved with the
+``schedulerAddress`` function.
 
-* **Solidity Function Signature:** ``getCallScheduledBy(bytes32 callKey) returns (address)``
-* **ABI Signature:** ``0x8b37e656``
-
-Called at Block
-^^^^^^^^^^^^^^^
-
-**uint calledAtBlock**
-
-The block number that this call was executed.  Retrieved with the
-``getCallCalledAtBlock`` function. Returns ``0`` if the call has not been
-executed yet.
-
-* **Solidity Function Signature:** ``getCallCalledAtBlock(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0xe4098655``
-
-Grace Period
-^^^^^^^^^^^^
-
-**uint8 gracePeriod**
-
-The number of blocks after the ``targetBlock`` that it is still ok to execute
-this call.  Retrieved with the ``getCallGracePeriod`` function.
-
-* **Solidity Function Signature:** ``getCallGracePeriod(bytes32 callKey) returns (uint8)``
-* **ABI Signature:** ``0x34c19b93``
+* **Solidity Function Signature:** ``schedulerAddress() returns (address)``
+* **ABI Signature:** ``0xae45850b``
 
 Target Block
 ^^^^^^^^^^^^
@@ -115,133 +56,110 @@ Target Block
 **uint targetBlock**
 
 The block number that this call should be executed on.  Retrieved with the
-``getCallTargetBlock`` function.
+``targetBlock`` function.
 
-* **Solidity Function Signature:** ``getCallTargetBlock(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0x234917d4``
+* **Solidity Function Signature:** ``targetBlock() returns (uint)``
+* **ABI Signature:** ``0xa16697a``
 
-Base Gas Price
-^^^^^^^^^^^^^^
 
-**uint baseGasPrice**
-
-The value of ``tx.gasprice`` that was used to schedule this function call.
-Retrieved with the ``getCallBaseGasPrice`` function. Returns ``0`` if the call
-has not been executed yet.
-
-* **Solidity Function Signature:** ``getCallBaseGasPrice(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0x77b19cd5``
-
-Gas Price
-^^^^^^^^^
-
-**uint gasPrice**
-
-The value of ``tx.gasprice`` that was used to execute this function call.
-Retrieved with the ``getCallGasPrice`` function. Returns ``0`` if the call has
-not been executed yet.
-
-* **Solidity Function Signature:** ``getCallGasPrice(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0x78bc6460``
-
-Gas Used
-^^^^^^^^^
-
-**uint gasUsed**
-
-The amount of gas that was used during execution of this function call.
-Retrieved with the ``getCallGasUsed`` function.  Returns ``0`` if the call has
-not been executed yet.
-
-* **Solidity Function Signature:** ``getCallGasUsed(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0x86ae9e4``
-
-Signature
-^^^^^^^^^
-
-**bytes4 signature**
-
-The ABI function signature that should be used to execute this function call.
-Retrieved with the ``getCallSignature`` function.
-
-* **Solidity Function Signature:** ``getCallSignature(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0xc88edaed``
-
-Was Called
-^^^^^^^^^^
-
-**bool wasCalled**
-
-Boolean flag for whether or not this function has been called yet.  Retrieved
-with the ``checkIfCalled`` function.
-
-* **Solidity Function Signature:** ``checkIfCalled(bytes32 callKey) returns (bool)``
-* **ABI Signature:** ``0x2a472ae8``
-
-Was Successful
-^^^^^^^^^^^^^^
-
-**bool wasSuccessful**
-
-Boolean flag for whether or not this function call was successful when
-executed.  Retrieved with the ``checkIfSuccess`` function.
-
-* **Solidity Function Signature:** ``checkIfSuccess(bytes32 callKey) returns (bool)``
-* **ABI Signature:** ``0x6ffc0896``
-
-Is Cancelled
+Grace Period
 ^^^^^^^^^^^^
 
-**bool isCancelled**
+**uint8 gracePeriod**
 
-Boolean flag for whether or not this function call was cancelled.  Retrieved
-with the ``checkIfCancelled`` function.
+The number of blocks after the **targetBlock** that it is still ok to execute
+this call.  Retrieved with the ``gracePeriod`` function.
 
-* **Solidity Function Signature:** ``checkIfCancelled(bytes32 callKey) returns (bool)``
-* **ABI Signature:** ``0xaa4cc01f``
+* **Solidity Function Signature:** ``gracePeriod() returns (uint8)``
+* **ABI Signature:** ``0xa06db7dc``
 
-Call Data Hash
-^^^^^^^^^^^^^^
 
-**bytes32 dataHash**
+Anchor Gas Price
+^^^^^^^^^^^^^^^^
 
-The sha3 hash of the call data that will be used for this function call.  Retrieved
-with the ``getCallDataHash`` function.
+**uint anchorGasPrice**
 
-* **Solidity Function Signature:** ``getCallDataHash(bytes32 callKey) returns (bytes32)``
-* **ABI Signature:** ``0xf9f447eb``
+The value of ``tx.gasprice`` that was used to schedule this function call.
+Retrieved with the ``anchorGasPrice`` function.
+
+* **Solidity Function Signature:** ``anchorGasPrice() returns (uint)``
+* **ABI Signature:** ``0x37f4c00e``
+
+
+Suggested Gas
+^^^^^^^^^^^^^
+
+**uint suggestedGas**
+
+A suggestion for the amount of gas that a caller should expect the called
+function to require.  Retrieved with the ``suggestedGas`` function.
+
+* **Solidity Function Signature:** ``suggestedGas() returns (uint)``
+* **ABI Signature:** ``0x6560a307``
+
+
+Base Payment
+^^^^^^^^^^^^
+
+**uint basePayment**
+
+The base amount, in wei that the call executor's payment will be calculated
+from. Retrieved with the ``basePayment`` function.
+
+* **Solidity Function Signature:** ``basePayment() returns (uint)``
+* **ABI Signature:** ``0xc6502da8``
+
+Base Fee
+^^^^^^^^
+
+**uint baseFee**
+
+The base amount, in wei that the fee to the creator of the alarm service will
+be calculate from. Retrieved with the ``baseFee`` function.
+
+* **Solidity Function Signature:** ``baseFee() returns (uint)``
+* **ABI Signature:** ``0x6ef25c3a``
+
+
+ABI Signature
+^^^^^^^^^^^^^
+
+**bytes4 abiSignature**
+
+The ABI function signature that should be used to execute this function call.
+Retrieved with the ``abiSignature`` function.
+
+* **Solidity Function Signature:** ``abiSignature() returns (uint)``
+* **ABI Signature:** ``0xca94692d``
+
 
 Call Data
 ^^^^^^^^^
 
-**bytes data**
+**bytes callData**
 
 The full call data that will be used for this function call.  Retrieved
-with the ``getCallData`` function.
+with the ``callData`` function.
 
-* **Solidity Function Signature:** ``getCallData(bytes32 callKey) returns (bytes)``
-* **ABI Signature:** ``0x75428615``
+* **Solidity Function Signature:** ``callData() returns (bytes)``
+* **ABI Signature:** ``0x4e417a98``
 
-Payout
+
+Functions of a Call Contract
+----------------------------
+
+Cancel
 ^^^^^^
 
-**uint payout**
+Cancels the scheduled call, suiciding the call contract and sending any funds
+to the scheduler's address.  This function cannot be called from 10 blocks
+prior to the **target block** for the call through the end of the grace period.
 
-The amount in wei that was paid to the account that executed this function
-call.  Retrieved with the ``getCallPayout`` function.  If the function has not
-been executed this will return ``0``.
+* **Solidity Function Signature:** ``cancel() public onlyscheduler``
+* **ABI Signature:** ``0xea8a1af0``
 
-* **Solidity Function Signature:** ``getCallPayout(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0xa9743c68``
 
-Fee
-^^^
+Is Alive
+^^^^^^^^
 
-**uint fee**
-
-The amount in wei that was paid to the creator of the Alarm service.
-Retrieved with the ``getCallFee`` function.  If the function has not
-been executed this will return ``0``.
-
-* **Solidity Function Signature:** ``getCallFee(bytes32 callKey) returns (uint)``
-* **ABI Signature:** ``0xfc300522``
+Always returns ``true``.  Useful to check if the contract has been suicided.

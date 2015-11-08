@@ -12,13 +12,10 @@ calls are then executed by other nodes on the ethereum network who are
 reimbursed for their gas costs plus a small payment for the transaction.
 
 
-
 Contents:
 
 .. toctree::
    overview
-   accounts
-   authorization
    scheduling
    pool
    execution

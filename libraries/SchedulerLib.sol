@@ -166,8 +166,10 @@ library SchedulerLib {
     uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
     // The minimum gas required to execute a scheduled call on a function that
-    // does almost nothing.
-    // TODO: use a real value for this number
+    // does almost nothing.  This is an approximation and assumes the worst
+    // case scenario for gas consumption.
+    // 
+    // Measured Minimum is closer to 150,000
     uint constant MINIMUM_CALL_GAS = 200000;
 
     event CallScheduled(address callAddress);
@@ -192,6 +194,10 @@ library SchedulerLib {
 
     function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {
         return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
+    }
+
+    function isKnownCall(CallDatabase storage self, address callAddress) constant returns (bool) {
+        return GroveLib.exists(self.callIndex, bytes32(callAddress));
     }
 
     function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
@@ -233,12 +239,17 @@ library SchedulerLib {
     }
 
     function execute(CallDatabase storage self, uint startGas, address callAddress, address executor) {
-        if (!GroveLib.exists(self.callIndex, bytes32(callAddress))) {
+        if (!isKnownCall(self, callAddress)) {
                 CallLib.CallAborted(executor, "UNKNOWN_ADDRESS");
                 return;
         }
 
         FutureBlockCall call = FutureBlockCall(callAddress);
+
+        if (!call.isAlive()) {
+                CallLib.CallAborted(executor, "SUICIDED_ALREADY");
+                return;
+        }
         
         bool isDesignated;
         address designatedCaller;

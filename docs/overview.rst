@@ -13,36 +13,9 @@ Scheduling Function Calls
 When a contract, or individual wants to schedule a function call with the Alarm
 service it will perform the following steps.
 
-1. Ensure that the account that is scheduling the call has a sufficient balance
-   to pay for the scheduled call.
-2. Register any call data that will be required to make the function call.
-3. Schedule the function call with the service.
-
-Account Balance
-^^^^^^^^^^^^^^^
-
-The Alarm service operates under a *scheduler pays* model meaning that the
-address which schedules the function call is required to pay for it. When a
-call is executed, the initial gas cost is paid for by the ethereum address that
-sends the executing transaction.  This address needs to be reimbursed this gas
-cost plus a small fee.  The Alarm service requires this payment up front in the
-form of an account balance.
-
-The Alarm service maintains accounts for each address on the network.  These
-accounts can have ether deposited and withdrawn at any time.  However, at the
-time the call is executed, if the scheduler's account does not have enough
-funds to pay for the execution of the scheduled call, it will be skipped.
-
-Registering Call Data
-^^^^^^^^^^^^^^^^^^^^^
-
-The Alarm service is not aware of the function ABI for the calls it executes.
-Instead, it uses the function ABI signature and raw call data to execute the
-function call.
-
-To do this, any data that needs to be used in the call must be registered prior
-to scheduling the call.  Call data only needs to be registered once, and can be
-re-used for subsequent function calls.
+1. Schedule the function call with the service.
+2. Register any call data that will be required to make the function call
+   (optional for functions that have no arguments).
 
 
 Call Scheduling
@@ -54,14 +27,33 @@ following information:
 
 1. Contract address the call should be executed on.
 2. ABI signature of the function that should be called.
-3. SHA3 hash of the call data that should be included in the function call.
-4. Target block number that the call should be executed on.
-5. Number of blocks after the target block during which it still ok to execute
-   the call.  (between 64 - 255 blocks)
-6. A nonce to allow differentiation between identical calls that are scheduled
-   for the same block.
+3. Target block number that the call should be executed on.
+
+Optionally, these additional pieces of information can be supplied.
+
+* Suggested gas amount that should be provided to the function.  **default: 0
+  to indicate no suggestion**
+* Number of blocks after the target block during which it still ok to execute
+  the call.  (between 64 - 255 blocks) **default: 255**
+* Payment amount in wei that will be paid to the executor of the call.
+* Fee amount in wei that will be paid to the creator of the Alarm service.
+
+The scheduling transaction must also include enough ether to pay for the gas
+costs of the call as well as the payment and fee values.
 
 Once scheduled, the call waits to be picked up and executed at the desired block.
+
+
+Registering Call Data
+^^^^^^^^^^^^^^^^^^^^^
+
+The Alarm service is not aware of the function ABI for the calls it executes.
+Instead, it uses the function ABI signature and raw call data to execute the
+function call.
+
+To do this, any data that needs to be used in the call must be registered prior
+to scheduling the call.  Functions which do not have any arguments can skip
+this step.
 
 
 Execution of scheduled calls
@@ -76,12 +68,16 @@ block.
 Usage Fees
 ^^^^^^^^^^
 
-A scheduled function call costs approximately 102% of the total gas expenditure
-for the transaction in which it was executed.
+In addition to the gas costs, schedulers are also encouraged to pay the call
+executor as well as the creator of the service for their effort.  This value
+can be specified by the scheduler, meaning that you may choose to offer any
+amount (including zero).
 
-The additional 2% is split evenly between paying the account which executed the
-function call and the creator of the Alarm service for the many many hours
-spent creating it.
+The scheduling function uses the following defaults if specific values are not
+provided.
+
+* Payment to the executor: **1 ether**
+* Payment to the service creator: **100 finney**
 
 Guarantees
 ----------
@@ -89,10 +85,17 @@ Guarantees
 Will the call happen?
 ^^^^^^^^^^^^^^^^^^^^^
 
-There are no guarantees that your function will be called.  The design of this
-service is meant to provide the proper motivation for calls to be executed, but
-it is entirely possible that certain calls will be missed due to unforseen
-circumstances.
+There are no guarantees that your function will be called.  This is not a
+shortcoming of the service, but rather a fundamental limitation of the ethereum
+network.  Nobody is capable of forcing a transaction to be included in a
+specific block.
+
+The design of this service is meant to provide the proper motivation for calls
+to be executed, but it is entirely possible that certain calls will be missed
+due to unforseen circumstances.  Providing a higher Payment amount is a
+potential way to get your scheduled call handled at a higher priority as it
+will be more profitable to execute.
+
 
 Will I get paid for executing a call?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

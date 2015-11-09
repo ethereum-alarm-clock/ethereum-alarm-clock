@@ -199,6 +199,9 @@ class ScheduledCall(object):
         if block_number >= self.last_block:
             return False
 
+        if not self.is_designated:
+            return True
+
         designated_caller = self.designated_callers.get(block_number + 1)
 
         # Not free for all or designated for our address.

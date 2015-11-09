@@ -8,9 +8,6 @@ import click
 from eth_rpc_client import Client
 
 from populus.contracts import Contract
-from populus.utils import (
-    wait_for_transaction,
-)
 
 from eth_alarm_client import (
     BlockSage,
@@ -236,7 +233,7 @@ def pool_deposit(async, address, value):
         click.exit(1)
 
     if async:
-        wait_for_transaction(rpc_client, txn_hash)
+        rpc_client.wait_for_transaction(txn_hash)
         click.echo("Deposit of {0} completed with txn: {1}.  Balance is now {2}".format(value, txn_hash, pool_manager.bond_balance))
     else:
         click.echo("Deposit of {0} initiated with txn: {1}".format(value, txn_hash))

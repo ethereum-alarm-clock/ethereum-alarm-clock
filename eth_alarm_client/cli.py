@@ -19,14 +19,16 @@ from eth_alarm_client import (
 )
 
 
+DEFAULT_ADDRESS = '0x321a1e5e0ef137f37eeb5563c987d60ab9dcd8de'
+
+
 alarm_addresses = (
     ('0.1.0', '0xb0059e72ae1802fa1e1add5e7d0cb0eec1cc0cc1'),
     ('0.2.0', '0xc1cfa6ac1d7cf99bd1e145dcd04ec462b3b0c4da'),
     ('0.3.0', '0xdb15058402c241b04a03846f6fb104b1fbeea10b'),
-    ('0.4.0 (latest)', '0x07307d0b136a79bac718f43388aed706389c4588'),
+    ('0.4.0', '0x07307d0b136a79bac718f43388aed706389c4588'),
+    ('0.5.0 (latest)', DEFAULT_ADDRESS),
 )
-
-DEFAULT_ADDRESS = '0x07307d0b136a79bac718f43388aed706389c4588'
 
 rpc_client = Client('127.0.0.1', '8545')
 

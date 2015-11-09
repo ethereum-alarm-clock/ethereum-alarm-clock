@@ -61,7 +61,7 @@ def scheduler(address):
     """
     Run the call scheduler.
     """
-    Alarm = get_contract('Alarm')
+    Alarm = get_contract('Scheduler')
 
     alarm = Alarm(address, rpc_client)
 
@@ -130,7 +130,7 @@ def pool_balance(denomination, address):
     """
     Check your bond balance with the caller pool.
     """
-    Alarm = get_contract('Alarm')
+    Alarm = get_contract('Scheduler')
     alarm = Alarm(address, rpc_client)
 
     pool_manager = PoolManager(alarm)
@@ -158,7 +158,7 @@ def pool_minimum(denomination, address):
     """
     Check the current minimum bond balance.
     """
-    Alarm = get_contract('Alarm')
+    Alarm = get_contract('Scheduler')
     alarm = Alarm(address, rpc_client)
 
     pool_manager = PoolManager(alarm)
@@ -179,7 +179,7 @@ def pool_status(address):
     """
     Display some status information about the caller pools.
     """
-    Alarm = get_contract('Alarm')
+    Alarm = get_contract('Scheduler')
     alarm = Alarm(address, rpc_client)
     pool_manager = PoolManager(alarm)
 
@@ -217,7 +217,7 @@ def pool_deposit(async, address, value):
     """
     Deposit an amount in wei into your caller pool bond balance.
     """
-    Alarm = get_contract('Alarm')
+    Alarm = get_contract('Scheduler')
     alarm = Alarm(address, rpc_client)
     pool_manager = PoolManager(alarm)
 

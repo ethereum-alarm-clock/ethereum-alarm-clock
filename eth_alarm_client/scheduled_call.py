@@ -48,6 +48,8 @@ class ScheduledCall(object):
     #
     @cached_property
     def is_designated_caller(self):
+        if not self.is_designated:
+            return True
         return self.designated_caller_addresses.intersection((
             self.coinbase, EMPTY_ADDRESS,
         ))
@@ -164,6 +166,10 @@ class ScheduledCall(object):
         The last block number that this call can be executed on.
         """
         return self.target_block + self.grace_period
+
+    @cached_property
+    def is_designated(self):
+        return self.scheduler.getDesignatedCaller(self.call_address, self.target_block)[0]
 
     @cached_property
     def designated_caller_addresses(self):

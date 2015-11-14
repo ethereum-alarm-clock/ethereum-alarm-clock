@@ -1,5 +1,4 @@
 import "libraries/GroveLib.sol";
-import "libraries/ResourcePoolLib.sol";
 import "libraries/AccountingLib.sol";
 import "libraries/CallLib.sol";
 
@@ -9,7 +8,6 @@ library SchedulerLib {
      *  Address: 0x873bf63c898791e57fa66e7b9261ea81df0b8044
      */
     struct CallDatabase {
-        ResourcePoolLib.Pool callerPool;
         GroveLib.Index callIndex;
 
         AccountingLib.Bank gasBank;
@@ -18,140 +16,6 @@ library SchedulerLib {
     // The number of blocks that each caller in the pool has to complete their
     // call.
     uint constant CALL_WINDOW_SIZE = 16;
-
-    function getGenerationIdForCall(CallDatabase storage self, address callAddress) constant returns (uint) {
-            FutureBlockCall call = FutureBlockCall(callAddress);
-            return ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod());
-    }
-
-    function getDesignatedCaller(CallDatabase storage self, uint leftBound, uint rightBound, uint blockNumber) constant returns (bool, address) {
-            /*
-             *  Returns the caller from the current call pool who is
-             *  designated as the executor of this call.
-             */
-            if (leftBound > rightBound || blockNumber < leftBound ||  blockNumber > rightBound) {
-                    // Invalid call parameters.  blockNumber has to be
-                    // contained in the call window and the call window has to
-                    // be valid.
-                    throw;
-            }
-
-
-            // Lookup the pool that full contains the call window for this
-            // call.
-            uint generationId = ResourcePoolLib.getGenerationForWindow(self.callerPool, leftBound, rightBound);
-            if (generationId == 0) {
-                    // No pool currently in operation.
-                    return (false, 0x0);
-            }
-
-            var generation = self.callerPool.generations[generationId];
-            if (generation.members.length == 0) {
-                    // Current pool is empty
-                    return (false, 0x0);
-            }
-
-            // Check if we are in free-for-all window.
-            uint numWindows = (rightBound - leftBound) / CALL_WINDOW_SIZE;
-            uint blockWindow = (blockNumber - leftBound) / CALL_WINDOW_SIZE;
-
-            if (blockWindow + 2 > numWindows) {
-                    // We are within the free-for-all period.
-                    return (true, 0x0);
-            }
-
-            uint offset = uint(sha3(leftBound, rightBound, generationId, generation.members)) % generation.members.length;
-            return (true, generation.members[(offset + blockWindow) % generation.members.length]);
-    }
-
-    event AwardedMissedBlockBonus(address indexed fromCaller, address indexed toCaller, uint indexed generationId, address callAddress, uint blockNumber, uint bonusAmount);
-
-    function getMinimumBond() constant returns (uint) {
-            return tx.gasprice * block.gaslimit;
-    }
-
-    function doBondBonusTransfer(CallDatabase storage self, address fromCaller, address toCaller) internal returns (uint) {
-            uint bonusAmount = getMinimumBond();
-            uint bondBalance = self.callerPool.bonds[fromCaller];
-
-            // If the bond balance is lower than the award
-            // balance, then adjust the reward amount to
-            // match the bond balance.
-            if (bonusAmount > bondBalance) {
-                    bonusAmount = bondBalance;
-            }
-
-            // Transfer the funds fromCaller => toCaller
-            ResourcePoolLib.deductFromBond(self.callerPool, fromCaller, bonusAmount);
-            ResourcePoolLib.addToBond(self.callerPool, toCaller, bonusAmount);
-
-            return bonusAmount;
-    }
-
-    function awardMissedBlockBonus(CallDatabase storage self, address toCaller, address callAddress) public {
-            FutureBlockCall call = FutureBlockCall(callAddress);
-
-            var generation = self.callerPool.generations[ResourcePoolLib.getGenerationForWindow(self.callerPool, call.targetBlock(), call.targetBlock() + call.gracePeriod())];
-            uint i;
-            uint bonusAmount;
-            address fromCaller;
-
-            uint numWindows = call.gracePeriod() / CALL_WINDOW_SIZE;
-            uint blockWindow = (block.number - call.targetBlock()) / CALL_WINDOW_SIZE;
-
-            // Check if we are within the free-for-all period.  If so, we
-            // award from all pool members.
-            if (blockWindow + 2 > numWindows) {
-                    address firstCaller;
-                    (,firstCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), call.targetBlock());
-                    for (i = call.targetBlock(); i <= call.targetBlock() + call.gracePeriod(); i += CALL_WINDOW_SIZE) {
-                            (,fromCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), i);
-                            if (fromCaller == firstCaller && i != call.targetBlock()) {
-                                    // We have already gone through all of
-                                    // the pool callers so we should break
-                                    // out of the loop.
-                                    break;
-                            }
-                            if (fromCaller == toCaller) {
-                                    continue;
-                            }
-                            bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
-
-                            // Log the bonus was awarded.
-                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callAddress, block.number, bonusAmount);
-                    }
-                    return;
-            }
-
-            // Special case for single member and empty pools
-            if (generation.members.length < 2) {
-                    return;
-            }
-
-            // Otherwise the award comes from the previous caller.
-            for (i = 0; i < generation.members.length; i++) {
-                    // Find where the member is in the pool and
-                    // award from the previous pool members bond.
-                    if (generation.members[i] == toCaller) {
-                            fromCaller = generation.members[(i + generation.members.length - 1) % generation.members.length];
-
-                            bonusAmount = doBondBonusTransfer(self, fromCaller, toCaller);
-
-                            // Log the bonus was awarded.
-                            AwardedMissedBlockBonus(fromCaller, toCaller, generation.id, callAddress, block.number, bonusAmount);
-
-                            // Remove the caller from the next pool.
-                            if (ResourcePoolLib.getNextGenerationId(self.callerPool) == 0) {
-                                    // This is the first address to modify the
-                                    // current pool so we need to setup the next
-                                    // pool.
-                                    ResourcePoolLib.createNextGeneration(self.callerPool);
-                            }
-                            ResourcePoolLib.removeFromGeneration(self.callerPool, ResourcePoolLib.getNextGenerationId(self.callerPool), fromCaller);
-                            return;
-                    }
-            }
-    }
 
     /*
      *  Call Scheduling API

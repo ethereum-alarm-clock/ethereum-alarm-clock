@@ -1,3 +1,6 @@
+import "libraries/GroveLib.sol";
+
+
 library CallLib {
         /*
          *  Address: 0x2746bcf29bffafcc7906752f639819171d18ce2b
@@ -8,7 +11,13 @@ library CallLib {
                 bytes callData;
                 uint anchorGasPrice;
                 uint suggestedGas;
+
+                GroveLib.Index bids;
         }
+
+        // The number of blocks that each caller in the pool has to complete their
+        // call.
+        uint constant CALL_WINDOW_SIZE = 16;
 
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
@@ -32,7 +41,7 @@ library CallLib {
                 return 0;
         }
 
-        function getCallFeeScalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
+        function getGasScalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
                 /*
                  *  Return a number between 0 - 200 to scale the fee based on
                  *  the gas price set for the calling transaction as compared
@@ -64,14 +73,24 @@ library CallLib {
         }
 
         function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
+            FutureCall _call = FutureCall(this);
+
+            if (!this.checkExecutionAuthorization(executor, block.number)) {
+                return;
+            }
+
+            if (!this.beforeExecute(executor)) {
+                return;
+            }
+            
             // Make the call
             bool success = call.contractAddress.call.gas(msg.gas - overhead)(call.abiSignature, call.callData);
 
             // Compute the scalar (0 - 200) for the fee.
-            uint feeScalar = getCallFeeScalar(call.anchorGasPrice, tx.gasprice);
+            uint gasScalar = getGasScalar(call.anchorGasPrice, tx.gasprice);
 
-            uint payment = basePayment * feeScalar / 100; 
-            uint fee = baseFee * feeScalar / 100;
+            uint payment = basePayment * gasScalar / 100; 
+            uint fee = baseFee * gasScalar / 100;
 
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
@@ -92,6 +111,52 @@ library CallLib {
                 Cancelled(sender);
                 suicide(sender);
         }
+
+        /*
+         *  Bid API
+         */
+        // The number of blocks that each caller in the pool has to complete their
+        // call.
+        uint constant CALL_WINDOW_SIZE = 16;
+
+        function checkExecutionAuthorization(Call storage self, address executor, uint blockNumber) {
+                /*
+                 *  Check whether the address executing this call is
+                 *  authorized.  Must be one of:
+                 *  - in free-for-all window.
+                 *  - no bids
+                 *  - bid position is correct for call window.
+                 */
+                var call = FutureCall(this);
+
+                uint8 numWindows = call.gracePeriod() / CALL_WINDOW_SIZE;
+                uint8 callWindow = (blockNumber - call.targetBlock()) / CALL_WINDOW_SIZE;
+
+                if (callWindow + 2 > numWindows) {
+                        // In the free-for-all period.
+                        return true;
+                }
+
+                // Query for the lowest bidder.
+                address bidder = address(GroveLib.query(call.bids, ">=", 0));
+                if (bidder == 0x0) {
+                        // No bids
+                        return true;
+                }
+
+                // Which call window are we in?
+                for (uint i = 0; i < callWindow; i++) {
+                        bidder = GroveLib.getNextNode(call.bids, bytes32(bidder));
+                        if (bidder == 0x0) {
+                                // Not enough bidders for the entire call
+                                // window.
+                                return true;
+                        }
+                }
+
+                // Check that the bidder is the executor.
+                return bidder == executor;
+        }
 }
 
 
@@ -101,6 +166,13 @@ contract FutureCall {
 
         uint public basePayment;
         uint public baseFee;
+
+        // TODO: These *should* live on FutureBlockCall but I haven't figured
+        // the modularity part out quite yet.  For now I'm going to muddle
+        // these two concepts together for the sake of progress and pay this
+        // debt down later.
+        uint public targetBlock;
+        uint8 public gracePeriod;
 
         CallLib.Call call;
 
@@ -148,6 +220,10 @@ contract FutureCall {
                 CallLib.extractCallData(call, msg.data);
         }
 
+        function checkExecutionAuthorization(address executor, uint blockNumber) constant returns (bool);
+                return CallLib.checkExecutionAuthorization(call, executor, blockNumber);
+        }
+
         // API for inherited contracts
         function beforeExecute(address executor) public returns (bool);
         function afterExecute(address executor) internal;
@@ -176,8 +252,11 @@ contract FutureCall {
 
 
 contract FutureBlockCall is FutureCall {
-        uint public targetBlock;
-        uint8 public gracePeriod;
+        // TODO: This it the *appropriate* place for these to live, but for
+        // unfortunate reasons, they are present on the FutureCall contract
+        // class.
+        //uint public targetBlock;
+        //uint8 public gracePeriod;
 
         function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
                 owner = msg.sender;
@@ -223,9 +302,9 @@ contract FutureBlockCall is FutureCall {
 
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
-        function cancel() public onlyscheduler {
-                if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW || block.number > targetBlock + gracePeriod) {
-                        CallLib.cancel(msg.sender);
+        function cancel() public {
+                if ((block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW && msg.sender == scheduler) || block.number > targetBlock + gracePeriod) {
+                        CallLib.cancel(schedulerAddress);
                 }
         }
 

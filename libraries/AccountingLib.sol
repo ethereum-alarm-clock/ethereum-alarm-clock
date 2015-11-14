@@ -102,12 +102,18 @@ library AccountingLib {
                 return false;
         }
 
+        uint constant DEFAULT_SEND_GAS = 100000;
+
         function sendRobust(address toAddress, uint value) public returns (bool) {
+                sendRobust(toAddress, value, DEFAULT_SEND_GAS);
+        }
+
+        function sendRobust(address toAddress, uint value, uint maxGas) public returns (bool) {
                 if (value > 0 && !toAddress.send(value)) {
                         // Potentially sending money to a contract that
                         // has a fallback function.  So instead, try
                         // tranferring the funds with the call api.
-                        if (!toAddress.call.value(value)()) {
+                        if (!toAddress.call.gas(maxGas).value(value)()) {
                                 return false;
                         }
                 }

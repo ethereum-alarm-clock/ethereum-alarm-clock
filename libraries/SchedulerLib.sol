@@ -13,10 +13,6 @@ library SchedulerLib {
         AccountingLib.Bank gasBank;
     }
 
-    // The number of blocks that each caller in the pool has to complete their
-    // call.
-    uint constant CALL_WINDOW_SIZE = 16;
-
     /*
      *  Call Scheduling API
      */

@@ -119,6 +119,22 @@ library CallLib {
         // call.
         uint constant CALL_WINDOW_SIZE = 16;
 
+        function bid(Call storage self, address bidder, uint bidAmount, uint basePayment) public returns (bool) {
+                // Bid is over the declared basePayment.
+                if (bidAmount > basePayment) * basePayment) return false;
+                // Overflow, cannot be cast to an `int`
+                if (bidAmount > 2 ** 256 - 1) return false;
+                // Already Bid
+                if (GroveLib.exists(self.bids, bytes32(bidder))) {
+                        uint refund = uint(GroveLib.getNodeValue(self.bids, bytes32(bidder)));
+                        // Cannot increase bid.
+                        if (refund >= bidAmount) return false;
+                        sendRobust(bidder, refund);
+                }
+                // Register the bid.
+                GroveLib.insert(bytes32(bidder), int(bidAmount))
+        }
+
         function checkExecutionAuthorization(Call storage self, address executor, uint blockNumber) {
                 /*
                  *  Check whether the address executing this call is

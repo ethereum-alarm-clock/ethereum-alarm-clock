@@ -12,7 +12,9 @@ library CallLib {
                 uint anchorGasPrice;
                 uint suggestedGas;
 
+                uint numBids;
                 GroveLib.Index bids;
+                mapping (address => uint) deposits;
         }
 
         // The number of blocks that each caller in the pool has to complete their
@@ -75,11 +77,11 @@ library CallLib {
         function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
             FutureCall _call = FutureCall(this);
 
-            if (!this.checkExecutionAuthorization(executor, block.number)) {
+            if (!_call.checkExecutionAuthorization(executor, block.number)) {
                 return;
             }
 
-            if (!this.beforeExecute(executor)) {
+            if (!_call.beforeExecute(executor)) {
                 return;
             }
             
@@ -109,33 +111,74 @@ library CallLib {
 
         function cancel(address sender) public {
                 Cancelled(sender);
+                // TODO: remove suicide.
                 suicide(sender);
         }
 
         /*
          *  Bid API
+         *  - Gas costs for this transaction are not covered so it
+         *    must be up to the call executors to ensure that their actions
+         *    remain profitable.  Any form of bidding war is likely to eat into
+         *    profits.
          */
-        // The number of blocks that each caller in the pool has to complete their
-        // call.
-        uint constant CALL_WINDOW_SIZE = 16;
+        event Bid(address executor, uint bidAmount);
 
-        function bid(Call storage self, address bidder, uint bidAmount, uint basePayment) public returns (bool) {
+        function bid(Call storage self, address executor, uint bidAmount, uint depositAmount, uint basePayment) public returns (bool) {
+                // Insufficient Deposit
+                if (depositAmount < 2 * basePayment) return false;
+
                 // Bid is over the declared basePayment.
-                if (bidAmount > basePayment) * basePayment) return false;
-                // Overflow, cannot be cast to an `int`
-                if (bidAmount > 2 ** 256 - 1) return false;
-                // Already Bid
-                if (GroveLib.exists(self.bids, bytes32(bidder))) {
-                        uint refund = uint(GroveLib.getNodeValue(self.bids, bytes32(bidder)));
+                if (bidAmount > basePayment) return false;
+
+                // Overflow, must be castable to an `int` so that Grove can
+                // track it.
+                if (bidAmount > 2 ** 128 - 1) return false;
+
+                // Already Bid.
+                if (GroveLib.exists(self.bids, bytes32(executor))) {
+                        // Get the amount that was previously bid.
+                        uint refund = uint(GroveLib.getNodeValue(self.bids, bytes32(executor)));
+
                         // Cannot increase bid.
                         if (refund >= bidAmount) return false;
-                        sendRobust(bidder, refund);
+                        AccountingLib.sendRobust(executor, refund);
+                }
+                else {
+                        // Already reached the maximum number of bidders.
+                        if (self.numBids >= getMaximumBidders()) return false;
+
+                        // New bidder so increment the number of bids.
+                        self.numBids += 1;
                 }
                 // Register the bid.
-                GroveLib.insert(bytes32(bidder), int(bidAmount))
+                GroveLib.insert(self.bids, bytes32(executor), int(bidAmount));
+                self.deposits[executor] += depositAmount;
+                // Log the bid.
+                Bid(executor, bidAmount);
         }
 
-        function checkExecutionAuthorization(Call storage self, address executor, uint blockNumber) {
+        function getMaximumBidders() constant returns (uint) {
+                var call = FutureCall(this);
+                return call.gracePeriod() / CALL_WINDOW_SIZE;
+        }
+
+        function getNthBidder(Call storage self, uint n) constant returns (address) {
+                /*
+                 *  Return the nth bidder (0 indexed).  Returns 0x0 if there is
+                 *  no bidder in that position.
+                 */
+                address bidder = address(GroveLib.query(self.bids, ">=", 0));
+
+                for (uint i=0; i < n; i++) {
+                        if (bidder == 0x0) break;
+                        bidder = address(GroveLib.getNextNode(self.bids, bytes32(bidder)));
+                }
+
+                return bidder;
+        }
+
+        function checkExecutionAuthorization(Call storage self, address executor, uint blockNumber) returns (bool) {
                 /*
                  *  Check whether the address executing this call is
                  *  authorized.  Must be one of:
@@ -145,8 +188,8 @@ library CallLib {
                  */
                 var call = FutureCall(this);
 
-                uint8 numWindows = call.gracePeriod() / CALL_WINDOW_SIZE;
-                uint8 callWindow = (blockNumber - call.targetBlock()) / CALL_WINDOW_SIZE;
+                uint8 numWindows = uint8(call.gracePeriod() / CALL_WINDOW_SIZE);
+                uint8 callWindow = uint8((blockNumber - call.targetBlock()) / CALL_WINDOW_SIZE);
 
                 if (callWindow + 2 > numWindows) {
                         // In the free-for-all period.
@@ -154,20 +197,10 @@ library CallLib {
                 }
 
                 // Query for the lowest bidder.
-                address bidder = address(GroveLib.query(call.bids, ">=", 0));
+                address bidder = getNthBidder(self, callWindow);
                 if (bidder == 0x0) {
-                        // No bids
+                        // No caller at that position
                         return true;
-                }
-
-                // Which call window are we in?
-                for (uint i = 0; i < callWindow; i++) {
-                        bidder = GroveLib.getNextNode(call.bids, bytes32(bidder));
-                        if (bidder == 0x0) {
-                                // Not enough bidders for the entire call
-                                // window.
-                                return true;
-                        }
                 }
 
                 // Check that the bidder is the executor.
@@ -177,7 +210,6 @@ library CallLib {
 
 
 contract FutureCall {
-        address public owner;
         address public schedulerAddress;
 
         uint public basePayment;
@@ -192,6 +224,9 @@ contract FutureCall {
 
         CallLib.Call call;
 
+        /*
+         *  Data accessor functions.
+         */
         function contractAddress() constant returns (address) {
                 return call.contractAddress;
         }
@@ -236,7 +271,15 @@ contract FutureCall {
                 CallLib.extractCallData(call, msg.data);
         }
 
-        function checkExecutionAuthorization(address executor, uint blockNumber) constant returns (bool);
+        function bid(uint bidAmount) public returns (bool) {
+                bool success = CallLib.bid(call, msg.sender, bidAmount, msg.value, basePayment);
+                if (!success) {
+                        if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;
+                }
+                return success;
+        }
+
+        function checkExecutionAuthorization(address executor, uint blockNumber) constant returns (bool) {
                 return CallLib.checkExecutionAuthorization(call, executor, blockNumber);
         }
 
@@ -250,19 +293,18 @@ contract FutureCall {
                 CallLib.sendSafe(toAddress, value);
         }
 
-        modifier onlyowner { if (msg.sender == owner) _ }
+        function execute() public {
+            uint startGas = msg.gas;
 
-        function execute() public onlyowner {
-                uint startGas = msg.gas;
-                execute(startGas,  msg.sender);
-        }
+            // Check that the call should be executed now.
+            if (!beforeExecute(msg.sender)) return;
 
-        function execute(uint startGas, address executor) public onlyowner {
-            CallLib.execute(call, startGas, executor, basePayment, baseFee, getOverhead(), getExtraGas());
+            // Execute the call
+            CallLib.execute(call, startGas, msg.sender, basePayment, baseFee, getOverhead(), getExtraGas());
 
             // Any logic that needs to occur after the call has executed should
             // go in afterExecute
-            afterExecute(executor);
+            afterExecute(msg.sender);
         }
 }
 
@@ -275,8 +317,8 @@ contract FutureBlockCall is FutureCall {
         //uint8 public gracePeriod;
 
         function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
-                owner = msg.sender;
-
+                // TODO: split this constructor across this contract and the
+                // parent contract FutureCall
                 schedulerAddress = _schedulerAddress;
 
                 targetBlock = _targetBlock;
@@ -293,6 +335,7 @@ contract FutureBlockCall is FutureCall {
         }
 
         function beforeExecute(address executor) public returns (bool) {
+                // TODO: check if executor is designated to call during this window.
                 if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
                         // Not being called within call window.
                         CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
@@ -303,29 +346,30 @@ contract FutureBlockCall is FutureCall {
         }
 
         function afterExecute(address executor) internal {
+            // TODO: Remove suicide
             suicide(schedulerAddress);
         }
 
         function getOverhead() constant returns (uint) {
-                // TODO
+                // TODO real numbers
                 return 46000;
         }
 
         function getExtraGas() constant returns (uint) {
-                // TODO
+                // TODO real numbers
                 return 17000;
         }
 
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
         function cancel() public {
-                if ((block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW && msg.sender == scheduler) || block.number > targetBlock + gracePeriod) {
+                if ((block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW && msg.sender == schedulerAddress) || block.number > targetBlock + gracePeriod) {
                         CallLib.cancel(schedulerAddress);
                 }
         }
 
-        function isAlive() constant returns (bool) {
-                return true;
+        function getMaximumBidders() constant returns (uint) {
+                return CallLib.getMaximumBidders();
         }
 }
 

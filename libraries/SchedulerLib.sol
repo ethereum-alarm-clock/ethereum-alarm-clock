@@ -7,12 +7,6 @@ library SchedulerLib {
     /*
      *  Address: 0x873bf63c898791e57fa66e7b9261ea81df0b8044
      */
-    struct CallDatabase {
-        GroveLib.Index callIndex;
-
-        AccountingLib.Bank gasBank;
-    }
-
     /*
      *  Call Scheduling API
      */
@@ -29,6 +23,8 @@ library SchedulerLib {
     event CallScheduled(address callAddress);
 
     event CallRejected(address indexed schedulerAddress, bytes32 reason);
+
+    uint constant CALL_WINDOW_SIZE = 16;
 
     function getCallWindowSize() constant returns (uint) {
         return CALL_WINDOW_SIZE;
@@ -50,11 +46,7 @@ library SchedulerLib {
         return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    function isKnownCall(CallDatabase storage self, address callAddress) constant returns (bool) {
-        return GroveLib.exists(self.callIndex, bytes32(callAddress));
-    }
-
-    function scheduleCall(CallDatabase storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
+    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -85,49 +77,10 @@ library SchedulerLib {
         var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
 
         // Put the call into the grove index.
-        GroveLib.insert(self.callIndex, bytes32(address(call)), int(call.targetBlock()));
+        GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));
 
         CallScheduled(address(call));
 
         return address(call);
-    }
-
-    function execute(CallDatabase storage self, uint startGas, address callAddress, address executor) {
-        if (!isKnownCall(self, callAddress)) {
-                CallLib.CallAborted(executor, "UNKNOWN_ADDRESS");
-                return;
-        }
-
-        FutureBlockCall call = FutureBlockCall(callAddress);
-
-        if (!call.isAlive()) {
-                CallLib.CallAborted(executor, "SUICIDED_ALREADY");
-                return;
-        }
-        
-        bool isDesignated;
-        address designatedCaller;
-
-        (isDesignated, designatedCaller) = getDesignatedCaller(self, call.targetBlock(), call.targetBlock() + call.gracePeriod(), block.number);
-        if (isDesignated && designatedCaller != 0x0 && designatedCaller != executor) {
-                // Wrong caller
-                CallLib.CallAborted(executor, "WRONG_CALLER");
-                return;
-        }
-
-        if (!call.beforeExecute(executor)) {
-                return;
-        }
-
-        if (isDesignated) {
-            uint blockWindow = (block.number - call.targetBlock()) / getCallWindowSize();
-            if (blockWindow > 0) {
-                // Someone missed their call so this caller
-                // gets to claim their bond for picking up
-                // their slack.
-                awardMissedBlockBonus(self, executor, callAddress);
-            }
-        }
-        call.execute(startGas, executor);
     }
 }

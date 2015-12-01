@@ -158,6 +158,10 @@ library CallLib {
                 Bid(executor, bidAmount);
         }
 
+        function checkBid(Call storage self, address bidder) returns (uint) {
+                return uint(GroveLib.getNodeValue(self.bids, bytes32(bidder)));
+        }
+
         function getMaximumBidders() constant returns (uint) {
                 var call = FutureCall(this);
                 return call.gracePeriod() / CALL_WINDOW_SIZE;
@@ -277,6 +281,14 @@ contract FutureCall {
                         if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;
                 }
                 return success;
+        }
+
+        function checkBid() constant returns (uint) {
+                return checkBid(msg.sender);
+        }
+
+        function checkBid(address bidder) constant returns (uint) {
+                return CallLib.checkBid(call, bidder);
         }
 
         function checkExecutionAuthorization(address executor, uint blockNumber) constant returns (bool) {

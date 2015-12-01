@@ -25,7 +25,10 @@ def FutureBlockCall(contracts, deployed_contracts):
     from populus.contracts import (
         link_contract_dependency,
     )
-    return link_contract_dependency(contracts.FutureBlockCall, deployed_contracts.CallLib)
+    return link_contract_dependency(
+        link_contract_dependency(contracts.FutureBlockCall, deployed_contracts.CallLib),
+        deployed_contracts.AccountingLib,
+    )
 
 
 @pytest.fixture
@@ -56,7 +59,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
             constructor_args=(
                 scheduler_address,
                 target_block,
-                target_block + grace_period,
+                grace_period,
                 contract_function._contract._meta.address,
                 contract_function.encoded_abi_signature,
                 suggested_gas,

@@ -43,7 +43,7 @@ library CallLib {
                 return 0;
         }
 
-        function getGasScalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
+        function get_gas_scalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
                 /*
                  *  Return a number between 0 - 200 to scale the fee based on
                  *  the gas price set for the calling transaction as compared
@@ -81,7 +81,7 @@ library CallLib {
                 return;
             }
 
-            if (!_call.beforeExecute(executor)) {
+            if (!_call.before_execute(executor)) {
                 return;
             }
             
@@ -89,10 +89,10 @@ library CallLib {
             bool success = call.contractAddress.call.gas(msg.gas - overhead)(call.abiSignature, call.callData);
 
             // Compute the scalar (0 - 200) for the fee.
-            uint gasScalar = getGasScalar(call.anchorGasPrice, tx.gasprice);
+            uint gas_scalar = get_gas_scalar(call.anchorGasPrice, tx.gasprice);
 
-            uint payment = basePayment * gasScalar / 100; 
-            uint fee = baseFee * gasScalar / 100;
+            uint payment = basePayment * gas_scalar / 100; 
+            uint fee = baseFee * gas_scalar / 100;
 
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
@@ -147,7 +147,7 @@ library CallLib {
         function get_bid_amount_for_block(uint block_number) constant returns (uint) {
             var _call = FutureBlockCall(this);
 
-            uint last_block = _call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
+            uint last_block = _call.target_block() - BEFORE_CALL_FREEZE_WINDOW;
             
             // bid window has closed
             if (block_number > last_block) return _call.basePayment();
@@ -165,69 +165,45 @@ library CallLib {
             return 100 * x / BID_GROWTH_WINDOW;
         }
 
-        function claim(Call storage self, address executor, uint depositAmount, uint basePayment) public returns (bool) {
+        function claim(Call storage self, address executor, uint deposit_amount, uint base_payment) public returns (bool) {
                 // Already claimed
                 if (self.bidder != 0x0) return false;
 
                 // Insufficient Deposit
-                if (depositAmount < 2 * basePayment) return false;
+                if (deposit_amount < 2 * base_payment) return false;
 
                 self.bid_amount = get_maximum_bid_for_block(block.number);
                 self.bidder = executor;
-                self.bidder_deposit = depositAmount;
+                self.bidder_deposit = deposit_amount;
 
                 // Log the bid.
                 Bid(executor, self.bid_amount);
         }
 
-        function getNthBidder(Call storage self, uint n) constant returns (address) {
+        function check_execution_authorization(Call storage self, address executor, uint block_number) returns (bool) {
                 /*
-                 *  Return the nth bidder (0 indexed).  Returns 0x0 if there is
-                 *  no bidder in that position.
-                 */
-                address bidder = address(GroveLib.query(self.bids, ">=", 0));
-
-                for (uint i=0; i < n; i++) {
-                        if (bidder == 0x0) break;
-                        bidder = address(GroveLib.getNextNode(self.bids, bytes32(bidder)));
-                }
-
-                return bidder;
-        }
-
-        function checkExecutionAuthorization(Call storage self, address executor, uint blockNumber) returns (bool) {
-                /*
-                 *  Check whether the address executing this call is
-                 *  authorized.  Must be one of:
-                 *  - in free-for-all window.
-                 *  - no bids
-                 *  - bid position is correct for call window.
+                 *  Check whether the given `executor` is authorized.
                  */
                 var call = FutureCall(this);
 
-                uint8 numWindows = uint8(call.gracePeriod() / CALL_WINDOW_SIZE);
-                uint8 callWindow = uint8((blockNumber - call.targetBlock()) / CALL_WINDOW_SIZE);
+                uint target_block = call.target_block();
 
-                if (callWindow + 2 > numWindows) {
-                        // In the free-for-all period.
-                        return true;
+                // Call window hasn't started
+                if (block_number < target_block) return false;
+
+                if (block_number - target_block < CALL_WINDOW_SIZE) {
+                    return (self.bidder == 0x0 || self.bidder == executor);
                 }
 
-                // Query for the lowest bidder.
-                address bidder = getNthBidder(self, callWindow);
-                if (bidder == 0x0) {
-                        // No caller at that position
-                        return true;
-                }
+                if (block_number > target_block + call.grace_period()) return false;
 
-                // Check that the bidder is the executor.
-                return bidder == executor;
+                return true;
         }
 }
 
 
 contract FutureCall {
-        address public schedulerAddress;
+        address public scheduler_address;
 
         uint public basePayment;
         uint public baseFee;
@@ -236,8 +212,8 @@ contract FutureCall {
         // the modularity part out quite yet.  For now I'm going to muddle
         // these two concepts together for the sake of progress and pay this
         // debt down later.
-        uint public targetBlock;
-        uint8 public gracePeriod;
+        uint public target_block;
+        uint8 public grace_period;
 
         CallLib.Call call;
 
@@ -267,7 +243,7 @@ contract FutureCall {
         function () {
                 // Fallback to allow sending funds to this contract.
                 // Also allows call data registration.
-                if (msg.sender == schedulerAddress && msg.data.length > 0) {
+                if (msg.sender == scheduler_address && msg.data.length > 0) {
                         if (call.callData.length != 0) {
                             throw;
                         }
@@ -275,7 +251,7 @@ contract FutureCall {
                 }
         }
 
-        modifier onlyscheduler { if (msg.sender == schedulerAddress) _ }
+        modifier onlyscheduler { if (msg.sender == scheduler_address) _ }
 
         // The author (Piper Merriam) address.
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
@@ -309,10 +285,10 @@ contract FutureCall {
         }
 
         // API for inherited contracts
-        function beforeExecute(address executor) public returns (bool);
-        function afterExecute(address executor) internal;
-        function getOverhead() constant returns (uint);
-        function getExtraGas() constant returns (uint);
+        function before_execute(address executor) public returns (bool);
+        function after_execute(address executor) internal;
+        function get_overhead() constant returns (uint);
+        function get_extra_gas() constant returns (uint);
 
         function sendSafe(address toAddress, uint value) internal {
                 CallLib.sendSafe(toAddress, value);
@@ -322,14 +298,14 @@ contract FutureCall {
             uint startGas = msg.gas;
 
             // Check that the call should be executed now.
-            if (!beforeExecute(msg.sender)) return;
+            if (!before_execute(msg.sender)) return;
 
             // Execute the call
-            CallLib.execute(call, startGas, msg.sender, basePayment, baseFee, getOverhead(), getExtraGas());
+            CallLib.execute(call, startGas, msg.sender, basePayment, baseFee, get_overhead(), get_extra_gas());
 
             // Any logic that needs to occur after the call has executed should
-            // go in afterExecute
-            afterExecute(msg.sender);
+            // go in after_execute
+            after_execute(msg.sender);
         }
 }
 
@@ -338,16 +314,16 @@ contract FutureBlockCall is FutureCall {
         // TODO: This it the *appropriate* place for these to live, but for
         // unfortunate reasons, they are present on the FutureCall contract
         // class.
-        //uint public targetBlock;
-        //uint8 public gracePeriod;
+        //uint public target_block;
+        //uint8 public grace_period;
 
-        function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
+        function FutureBlockCall(address _scheduler_address, uint _target_block, uint8 _grace_period, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
                 // TODO: split this constructor across this contract and the
                 // parent contract FutureCall
-                schedulerAddress = _schedulerAddress;
+                scheduler_address = _scheduler_address;
 
-                targetBlock = _targetBlock;
-                gracePeriod = _gracePeriod;
+                target_block = _target_block;
+                grace_period = _grace_period;
 
 
                 basePayment = _basePayment;
@@ -359,9 +335,9 @@ contract FutureBlockCall is FutureCall {
                 call.abiSignature = _abiSignature;
         }
 
-        function beforeExecute(address executor) public returns (bool) {
+        function before_execute(address executor) public returns (bool) {
                 // TODO: check if executor is designated to call during this window.
-                if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
+                if (block.number < target_block || block.number > target_block + grace_period) {
                         // Not being called within call window.
                         CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
                         return false;
@@ -370,17 +346,17 @@ contract FutureBlockCall is FutureCall {
                 return true;
         }
 
-        function afterExecute(address executor) internal {
+        function after_execute(address executor) internal {
             // TODO: Remove suicide
-            suicide(schedulerAddress);
+            suicide(scheduler_address);
         }
 
-        function getOverhead() constant returns (uint) {
+        function get_overhead() constant returns (uint) {
                 // TODO real numbers
                 return 46000;
         }
 
-        function getExtraGas() constant returns (uint) {
+        function get_extra_gas() constant returns (uint) {
                 // TODO real numbers
                 return 17000;
         }
@@ -388,12 +364,8 @@ contract FutureBlockCall is FutureCall {
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
         function cancel() public {
-                if ((block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW && msg.sender == schedulerAddress) || block.number > targetBlock + gracePeriod) {
-                        CallLib.cancel(schedulerAddress);
+                if ((block.number < target_block - BEFORE_CALL_FREEZE_WINDOW && msg.sender == scheduler_address) || block.number > target_block + grace_period) {
+                        CallLib.cancel(scheduler_address);
                 }
-        }
-
-        function getMaximumBidders() constant returns (uint) {
-                return CallLib.getMaximumBidders();
         }
 }

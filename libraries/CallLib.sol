@@ -12,9 +12,9 @@ library CallLib {
                 uint anchorGasPrice;
                 uint suggestedGas;
 
-                uint numBids;
-                GroveLib.Index bids;
-                mapping (address => uint) deposits;
+                address bidder;
+                uint bid_amount;
+                uint bidder_deposit;
         }
 
         // The number of blocks that each caller in the pool has to complete their
@@ -124,47 +124,60 @@ library CallLib {
          */
         event Bid(address executor, uint bidAmount);
 
-        function bid(Call storage self, address executor, uint bidAmount, uint depositAmount, uint basePayment) public returns (bool) {
+        // The duration (in blocks) during which the maximum bid will slowly rise
+        // towards the base_payment amount.
+        uint constant BID_GROWTH_WINDOW = 240;
+
+        // The duration (in blocks) after the BID_WINDOW that bidding will
+        // remain open.
+        uint constant MAXIMUM_BID_WINDOW = 15;
+
+        // The duration (in blocks) before the call's target block during which
+        // all actions are frozen.  This includes bidding, cancellation,
+        // registering call data.
+        uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
+
+        /*
+         *  The maximum allowed bid slowly rises across a window of blocks
+         *  BID_GROWTH_WINDOW prior to the call.  No bidder is allowed to bid
+         *  above this value.  This is intended to prevent bidding wars in that
+         *  each caller should know how much they are willing to execute a call
+         *  for.
+         */
+        function get_bid_amount_for_block(uint block_number) constant returns (uint) {
+            var _call = FutureBlockCall(this);
+
+            uint last_block = _call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
+            
+            // bid window has closed
+            if (block_number > last_block) return _call.basePayment();
+
+            uint first_block = last_block - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW;
+            
+            // bid window has not begun
+            if (block_number < first_block) return 0;
+
+            // in the maximum bid window.
+            if (block_number > last_block - MAXIMUM_BID_WINDOW) return _call.basePayment();
+
+            uint x = block_number - first_block;
+
+            return 100 * x / BID_GROWTH_WINDOW;
+        }
+
+        function claim(Call storage self, address executor, uint depositAmount, uint basePayment) public returns (bool) {
+                // Already claimed
+                if (self.bidder != 0x0) return false;
+
                 // Insufficient Deposit
                 if (depositAmount < 2 * basePayment) return false;
 
-                // Bid is over the declared basePayment.
-                if (bidAmount > basePayment) return false;
+                self.bid_amount = get_maximum_bid_for_block(block.number);
+                self.bidder = executor;
+                self.bidder_deposit = depositAmount;
 
-                // Overflow, must be castable to an `int` so that Grove can
-                // track it.
-                if (bidAmount > 2 ** 128 - 1) return false;
-
-                // Already Bid.
-                if (GroveLib.exists(self.bids, bytes32(executor))) {
-                        // Get the amount that was previously bid.
-                        uint refund = uint(GroveLib.getNodeValue(self.bids, bytes32(executor)));
-
-                        // Cannot increase bid.
-                        if (refund >= bidAmount) return false;
-                        AccountingLib.sendRobust(executor, refund);
-                }
-                else {
-                        // Already reached the maximum number of bidders.
-                        if (self.numBids >= getMaximumBidders()) return false;
-
-                        // New bidder so increment the number of bids.
-                        self.numBids += 1;
-                }
-                // Register the bid.
-                GroveLib.insert(self.bids, bytes32(executor), int(bidAmount));
-                self.deposits[executor] += depositAmount;
                 // Log the bid.
-                Bid(executor, bidAmount);
-        }
-
-        function checkBid(Call storage self, address bidder) returns (uint) {
-                return uint(GroveLib.getNodeValue(self.bids, bytes32(bidder)));
-        }
-
-        function getMaximumBidders() constant returns (uint) {
-                var call = FutureCall(this);
-                return call.gracePeriod() / CALL_WINDOW_SIZE;
+                Bid(executor, self.bid_amount);
         }
 
         function getNthBidder(Call storage self, uint n) constant returns (address) {
@@ -384,4 +397,3 @@ contract FutureBlockCall is FutureCall {
                 return CallLib.getMaximumBidders();
         }
 }
-

@@ -105,7 +105,10 @@ library AccountingLib {
         uint constant DEFAULT_SEND_GAS = 100000;
 
         function sendRobust(address toAddress, uint value) public returns (bool) {
-                sendRobust(toAddress, value, DEFAULT_SEND_GAS);
+                if (msg.gas < DEFAULT_SEND_GAS) {
+                    return sendRobust(toAddress, value, msg.gas);
+                }
+                return sendRobust(toAddress, value, DEFAULT_SEND_GAS);
         }
 
         function sendRobust(address toAddress, uint value, uint maxGas) public returns (bool) {

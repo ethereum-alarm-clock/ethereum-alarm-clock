@@ -6,11 +6,11 @@ library CallLib {
          *  Address: 0x2746bcf29bffafcc7906752f639819171d18ce2b
          */
         struct Call {
-                address contractAddress;
-                bytes4 abiSignature;
-                bytes callData;
-                uint anchorGasPrice;
-                uint suggestedGas;
+                address contract_address;
+                bytes4 abi_signature;
+                bytes call_data;
+                uint anchor_gas_price;
+                uint suggested_gas;
 
                 address bidder;
                 uint bid_amount;
@@ -23,27 +23,27 @@ library CallLib {
 
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
-        function extractCallData(Call storage call, bytes data) public {
-            call.callData.length = data.length - 4;
+        function extract_call_data(Call storage call, bytes data) public {
+            call.call_data.length = data.length - 4;
             if (data.length > 4) {
-                    for (uint i = 0; i < call.callData.length; i++) {
-                            call.callData[i] = data[i + 4];
+                    for (uint i = 0; i < call.call_data.length; i++) {
+                            call.call_data[i] = data[i + 4];
                     }
             }
         }
 
-        function sendSafe(address toAddress, uint value) public returns (uint) {
+        function send_safe(address to_address, uint value) public returns (uint) {
                 if (value > address(this).balance) {
                         value = address(this).balance;
                 }
                 if (value > 0) {
-                        AccountingLib.sendRobust(toAddress, value);
+                        AccountingLib.sendRobust(to_address, value);
                         return value;
                 }
                 return 0;
         }
 
-        function get_gas_scalar(uint baseGasPrice, uint gasPrice) constant returns (uint) {
+        function get_gas_scalar(uint base_gas_price, uint gas_price) constant returns (uint) {
                 /*
                  *  Return a number between 0 - 200 to scale the fee based on
                  *  the gas price set for the calling transaction as compared
@@ -59,55 +59,52 @@ library CallLib {
                  *  for the executing transaction, the higher the payout to the
                  *  caller.
                  */
-                if (gasPrice > baseGasPrice) {
-                        return 100 * baseGasPrice / gasPrice;
+                if (gas_price > base_gas_price) {
+                        return 100 * base_gas_price / gas_price;
                 }
                 else {
-                        return 200 - 100 * baseGasPrice / (2 * baseGasPrice - gasPrice);
+                        return 200 - 100 * base_gas_price / (2 * base_gas_price - gas_price);
                 }
         }
 
-        event CallExecuted(address indexed executor, uint gasCost, uint payment, uint fee, bool success);
+        event CallExecuted(address indexed executor, uint gas_cost, uint payment, uint fee, bool success);
 
         event _CallAborted(address executor, bytes32 reason);
         function CallAborted(address executor, bytes32 reason) public {
             _CallAborted(executor, reason);
         }
 
-        function execute(Call storage call, uint startGas, address executor, uint basePayment, uint baseFee, uint overhead, uint extraGas) public {
+        function execute(Call storage call, uint start_gas, address executor, uint base_payment, uint base_fee, uint overhead, uint extraGas) public {
             FutureCall _call = FutureCall(this);
 
-            if (!_call.checkExecutionAuthorization(executor, block.number)) {
-                return;
-            }
-
+            // If the pre-execution checks do not pass, exit early.
             if (!_call.before_execute(executor)) {
                 return;
             }
             
             // Make the call
-            bool success = call.contractAddress.call.gas(msg.gas - overhead)(call.abiSignature, call.callData);
+            bool success = call.contract_address.call.gas(msg.gas - overhead)(call.abi_signature, call.call_data);
 
             // Compute the scalar (0 - 200) for the fee.
-            uint gas_scalar = get_gas_scalar(call.anchorGasPrice, tx.gasprice);
+            uint gas_scalar = get_gas_scalar(call.anchor_gas_price, tx.gasprice);
 
-            uint payment = basePayment * gas_scalar / 100; 
-            uint fee = baseFee * gas_scalar / 100;
+            uint payment = base_payment * gas_scalar / 100; 
+            uint fee = base_fee * gas_scalar / 100;
 
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
             // happen after this line.
-            uint gasCost = tx.gasprice * (startGas - msg.gas + extraGas);
+            uint gas_cost = tx.gasprice * (start_gas - msg.gas + extraGas);
 
             // Now we need to pay the executor as well as keep fee.
-            payment = sendSafe(executor, payment + gasCost);
-            fee = sendSafe(creator, fee);
+            payment = send_safe(executor, payment + gas_cost);
+            fee = send_safe(creator, fee);
 
             // Log execution
-            CallExecuted(executor, gasCost, payment, fee, success);
+            CallExecuted(executor, gas_cost, payment, fee, success);
         }
 
-        event Cancelled(address indexed cancelledBy);
+        event Cancelled(address indexed cancelled_by);
 
         function cancel(address sender) public {
                 Cancelled(sender);
@@ -122,7 +119,7 @@ library CallLib {
          *    remain profitable.  Any form of bidding war is likely to eat into
          *    profits.
          */
-        event Bid(address executor, uint bidAmount);
+        event Claimed(address executor, uint bid_amount);
 
         // The duration (in blocks) during which the maximum bid will slowly rise
         // towards the base_payment amount.
@@ -150,7 +147,7 @@ library CallLib {
             uint last_block = _call.target_block() - BEFORE_CALL_FREEZE_WINDOW;
             
             // bid window has closed
-            if (block_number > last_block) return _call.basePayment();
+            if (block_number > last_block) return _call.base_payment();
 
             uint first_block = last_block - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW;
             
@@ -158,7 +155,7 @@ library CallLib {
             if (block_number < first_block) return 0;
 
             // in the maximum bid window.
-            if (block_number > last_block - MAXIMUM_BID_WINDOW) return _call.basePayment();
+            if (block_number > last_block - MAXIMUM_BID_WINDOW) return _call.base_payment();
 
             uint x = block_number - first_block;
 
@@ -177,7 +174,7 @@ library CallLib {
                 self.bidder_deposit = deposit_amount;
 
                 // Log the bid.
-                Bid(executor, self.bid_amount);
+                Claimed(executor, self.bid_amount);
         }
 
         function check_execution_authorization(Call storage self, address executor, uint block_number) returns (bool) {
@@ -188,15 +185,16 @@ library CallLib {
 
                 uint target_block = call.target_block();
 
-                // Call window hasn't started
-                if (block_number < target_block) return false;
+                // Invalid, not in call window.
+                if (block_number < target_block || block_number > target_block + call.grace_period()) throw;
 
+                // Within the reserved call window so if there is a bidder, the
+                // executor must be the biddor.
                 if (block_number - target_block < CALL_WINDOW_SIZE) {
                     return (self.bidder == 0x0 || self.bidder == executor);
                 }
 
-                if (block_number > target_block + call.grace_period()) return false;
-
+                // Must be in the free-for-all period.
                 return true;
         }
 }
@@ -205,8 +203,8 @@ library CallLib {
 contract FutureCall {
         address public scheduler_address;
 
-        uint public basePayment;
-        uint public baseFee;
+        uint public base_payment;
+        uint public base_fee;
 
         // TODO: These *should* live on FutureBlockCall but I haven't figured
         // the modularity part out quite yet.  For now I'm going to muddle
@@ -220,34 +218,34 @@ contract FutureCall {
         /*
          *  Data accessor functions.
          */
-        function contractAddress() constant returns (address) {
-                return call.contractAddress;
+        function contract_address() constant returns (address) {
+                return call.contract_address;
         }
 
-        function abiSignature() constant returns (bytes4) {
-                return call.abiSignature;
+        function abi_signature() constant returns (bytes4) {
+                return call.abi_signature;
         }
 
-        function callData() constant returns (bytes) {
-                return call.callData;
+        function call_data() constant returns (bytes) {
+                return call.call_data;
         }
 
-        function anchorGasPrice() constant returns (uint) {
-                return call.anchorGasPrice;
+        function anchor_gas_price() constant returns (uint) {
+                return call.anchor_gas_price;
         }
 
-        function suggestedGas() constant returns (uint) {
-                return call.suggestedGas;
+        function suggested_gas() constant returns (uint) {
+                return call.suggested_gas;
         }
 
         function () {
                 // Fallback to allow sending funds to this contract.
                 // Also allows call data registration.
                 if (msg.sender == scheduler_address && msg.data.length > 0) {
-                        if (call.callData.length != 0) {
+                        if (call.call_data.length != 0) {
                             throw;
                         }
-                        call.callData = msg.data;
+                        call.call_data = msg.data;
                 }
         }
 
@@ -256,32 +254,24 @@ contract FutureCall {
         // The author (Piper Merriam) address.
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
-        function registerData() public onlyscheduler {
-                if (call.callData.length > 0) {
+        function register_data() public onlyscheduler {
+                if (call.call_data.length > 0) {
                         // cannot write over call data
                         throw;
                 }
-                CallLib.extractCallData(call, msg.data);
+                CallLib.extract_call_data(call, msg.data);
         }
 
         function bid(uint bidAmount) public returns (bool) {
-                bool success = CallLib.bid(call, msg.sender, bidAmount, msg.value, basePayment);
+                bool success = CallLib.bid(call, msg.sender, bidAmount, msg.value, base_payment);
                 if (!success) {
                         if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;
                 }
                 return success;
         }
 
-        function checkBid() constant returns (uint) {
-                return checkBid(msg.sender);
-        }
-
-        function checkBid(address bidder) constant returns (uint) {
-                return CallLib.checkBid(call, bidder);
-        }
-
-        function checkExecutionAuthorization(address executor, uint blockNumber) constant returns (bool) {
-                return CallLib.checkExecutionAuthorization(call, executor, blockNumber);
+        function check_execution_authorization(address executor, uint block_number) constant returns (bool) {
+                return CallLib.check_execution_authorization(call, executor, block_number);
         }
 
         // API for inherited contracts
@@ -290,18 +280,18 @@ contract FutureCall {
         function get_overhead() constant returns (uint);
         function get_extra_gas() constant returns (uint);
 
-        function sendSafe(address toAddress, uint value) internal {
-                CallLib.sendSafe(toAddress, value);
+        function send_safe(address to_address, uint value) internal {
+                CallLib.send_safe(to_address, value);
         }
 
         function execute() public {
-            uint startGas = msg.gas;
+            uint start_gas = msg.gas;
 
             // Check that the call should be executed now.
             if (!before_execute(msg.sender)) return;
 
             // Execute the call
-            CallLib.execute(call, startGas, msg.sender, basePayment, baseFee, get_overhead(), get_extra_gas());
+            CallLib.execute(call, start_gas, msg.sender, base_payment, base_fee, get_overhead(), get_extra_gas());
 
             // Any logic that needs to occur after the call has executed should
             // go in after_execute
@@ -317,7 +307,7 @@ contract FutureBlockCall is FutureCall {
         //uint public target_block;
         //uint8 public grace_period;
 
-        function FutureBlockCall(address _scheduler_address, uint _target_block, uint8 _grace_period, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {
+        function FutureBlockCall(address _scheduler_address, uint _target_block, uint8 _grace_period, address _contract_address, bytes4 _abi_signature, uint _suggested_gas, uint _base_payment, uint _base_fee) {
                 // TODO: split this constructor across this contract and the
                 // parent contract FutureCall
                 scheduler_address = _scheduler_address;
@@ -326,24 +316,30 @@ contract FutureBlockCall is FutureCall {
                 grace_period = _grace_period;
 
 
-                basePayment = _basePayment;
-                baseFee = _baseFee;
+                base_payment = _base_payment;
+                base_fee = _base_fee;
 
-                call.suggestedGas = _suggestedGas;
-                call.anchorGasPrice = tx.gasprice;
-                call.contractAddress = _contractAddress;
-                call.abiSignature = _abiSignature;
+                call.suggested_gas = _suggested_gas;
+                call.anchor_gas_price = tx.gasprice;
+                call.contract_address = _contract_address;
+                call.abi_signature = _abi_signature;
         }
 
         function before_execute(address executor) public returns (bool) {
-                // TODO: check if executor is designated to call during this window.
-                if (block.number < target_block || block.number > target_block + grace_period) {
-                        // Not being called within call window.
-                        CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
-                        return false;
-                }
+            if (block.number < target_block || block.number > target_block + grace_period) {
+                // Not being called within call window.
+                CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
+                return false;
+            }
 
-                return true;
+            // If they are not authorized to execute the call at this time,
+            // exit early.
+            if (!CallLib.check_execution_authorization(executor, block.number)) {
+                CallLib.CallAborted(executor, "NOT_AUTHORIZED");
+                return;
+            }
+
+            return true;
         }
 
         function after_execute(address executor) internal {

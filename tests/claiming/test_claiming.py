@@ -27,7 +27,7 @@ def test_claiming(deploy_client, deployed_contracts, deploy_future_block_call,
     assert call.get_bid_amount_for_block(first_claim_block) == 0
 
     for i in range(240):
-        assert call.get_bid_amount_for_block(target_block + i) == base_payment * 100 / 240
+        assert call.get_bid_amount_for_block(first_claim_block + i) == base_payment * i / 240
 
     assert call.get_bid_amount_for_block(peak_claim_block) == call.base_payment()
 
@@ -39,9 +39,10 @@ def test_claiming(deploy_client, deployed_contracts, deploy_future_block_call,
     assert deploy_client.get_block_number() < first_claim_block - 1
     deploy_client.wait_for_block(first_claim_block - 1)
 
-    claim_txn_h = call.claim(denoms.ether, value=2*denoms.ether)
+    claim_txn_h = call.claim(value=2 * base_payment)
     claim_txn_r = deploy_client.wait_for_transaction(claim_txn_h)
 
+    # TODO: see that bid is set correctly and that coinbase is bidder.
     assert call.checkBid() == denoms.ether
 
     update_claim_txn_h = call.claim(750 * denoms.finney)

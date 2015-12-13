@@ -161,12 +161,17 @@ library CallLib {
          *  for.
          */
         function get_bid_amount_for_block(uint block_number) constant returns (uint) {
-            var _call = FutureBlockCall(this);
+            /*
+             *   [--growth-window--][--max-window--][--freeze-window--]
+             *
+             *
+             */
+            var call = FutureBlockCall(this);
 
-            uint last_block = _call.target_block() - BEFORE_CALL_FREEZE_WINDOW;
+            uint last_block = call.target_block() - BEFORE_CALL_FREEZE_WINDOW;
             
             // bid window has closed
-            if (block_number > last_block) return _call.base_payment();
+            if (block_number > last_block) return call.base_payment();
 
             uint first_block = last_block - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW;
             
@@ -174,11 +179,11 @@ library CallLib {
             if (block_number < first_block) return 0;
 
             // in the maximum bid window.
-            if (block_number > last_block - MAXIMUM_BID_WINDOW) return _call.base_payment();
+            if (block_number > last_block - MAXIMUM_BID_WINDOW) return call.base_payment();
 
             uint x = block_number - first_block;
 
-            return 100 * x / BID_GROWTH_WINDOW;
+            return call.base_payment() * x / BID_GROWTH_WINDOW;
         }
 
         function claim(Call storage self, address executor, uint deposit_amount, uint base_payment) public returns (bool) {

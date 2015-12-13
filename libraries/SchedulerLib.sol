@@ -46,7 +46,7 @@ library SchedulerLib {
         return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
+    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint target_block, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -56,7 +56,7 @@ library SchedulerLib {
         */
         bytes32 reason;
 
-        if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
+        if (target_block < block.number + MAX_BLOCKS_IN_FUTURE) {
             // Don't allow scheduling further than
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
@@ -74,10 +74,10 @@ library SchedulerLib {
             return;
         }
 
-        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
+        var call = new FutureBlockCall.value(endowment)(schedulerAddress, target_block, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
 
         // Put the call into the grove index.
-        GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));
+        GroveLib.insert(self, bytes32(address(call)), int(call.target_block()));
 
         CallScheduled(address(call));
 

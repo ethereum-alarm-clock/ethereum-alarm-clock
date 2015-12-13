@@ -78,7 +78,7 @@ library CallLib {
             _CallAborted(executor, reason);
         }
 
-        function execute(Call storage self, uint start_gas, address executor, uint base_payment, uint base_fee, uint overhead, uint extraGas) public {
+        function execute(Call storage self, uint start_gas, address executor, uint overhead, uint extraGas) public {
             FutureCall call = FutureCall(this);
 
             // If the pre-execution checks do not pass, exit early.
@@ -87,14 +87,24 @@ library CallLib {
             }
             
             // Make the call
-            call.was_successful = self.contract_address.self.gas(msg.gas - overhead)(self.abi_signature, self.call_data);
-            call.was_called = true;
+            self.was_successful = self.contract_address.call.gas(msg.gas - overhead)(self.abi_signature, self.call_data);
+            self.was_called = true;
 
             // Compute the scalar (0 - 200) for the fee.
             uint gas_scalar = get_gas_scalar(self.anchor_gas_price, tx.gasprice);
 
-            uint payment = call.deposit_amount + call.bid_amount * gas_scalar / 100; 
-            uint fee = base_fee * gas_scalar / 100;
+            uint base_payment;
+            if (self.bidder == 0x0) {
+                base_payment = call.base_payment();
+            }
+            else {
+                base_payment = self.bid_amount;
+            }
+            uint payment = self.bidder_deposit + base_payment * gas_scalar / 100; 
+            uint fee = call.base_fee() * gas_scalar / 100;
+
+            // zero out the deposit
+            self.bidder_deposit = 0;
 
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
@@ -106,17 +116,18 @@ library CallLib {
             fee = send_safe(creator, fee);
 
             // Log execution
-            CallExecuted(executor, gas_cost, payment, fee, success);
+            CallExecuted(executor, gas_cost, payment, fee, self.was_successful);
         }
 
         event Cancelled(address indexed cancelled_by);
 
         function cancel(Call storage self, address sender) public {
                 Cancelled(sender);
-                if (self.deposit_amount >= 0) {
-                    send_safe(self.bidder, self.deposit_amount);
+                if (self.bidder_deposit >= 0) {
+                    send_safe(self.bidder, self.bidder_deposit);
                 }
-                send_safe(self.scheduler_address, this.balance);
+                var call = FutureCall(this);
+                send_safe(call.scheduler_address(), address(this).balance);
                 self.is_cancelled = true;
         }
 
@@ -177,7 +188,7 @@ library CallLib {
                 // Insufficient Deposit
                 if (deposit_amount < 2 * base_payment) return false;
 
-                self.bid_amount = get_maximum_bid_for_block(block.number);
+                self.bid_amount = get_bid_amount_for_block(block.number);
                 self.bidder = executor;
                 self.bidder_deposit = deposit_amount;
 
@@ -246,6 +257,14 @@ contract FutureCall {
                 return call.suggested_gas;
         }
 
+        function get_bid_amount_for_block() constant returns (uint) {
+            return CallLib.get_bid_amount_for_block(block.number);
+        }
+
+        function get_bid_amount_for_block(uint block_number) constant returns (uint) {
+            return CallLib.get_bid_amount_for_block(block_number);
+        }
+
         function () {
                 // Fallback to allow sending funds to this contract.
                 // Also allows call data registration.
@@ -265,23 +284,23 @@ contract FutureCall {
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
         function register_data() public onlyscheduler {
-                if (call.call_data.length > 0) {
-                        // cannot write over call data
-                        throw;
-                }
-                CallLib.extract_call_data(call, msg.data);
+            if (call.call_data.length > 0) {
+                // cannot write over call data
+                throw;
+            }
+            CallLib.extract_call_data(call, msg.data);
         }
 
-        function bid(uint bidAmount) public returns (bool) public notcancelled {
-                bool success = CallLib.bid(call, msg.sender, bidAmount, msg.value, base_payment);
-                if (!success) {
-                        if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;
-                }
-                return success;
+        function claim() public notcancelled returns (bool) {
+            bool success = CallLib.claim(call, msg.sender, msg.value, base_payment);
+            if (!success) {
+                if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;
+            }
+            return success;
         }
 
         function check_execution_authorization(address executor, uint block_number) constant returns (bool) {
-                return CallLib.check_execution_authorization(call, executor, block_number);
+            return CallLib.check_execution_authorization(call, executor, block_number);
         }
 
         // API for inherited contracts
@@ -291,7 +310,7 @@ contract FutureCall {
         function get_extra_gas() constant returns (uint);
 
         function send_safe(address to_address, uint value) internal {
-                CallLib.send_safe(to_address, value);
+            CallLib.send_safe(to_address, value);
         }
 
         function execute() public notcancelled {
@@ -301,7 +320,7 @@ contract FutureCall {
             if (!before_execute(msg.sender)) return;
 
             // Execute the call
-            CallLib.execute(call, start_gas, msg.sender, base_payment, base_fee, get_overhead(), get_extra_gas());
+            CallLib.execute(call, start_gas, msg.sender, get_overhead(), get_extra_gas());
 
             // Any logic that needs to occur after the call has executed should
             // go in after_execute
@@ -344,7 +363,7 @@ contract FutureBlockCall is FutureCall {
 
             // If they are not authorized to execute the call at this time,
             // exit early.
-            if (!CallLib.check_execution_authorization(executor, block.number)) {
+            if (!CallLib.check_execution_authorization(call, executor, block.number)) {
                 CallLib.CallAborted(executor, "NOT_AUTHORIZED");
                 return;
             }
@@ -353,8 +372,8 @@ contract FutureBlockCall is FutureCall {
         }
 
         function after_execute(address executor) internal {
-            // TODO: Remove suicide
-            suicide(scheduler_address);
+            // Refund any leftover funds.
+            CallLib.send_safe(scheduler_address, address(this).balance);
         }
 
         function get_overhead() constant returns (uint) {
@@ -369,8 +388,8 @@ contract FutureBlockCall is FutureCall {
 
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
-        function cancel() public notcancelled {
-                if ((block.number < target_block - BEFORE_CALL_FREEZE_WINDOW && msg.sender == scheduler_address) || block.number > target_block + grace_period) {
+        function cancel() public onlyscheduler notcancelled {
+                if ((block.number < target_block - BEFORE_CALL_FREEZE_WINDOW || block.number > target_block + grace_period) && !call.was_called) {
                         CallLib.cancel(call, scheduler_address);
                 }
         }

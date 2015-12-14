@@ -193,6 +193,13 @@ library CallLib {
                 // Insufficient Deposit
                 if (deposit_amount < 2 * base_payment) return false;
 
+                var call = FutureCall(this);
+
+                // Too early
+                if (block.number < call.target_block() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) return false;
+
+                // Too late
+                if (block.number > call.target_block() - BEFORE_CALL_FREEZE_WINDOW) return false;
                 self.bid_amount = get_bid_amount_for_block(block.number);
                 self.bidder = executor;
                 self.bidder_deposit = deposit_amount;
@@ -243,23 +250,47 @@ contract FutureCall {
          *  Data accessor functions.
          */
         function contract_address() constant returns (address) {
-                return call.contract_address;
+            return call.contract_address;
         }
 
         function abi_signature() constant returns (bytes4) {
-                return call.abi_signature;
+            return call.abi_signature;
         }
 
         function call_data() constant returns (bytes) {
-                return call.call_data;
+            return call.call_data;
         }
 
         function anchor_gas_price() constant returns (uint) {
-                return call.anchor_gas_price;
+            return call.anchor_gas_price;
         }
 
         function suggested_gas() constant returns (uint) {
-                return call.suggested_gas;
+            return call.suggested_gas;
+        }
+
+        function bidder() constant returns (address) {
+            return call.bidder;
+        }
+
+        function bid_amount() constant returns (uint) {
+            return call.bid_amount;
+        }
+
+        function bidder_deposit() constant returns (uint) {
+            return call.bidder_deposit;
+        }
+
+        function was_successful() constant returns (bool) {
+            return call.was_successful;
+        }
+
+        function was_called() constant returns (bool) {
+            return call.was_called;
+        }
+
+        function is_cancelled() constant returns (bool) {
+            return call.is_cancelled;
         }
 
         function get_bid_amount_for_block() constant returns (uint) {

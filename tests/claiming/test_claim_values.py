@@ -7,9 +7,10 @@ deploy_contracts = [
 ]
 
 
-def test_claiming(deploy_client, deployed_contracts, deploy_future_block_call,
-                  denoms, FutureBlockCall, CallLib, SchedulerLib, get_call,
-                  get_execution_data):
+def test_claim_block_values(deploy_client, deployed_contracts,
+                            deploy_future_block_call, denoms, FutureBlockCall,
+                            CallLib, SchedulerLib, get_call,
+                            get_execution_data):
     client_contract = deployed_contracts.TestCallExecution
     call = deploy_future_block_call(
         client_contract.setBool,
@@ -35,17 +36,3 @@ def test_claiming(deploy_client, deployed_contracts, deploy_future_block_call,
         assert call.get_bid_amount_for_block(peak_claim_block + i) == call.base_payment()
 
     assert call.get_bid_amount_for_block(last_claim_block) == call.base_payment()
-
-    assert deploy_client.get_block_number() < first_claim_block - 1
-    deploy_client.wait_for_block(first_claim_block - 1)
-
-    claim_txn_h = call.claim(value=2 * base_payment)
-    claim_txn_r = deploy_client.wait_for_transaction(claim_txn_h)
-
-    # TODO: see that bid is set correctly and that coinbase is bidder.
-    assert call.checkBid() == denoms.ether
-
-    update_claim_txn_h = call.claim(750 * denoms.finney)
-    update_claim_txn_r = deploy_client.wait_for_transaction(update_claim_txn_h)
-
-    assert call.checkBid() == 750 * denoms.finney

@@ -427,17 +427,17 @@ contract FutureBlockCall is FutureCall {
         function cancel() public notcancelled {
             // Before the bid window
             if (block.number < target_block - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) {
-                    // already cancelled
-                    if (msg.sender != scheduler_address) throw;
-                    CallLib.cancel(call, scheduler_address);
-                    return;
-                }
-                if (block.number > target_block + grace_period) {
-                    // already called
-                    if (call.was_called) throw;
-                    CallLib.cancel(call, scheduler_address);
-                    return;
-                }
-                throw;
+                // already cancelled
+                if (msg.sender != scheduler_address) throw;
+                CallLib.cancel(call, msg.sender);
+                return;
+            }
+            if (block.number > target_block + grace_period) {
+                // already called
+                if (call.was_called) throw;
+                CallLib.cancel(call, msg.sender);
+                return;
+            }
+            throw;
         }
 }

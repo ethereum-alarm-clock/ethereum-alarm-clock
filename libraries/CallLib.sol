@@ -314,13 +314,11 @@ contract FutureCall {
 
         modifier notcancelled { if (call.is_cancelled) throw; _ }
 
-        modifier onlyscheduler { if (msg.sender == scheduler_address) _ }
-
         // The author (Piper Merriam) address.
         address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
-        function register_data() public onlyscheduler {
-            if (call.call_data.length > 0) {
+        function register_data() public notcancelled {
+            if (msg.sender != scheduler_address || call.call_data.length > 0) {
                 // cannot write over call data
                 throw;
             }
@@ -414,19 +412,32 @@ contract FutureBlockCall is FutureCall {
 
         function get_overhead() constant returns (uint) {
                 // TODO real numbers
-                return 46000;
+                return 146000;
         }
 
         function get_extra_gas() constant returns (uint) {
                 // TODO real numbers
-                return 17000;
+                return 117000;
         }
 
+        uint constant BID_GROWTH_WINDOW = 240;
+        uint constant MAXIMUM_BID_WINDOW = 15;
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
-        function cancel() public onlyscheduler notcancelled {
-                if ((block.number < target_block - BEFORE_CALL_FREEZE_WINDOW || block.number > target_block + grace_period) && !call.was_called) {
-                        CallLib.cancel(call, scheduler_address);
+        function cancel() public notcancelled {
+            // Before the bid window
+            if (block.number < target_block - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) {
+                    // already cancelled
+                    if (msg.sender != scheduler_address) throw;
+                    CallLib.cancel(call, scheduler_address);
+                    return;
                 }
+                if (block.number > target_block + grace_period) {
+                    // already called
+                    if (call.was_called) throw;
+                    CallLib.cancel(call, scheduler_address);
+                    return;
+                }
+                throw;
         }
 }

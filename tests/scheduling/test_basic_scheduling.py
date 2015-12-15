@@ -13,25 +13,22 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
-    scheduling_txn = scheduler.scheduleCall(
+    target_block = deploy_client.get_block_number() + 300
+
+    scheduling_txn = scheduler.schedule_call(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
-        deploy_client.get_block_number() + 45,
+        target_block,
         1000000,
         value=10 * denoms.ether,
         gas=3000000,
     )
+
     scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
     call = get_call(scheduling_txn)
 
-    deploy_client.wait_for_block(call.targetBlock())
-
-    assert client_contract.v_bool() is False
-
-    call_txn_hash = scheduler.execute(call._meta.address)
-    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
-
-    execution_data = get_execution_data(call_txn_hash)
-
-    assert execution_data['success'] is True
-    assert client_contract.v_bool() is True
+    assert call.target_block() == target_block
+    assert call.grace_period() == 255
+    assert call.suggested_gas() == 1000000
+    assert call.base_payment() == denoms.ether
+    assert call.base_fee() == denoms.ether

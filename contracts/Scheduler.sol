@@ -23,6 +23,22 @@ contract Scheduler {
         return 100 finney;
     }
 
+    function get_minimum_call_gas() constant returns (uint) {
+        return SchedulerLib.get_minimum_call_gas();
+    }
+
+    function get_minimum_call_cost() constant returns (uint) {
+        return get_minimum_call_cost(get_default_payment(), get_default_fee());
+    }
+
+    function get_minimum_call_cost(uint base_payment) constant returns (uint) {
+        return get_minimum_call_cost(base_payment, get_default_fee());
+    }
+
+    function get_minimum_call_cost(uint base_payment, uint base_fee) constant returns (uint) {
+        SchedulerLib.get_minimum_call_cost(base_payment, base_fee);
+    }
+
     function is_known_call(address callAddress) constant returns (bool) {
         return GroveLib.exists(callIndex, bytes32(callAddress));
     }

@@ -34,12 +34,8 @@ library SchedulerLib {
         return 4 * CALL_WINDOW_SIZE;
     }
 
-    function getMinimumCallGas() constant returns (uint) {
+    function get_minimum_call_gas() constant returns (uint) {
         return MINIMUM_CALL_GAS;
-    }
-
-    function get_minimum_call_cost(uint base_payment) constant returns (uint) {
-        return get_minimum_call_cost(base_payment, base_payment);
     }
 
     function get_minimum_call_cost(uint base_payment, uint base_fee) constant returns (uint) {

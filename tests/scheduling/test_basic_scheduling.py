@@ -13,7 +13,7 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
-    target_block = deploy_client.get_block_number() + 300
+    target_block = deploy_client.get_block_number() + 255 + 10 + 40
 
     scheduling_txn_hash = scheduler.schedule_call(
         client_contract._meta.address,
@@ -28,6 +28,7 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
     call = get_call(scheduling_txn_hash)
 
+    # Sanity check for all of the queriable call values.
     assert call.target_block() == target_block
     assert call.grace_period() == 255
     assert call.suggested_gas() == 1000000

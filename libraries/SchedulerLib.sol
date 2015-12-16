@@ -11,7 +11,7 @@ library SchedulerLib {
      *  Call Scheduling API
      */
     // Ten minutes into the future.
-    uint constant MAX_BLOCKS_IN_FUTURE = 40;
+    uint constant MAX_BLOCKS_IN_FUTURE = 40 + 10 + 255;
 
     // The minimum gas required to execute a scheduled call on a function that
     // does almost nothing.  This is an approximation and assumes the worst

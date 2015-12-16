@@ -7,7 +7,7 @@ deploy_contracts = [
 
 def test_minimum_endowment_enforced(deploy_client, deployed_contracts,
                                     deploy_future_block_call, denoms,
-                                    FutureBlockCall, SchedulerLib):
+                                    FutureBlockCall, SchedulerLib, get_call):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
@@ -30,15 +30,16 @@ def test_minimum_endowment_enforced(deploy_client, deployed_contracts,
 
     assert call_rejected_data['reason'] == 'INSUFFICIENT_FUNDS'
 
+    now_block = deploy_client.get_block_number()
+
     good_scheduling_txn = scheduler.schedule_call(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
         now_block + 40 + 10 + 255,
         1000000,
-        value=minimum_endowment - 1,
+        value=minimum_endowment,
         gas=3000000,
     )
     good_scheduling_receipt = deploy_client.wait_for_transaction(good_scheduling_txn)
-    good_scheduling_txn = deploy_client.get_transaction_by_hash(good_scheduling_txn_hash)
 
-    call = get_call(good_scheduling_txn_hash)
+    call = get_call(good_scheduling_txn)

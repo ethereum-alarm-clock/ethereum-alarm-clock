@@ -36,7 +36,7 @@ contract Scheduler {
     }
 
     function get_minimum_call_cost(uint base_payment, uint base_fee) constant returns (uint) {
-        SchedulerLib.get_minimum_call_cost(base_payment, base_fee);
+        return SchedulerLib.get_minimum_call_cost(base_payment, base_fee);
     }
 
     function is_known_call(address callAddress) constant returns (bool) {

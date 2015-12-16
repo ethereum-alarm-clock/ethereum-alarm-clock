@@ -193,7 +193,7 @@ library CallLib {
                 // Insufficient Deposit
                 if (deposit_amount < 2 * base_payment) return false;
 
-                var call = FutureCall(this);
+                var call = FutureBlockCall(this);
 
                 // Too early
                 if (block.number < call.target_block() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) return false;
@@ -212,7 +212,7 @@ library CallLib {
                 /*
                  *  Check whether the given `executor` is authorized.
                  */
-                var call = FutureCall(this);
+                var call = FutureBlockCall(this);
 
                 uint target_block = call.target_block();
 
@@ -236,13 +236,6 @@ contract FutureCall {
 
         uint public base_payment;
         uint public base_fee;
-
-        // TODO: These *should* live on FutureBlockCall but I haven't figured
-        // the modularity part out quite yet.  For now I'm going to muddle
-        // these two concepts together for the sake of progress and pay this
-        // debt down later.
-        uint public target_block;
-        uint8 public grace_period;
 
         CallLib.Call call;
 
@@ -364,11 +357,8 @@ contract FutureCall {
 
 
 contract FutureBlockCall is FutureCall {
-        // TODO: This it the *appropriate* place for these to live, but for
-        // unfortunate reasons, they are present on the FutureCall contract
-        // class.
-        //uint public target_block;
-        //uint8 public grace_period;
+        uint public target_block;
+        uint8 public grace_period;
 
         function FutureBlockCall(address _scheduler_address, uint _target_block, uint8 _grace_period, address _contract_address, bytes4 _abi_signature, uint _suggested_gas, uint _base_payment, uint _base_fee) {
                 // TODO: split this constructor across this contract and the

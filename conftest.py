@@ -99,7 +99,6 @@ def get_call(SchedulerLib, FutureBlockCall, deploy_client):
         assert len(call_scheduled_logs) == 1
         call_scheduled_data = SchedulerLib.CallScheduled.get_log_data(call_scheduled_logs[0])
 
-        import ipdb; ipdb.set_trace()
         call_address = call_scheduled_data['call_address']
         call = FutureBlockCall(call_address, deploy_client)
         return call

@@ -81,8 +81,8 @@ contract TestDataRegistry {
 contract TestCallExecution {
         uint8 public wasSuccessful;
 
-        function doExecution(address to, address callAddress) {
-            bool result = to.call(bytes4(sha3("execute()")), callAddress);
+        function doExecution(address to) {
+            bool result = to.call(bytes4(sha3("execute()")));
             if (result) {
                 wasSuccessful = 1;
             }

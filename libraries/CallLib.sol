@@ -400,14 +400,16 @@ contract FutureBlockCall is FutureCall {
             CallLib.send_safe(scheduler_address, address(this).balance);
         }
 
+        uint constant GAS_OVERHEAD = 100000;
+
         function get_overhead() constant returns (uint) {
-                // TODO real numbers
-                return 146000;
+                return GAS_OVERHEAD;
         }
 
+        uint constant EXTRA_GAS = 73000;
+
         function get_extra_gas() constant returns (uint) {
-                // TODO real numbers
-                return 117000;
+                return EXTRA_GAS;
         }
 
         uint constant BID_GROWTH_WINDOW = 240;

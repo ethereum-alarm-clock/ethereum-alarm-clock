@@ -30,10 +30,10 @@ deploy_contracts = [
     "CallLib",
 ]
 
-def test_call_fee_scalar_values(CallLib):
+def test_gas_scalar_values(CallLib):
     for base_gas_price, values in test_values:
         actual_values = [
-            (CallLib.getCallFeeScalar(base_gas_price, gas_price), expected)
+            (CallLib.get_gas_scalar(base_gas_price, gas_price), expected)
             for gas_price, expected in values
         ]
         assert all(actual == expected for actual, expected in actual_values)

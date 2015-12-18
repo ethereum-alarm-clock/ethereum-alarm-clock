@@ -22,58 +22,58 @@ library SchedulerLib {
 
     event CallScheduled(address call_address);
 
-    event CallRejected(address indexed scheduler_address, bytes32 reason);
+    event CallRejected(address indexed schedulerAddress, bytes32 reason);
 
     uint constant CALL_WINDOW_SIZE = 16;
 
-    function get_call_window_size() constant returns (uint) {
+    function getCallWindowSize() constant returns (uint) {
         return CALL_WINDOW_SIZE;
     }
 
-    function get_minimum_grace_period() constant returns (uint) {
+    function getMinimumGracePeriod() constant returns (uint) {
         return 4 * CALL_WINDOW_SIZE;
     }
 
-    function get_minimum_call_gas() constant returns (uint) {
+    function getMinimumCallGas() constant returns (uint) {
         return MINIMUM_CALL_GAS;
     }
 
-    function get_minimum_call_cost(uint base_payment, uint base_fee) constant returns (uint) {
-        return 2 * (base_fee + base_payment) + MINIMUM_CALL_GAS * tx.gasprice;
+    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {
+        return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    function schedule_call(GroveLib.Index storage self, address scheduler_address, address contractAddress, bytes4 abi_signature, uint target_block, uint suggested_gas, uint8 grace_period, uint base_payment, uint base_fee, uint endowment) public returns (address) {
+    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
         *
         * - No sooner than MAX_BLOCKS_IN_FUTURE
         * - Grace Period must be longer than the minimum grace period.
-        * - msg.value must be >= MIN_GAS * tx.gasprice + 2 * (base_fee + base_payment)
+        * - msg.value must be >= MIN_GAS * tx.gasprice + 2 * (baseFee + basePayment)
         */
         bytes32 reason;
 
-        if (target_block < block.number + MAX_BLOCKS_IN_FUTURE) {
+        if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
             // Don't allow scheduling further than
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
-        else if (grace_period < get_minimum_grace_period()) {
+        else if (gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
         }
-        else if (endowment < 2 * (base_fee + base_payment) + MINIMUM_CALL_GAS * tx.gasprice) {
+        else if (endowment < 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
             reason = "INSUFFICIENT_FUNDS";
         }
 
         if (reason != 0x0) {
-            CallRejected(scheduler_address, reason);
-            AccountingLib.sendRobust(scheduler_address, endowment);
+            CallRejected(schedulerAddress, reason);
+            AccountingLib.sendRobust(schedulerAddress, endowment);
             return;
         }
 
-        var call = new FutureBlockCall.value(endowment)(scheduler_address, target_block, grace_period, contractAddress, abi_signature, suggested_gas, base_payment, base_fee);
+        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);
 
         // Put the call into the grove index.
-        GroveLib.insert(self, bytes32(address(call)), int(call.target_block()));
+        GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));
 
         CallScheduled(address(call));
 

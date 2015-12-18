@@ -11,70 +11,70 @@ contract Scheduler {
     /*
      *  Call Scheduling
      */
-    function get_minimum_grace_period() constant returns (uint) {
-        return SchedulerLib.get_minimum_grace_period();
+    function getMinimumGracePeriod() constant returns (uint) {
+        return SchedulerLib.getMinimumGracePeriod();
     }
 
-    function get_default_payment() constant returns (uint) {
+    function getDefaultPayment() constant returns (uint) {
         return 1 ether;
     }
 
-    function get_default_fee() constant returns (uint) {
+    function getDefaultFee() constant returns (uint) {
         return 100 finney;
     }
 
-    function get_minimum_call_gas() constant returns (uint) {
-        return SchedulerLib.get_minimum_call_gas();
+    function getMinimumCallGas() constant returns (uint) {
+        return SchedulerLib.getMinimumCallGas();
     }
 
-    function get_minimum_call_cost() constant returns (uint) {
-        return get_minimum_call_cost(get_default_payment(), get_default_fee());
+    function getMinimumCallCost() constant returns (uint) {
+        return getMinimumCallCost(getDefaultPayment(), getDefaultFee());
     }
 
-    function get_minimum_call_cost(uint base_payment) constant returns (uint) {
-        return get_minimum_call_cost(base_payment, get_default_fee());
+    function getMinimumCallCost(uint basePayment) constant returns (uint) {
+        return getMinimumCallCost(basePayment, getDefaultFee());
     }
 
-    function get_minimum_call_cost(uint base_payment, uint base_fee) constant returns (uint) {
-        return SchedulerLib.get_minimum_call_cost(base_payment, base_fee);
+    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {
+        return SchedulerLib.getMinimumCallCost(basePayment, baseFee);
     }
 
-    function is_known_call(address callAddress) constant returns (bool) {
+    function isKnownCall(address callAddress) constant returns (bool) {
         return GroveLib.exists(callIndex, bytes32(callAddress));
     }
 
-    function schedule_call(address contract_address, bytes4 abi_signature, uint target_block) public returns (address) {
-        return schedule_call(contract_address, abi_signature, target_block, 0, 255, get_default_payment(), get_default_fee());
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {
+        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultFee());
     }
 
-    function schedule_call(address contract_address, bytes4 abi_signature, uint target_block, uint suggested_gas) public returns (address) {
-        return schedule_call(contract_address, abi_signature, target_block, suggested_gas, 255, get_default_payment(), get_default_fee());
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());
     }
 
-    function schedule_call(address contract_address, bytes4 abi_signature, uint target_block, uint suggested_gas, uint8 grace_period) public returns (address) {
-        return schedule_call(contract_address, abi_signature, target_block, suggested_gas, grace_period, get_default_payment(), get_default_fee());
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address) {
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultFee());
     }
 
-    function schedule_call(address contract_address, bytes4 abi_signature, uint target_block, uint suggested_gas, uint8 grace_period, uint base_payment) public returns (address) {
-        return schedule_call(contract_address, abi_signature, target_block, suggested_gas, grace_period, base_payment, get_default_fee());
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address) {
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultFee());
     }
 
-    function schedule_call(address contract_address, bytes4 abi_signature, uint target_block, uint suggested_gas, uint8 grace_period, uint base_payment, uint base_fee) public returns (address) {
-        return SchedulerLib.schedule_call(callIndex, msg.sender, contract_address, abi_signature, target_block, suggested_gas, grace_period, base_payment, base_fee, msg.value);
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);
     }
 
     /*
      *  Next Call API
      */
-    function get_call_window_size() constant returns (uint) {
-            return SchedulerLib.get_call_window_size();
+    function getCallWindowSize() constant returns (uint) {
+            return SchedulerLib.getCallWindowSize();
     }
 
     function getNextCall(uint blockNumber) constant returns (address) {
             return address(GroveLib.query(callIndex, ">=", int(blockNumber)));
     }
 
-    function get_next_call_sibling(address callAddress) constant returns (address) {
+    function getNextCallSibling(address callAddress) constant returns (address) {
             return address(GroveLib.getNextNode(callIndex, bytes32(callAddress)));
     }
 }

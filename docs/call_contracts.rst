@@ -25,6 +25,12 @@ values.
 * **bytes4 abiSignature:** the 4 byte ABI function signature of the function on the
   ``contractAddress`` for this call.
 * **bytes callData:** the data that will be passed to the called function.
+* **bool wasCalled:** whether the call was called.
+* **bool wasSuccessful:** whether the call was successful during execution.
+* **bool isCancelled:** whether the call was cancelled.
+* **address bidder:** the address that has claimed this contract.
+* **uint bidAmount:** the amount that the bidder agreed to execute the contract for.
+* **uint bidderDeposit:** the amount that the bidder has put up for deposit.
 
 
 Contract Address

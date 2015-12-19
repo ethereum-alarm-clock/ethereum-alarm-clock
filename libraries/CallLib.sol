@@ -71,7 +71,7 @@ library CallLib {
                 }
         }
 
-        event CallExecuted(address indexed executor, uint gas_cost, uint payment, uint fee, bool success);
+        event CallExecuted(address indexed executor, uint gasCost, uint payment, uint fee, bool success);
 
         event _CallAborted(address executor, bytes32 reason);
         function CallAborted(address executor, bytes32 reason) public {
@@ -91,7 +91,7 @@ library CallLib {
             self.wasCalled = true;
 
             // Compute the scalar (0 - 200) for the fee.
-            uint gas_scalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
+            uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
 
             uint basePayment;
             if (self.bidder == 0x0) {
@@ -100,8 +100,8 @@ library CallLib {
             else {
                 basePayment = self.bidAmount;
             }
-            uint payment = self.bidderDeposit + basePayment * gas_scalar / 100; 
-            uint fee = call.baseFee() * gas_scalar / 100;
+            uint payment = self.bidderDeposit + basePayment * gasScalar / 100; 
+            uint fee = call.baseFee() * gasScalar / 100;
 
             // zero out the deposit
             self.bidderDeposit = 0;
@@ -109,14 +109,14 @@ library CallLib {
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
             // happen after this line.
-            uint gas_cost = tx.gasprice * (start_gas - msg.gas + extraGas);
+            uint gasCost = tx.gasprice * (start_gas - msg.gas + extraGas);
 
             // Now we need to pay the executor as well as keep fee.
-            payment = sendSafe(executor, payment + gas_cost);
+            payment = sendSafe(executor, payment + gasCost);
             fee = sendSafe(creator, fee);
 
             // Log execution
-            CallExecuted(executor, gas_cost, payment, fee, self.wasSuccessful);
+            CallExecuted(executor, gasCost, payment, fee, self.wasSuccessful);
         }
 
         event Cancelled(address indexed cancelled_by);

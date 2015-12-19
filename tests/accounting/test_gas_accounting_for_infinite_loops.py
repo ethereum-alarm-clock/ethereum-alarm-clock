@@ -18,7 +18,7 @@ def test_gas_accounting_for_infinite_loop(deploy_client, deployed_contracts,
         fee=54321,
     )
 
-    deploy_client.wait_for_block(call.target_block())
+    deploy_client.wait_for_block(call.targetBlock())
 
     call_txn_hash = call.execute()
     call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
@@ -33,7 +33,7 @@ def test_gas_accounting_for_infinite_loop(deploy_client, deployed_contracts,
     gas_used = int(call_txn_receipt['gasUsed'], 16)
     gas_price = int(call_txn['gasPrice'], 16)
     actual_gas_cost = gas_used * gas_price
-    expected_gas_cost = execute_data['gas_cost']
+    expected_gas_cost = execute_data['gasCost']
 
     assert actual_gas_cost <= expected_gas_cost
     assert abs(actual_gas_cost - expected_gas_cost) < 1000

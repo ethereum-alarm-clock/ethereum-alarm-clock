@@ -11,10 +11,10 @@ def test_minimum_endowment_enforced(deploy_client, deployed_contracts,
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
-    minimum_endowment = scheduler.get_minimum_call_cost(denoms.ether, 100 * denoms.finney)
+    minimum_endowment = scheduler.getMinimumCallCost(denoms.ether, 100 * denoms.finney)
     now_block = deploy_client.get_block_number()
 
-    bad_scheduling_txn = scheduler.schedule_call(
+    bad_scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
         now_block + 40 + 10 + 255,
@@ -32,7 +32,7 @@ def test_minimum_endowment_enforced(deploy_client, deployed_contracts,
 
     now_block = deploy_client.get_block_number()
 
-    good_scheduling_txn = scheduler.schedule_call(
+    good_scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
         now_block + 40 + 10 + 255,

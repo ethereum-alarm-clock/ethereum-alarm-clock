@@ -6,7 +6,7 @@ contract TestDataRegistry {
         }
 
         function registerUInt(address to, uint v) public {
-            bool result = to.call(bytes4(sha3("register_data()")), v);
+            bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -16,7 +16,7 @@ contract TestDataRegistry {
         }
 
         function registerInt(address to, int v) public {
-            bool result = to.call(bytes4(sha3("register_data()")), v);
+            bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -26,7 +26,7 @@ contract TestDataRegistry {
         }
 
         function registerBytes32(address to, bytes32 v) public {
-            bool result = to.call(bytes4(sha3("register_data()")), v);
+            bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -36,7 +36,7 @@ contract TestDataRegistry {
         }
 
         function registerBytes(address to, bytes v) public {
-            bool result = to.call(bytes4(sha3("register_data()")), v.length, v);
+            bool result = to.call(bytes4(sha3("registerData()")), v.length, v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -46,7 +46,7 @@ contract TestDataRegistry {
         }
 
         function registerAddress(address to, address v) public {
-            bool result = to.call(bytes4(sha3("register_data()")), v);
+            bool result = to.call(bytes4(sha3("registerData()")), v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -56,7 +56,7 @@ contract TestDataRegistry {
         }
 
         function registerMany(address to, uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            bool result = to.call(bytes4(sha3("register_data()")), a, b, c, d, e, f.length, f);
+            bool result = to.call(bytes4(sha3("registerData()")), a, b, c, d, e, f.length, f);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -65,8 +65,8 @@ contract TestDataRegistry {
             }
         }
 
-        function register_data(address to, int arg1, bytes32 arg2, address arg3) public {
-            // 0xb0f07e44 == bytes4(sha3("register_data()"))
+        function registerData(address to, int arg1, bytes32 arg2, address arg3) public {
+            // 0xb0f07e44 == bytes4(sha3("registerData()"))
             bool result = to.call(0xb0f07e44, arg1, arg2, arg3);
             if (result) {
                 wasSuccessful = 1;

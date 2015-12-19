@@ -21,14 +21,14 @@ def test_cannot_cancel_if_already_called(deploy_client, deployed_contracts,
 
     deploy_client.wait_for_block(target_block)
 
-    assert call.is_cancelled() is False
-    assert call.was_called() is False
+    assert call.isCancelled() is False
+    assert call.wasCalled() is False
 
     execute_txn_h = call.execute()
     execute_txn_r = deploy_client.wait_for_transaction(execute_txn_h)
 
-    assert call.was_called() is True
-    assert call.is_cancelled() is False
+    assert call.wasCalled() is True
+    assert call.isCancelled() is False
 
     with pytest.raises(TransactionFailed):
         call.cancel()

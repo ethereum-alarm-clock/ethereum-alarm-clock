@@ -13,7 +13,7 @@ def test_cannot_schedule_too_soon(deploy_client, deployed_contracts,
 
     now_block = deploy_client.get_block_number()
 
-    scheduling_txn = scheduler.schedule_call(
+    scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
         now_block+ 40 + 10 + 255 - 1,

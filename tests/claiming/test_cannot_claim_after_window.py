@@ -18,8 +18,8 @@ def test_cannot_claim_after_window(deploy_client, deployed_contracts,
         payment=denoms.ether,
     )
 
-    target_block = call.target_block()
-    base_payment = call.base_payment()
+    target_block = call.targetBlock()
+    base_payment = call.basePayment()
 
     last_claim_block = target_block - 10
 

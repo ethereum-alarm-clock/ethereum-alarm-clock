@@ -22,7 +22,7 @@ def test_cancelling_a_call_during_bid_window(deploy_client, deployed_contracts,
     first_bid_block = target_block - 240 - 15 - 10
     deploy_client.wait_for_block(first_bid_block - 1)
 
-    assert call.is_cancelled() is False
+    assert call.isCancelled() is False
 
     with pytest.raises(TransactionFailed):
         call.cancel()

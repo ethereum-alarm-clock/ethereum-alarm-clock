@@ -18,7 +18,7 @@ def test_execution_payment(deploy_client, deployed_contracts,
         fee=54321,
     )
 
-    deploy_client.wait_for_block(call.target_block())
+    deploy_client.wait_for_block(call.targetBlock())
 
     assert client_contract.get_balance() == 0
 
@@ -36,7 +36,7 @@ def test_execution_payment(deploy_client, deployed_contracts,
     assert len(execute_logs) == 1
     execute_data = CallLib.CallExecuted.get_log_data(execute_logs[0])
 
-    expected_payout = 12345 + execute_data['gas_cost']
+    expected_payout = 12345 + execute_data['gasCost']
 
     assert execute_data['payment'] == expected_payout
     assert client_contract.get_balance() == execute_data['payment']

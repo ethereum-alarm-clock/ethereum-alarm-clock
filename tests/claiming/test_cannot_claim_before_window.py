@@ -17,8 +17,8 @@ def test_claiming_too_early(deploy_client, deployed_contracts, deploy_future_blo
         payment=denoms.ether,
     )
 
-    target_block = call.target_block()
-    base_payment = call.base_payment()
+    target_block = call.targetBlock()
+    base_payment = call.basePayment()
 
     first_claim_block = target_block - 255 - 10
 

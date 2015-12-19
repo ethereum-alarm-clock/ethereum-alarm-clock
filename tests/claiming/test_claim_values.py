@@ -18,21 +18,21 @@ def test_claim_block_values(deploy_client, deployed_contracts,
         payment=denoms.ether,
     )
 
-    target_block = call.target_block()
-    base_payment = call.base_payment()
+    target_block = call.targetBlock()
+    base_payment = call.basePayment()
 
     first_claim_block = target_block - 255 - 10
     peak_claim_block = target_block - 10 - 15
     last_claim_block = target_block - 10
 
-    assert call.get_bid_amount_for_block(first_claim_block) == 0
+    assert call.getBidAmountForBlock(first_claim_block) == 0
 
     for i in range(240):
-        assert call.get_bid_amount_for_block(first_claim_block + i) == base_payment * i / 240
+        assert call.getBidAmountForBlock(first_claim_block + i) == base_payment * i / 240
 
-    assert call.get_bid_amount_for_block(peak_claim_block) == call.base_payment()
+    assert call.getBidAmountForBlock(peak_claim_block) == call.basePayment()
 
     for i in range(15):
-        assert call.get_bid_amount_for_block(peak_claim_block + i) == call.base_payment()
+        assert call.getBidAmountForBlock(peak_claim_block + i) == call.basePayment()
 
-    assert call.get_bid_amount_for_block(last_claim_block) == call.base_payment()
+    assert call.getBidAmountForBlock(last_claim_block) == call.basePayment()

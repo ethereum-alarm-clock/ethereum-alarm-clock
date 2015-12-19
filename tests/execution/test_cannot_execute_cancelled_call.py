@@ -21,7 +21,7 @@ def test_execution_of_call_with_single_bool(deploy_client, deployed_contracts,
     cancel_txn_h = call.cancel()
     cancel_txn_r = deploy_client.wait_for_transaction(cancel_txn_h)
 
-    deploy_client.wait_for_block(call.target_block())
+    deploy_client.wait_for_block(call.targetBlock())
 
     with pytest.raises(TransactionFailed):
         call.execute()

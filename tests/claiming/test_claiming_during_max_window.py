@@ -19,8 +19,8 @@ def test_claiming_during_max_window(deploy_client, deployed_contracts,
         payment=denoms.ether,
     )
 
-    target_block = call.target_block()
-    base_payment = call.base_payment()
+    target_block = call.targetBlock()
+    base_payment = call.basePayment()
 
     first_claim_block = target_block - 255 - 10
     peak_claim_block = target_block - 10 - 15
@@ -38,5 +38,5 @@ def test_claiming_during_max_window(deploy_client, deployed_contracts,
     assert int(txn_r['blockNumber'], 16) == claim_at_block
 
     assert call.bidder() == deploy_coinbase
-    assert call.bidder_deposit() == 2 * base_payment
-    assert call.bid_amount() == base_payment
+    assert call.bidderDeposit() == 2 * base_payment
+    assert call.bidAmount() == base_payment

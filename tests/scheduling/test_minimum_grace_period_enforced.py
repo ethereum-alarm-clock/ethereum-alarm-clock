@@ -11,10 +11,10 @@ def test_cannot_schedule_with_too_small_grace_perioud(deploy_client, deployed_co
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
-    minimum_grace_period = scheduler.get_minimum_grace_period()
+    minimum_grace_period = scheduler.getMinimumGracePeriod()
     now_block = deploy_client.get_block_number()
 
-    scheduling_txn = scheduler.schedule_call(
+    scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
         now_block + 40 + 10 + 255,

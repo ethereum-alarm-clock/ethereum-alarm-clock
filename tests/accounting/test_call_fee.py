@@ -18,7 +18,7 @@ def test_execution_fee(deploy_client, deployed_contracts,
         fee=54321,
     )
 
-    deploy_client.wait_for_block(call.target_block())
+    deploy_client.wait_for_block(call.targetBlock())
 
     assert deploy_client.get_balance("0xd3cda913deb6f67967b99d67acdfa1712c293601") == 0
 

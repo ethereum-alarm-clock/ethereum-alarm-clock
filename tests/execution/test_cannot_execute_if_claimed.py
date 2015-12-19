@@ -30,21 +30,21 @@ def test_cannot_execute_if_claimed_by_other(deploy_client, deployed_contracts,
     deploy_client.wait_for_block(target_block - 10 - 255)
 
     # claim it
-    claim_txn_h = call.claim(value=2 * call.base_payment())
+    claim_txn_h = call.claim(value=2 * call.basePayment())
     claim_txn_r = deploy_client.wait_for_transaction(claim_txn_h)
 
     assert call.bidder() == deploy_coinbase
 
-    deploy_client.wait_for_block(call.target_block())
+    deploy_client.wait_for_block(call.targetBlock())
 
-    assert call.was_called() is False
+    assert call.wasCalled() is False
 
     not_allowed_txn_h = call.execute(_from=encode_hex(accounts[1]))
     not_allowed_txn_r = deploy_client.wait_for_transaction(not_allowed_txn_h)
 
-    assert call.was_called() is False
+    assert call.wasCalled() is False
 
     execute_txn_h = call.execute()
     execute_txn_r = deploy_client.wait_for_transaction(execute_txn_h)
 
-    assert call.was_called() is True
+    assert call.wasCalled() is True

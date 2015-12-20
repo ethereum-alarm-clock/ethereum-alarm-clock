@@ -25,6 +25,7 @@ values.
 * **bytes4 abiSignature:** the 4 byte ABI function signature of the function on the
   ``contractAddress`` for this call.
 * **bytes callData:** the data that will be passed to the called function.
+
 * **bool wasCalled:** whether the call was called.
 * **bool wasSuccessful:** whether the call was successful during execution.
 * **bool isCancelled:** whether the call was cancelled.
@@ -151,6 +152,79 @@ with the ``callData`` function.
 * **ABI Signature:** ``0x4e417a98``
 
 
+Was Called
+^^^^^^^^^^
+
+**bool wasCalled**
+
+Boolean as to whether this call has been executed.  Retrieved
+with the ``wasCalled`` function.
+
+* **Solidity Function Signature:** ``wasCalled() returns (bool)``
+* **ABI Signature:** ``0xc6803622``
+
+
+Was Successful
+^^^^^^^^^^^^^^
+
+**bool wasSuccessful**
+
+Boolean as to whether this call was successful.  This indicates whether the
+called contract returned without error.  Retrieved with the ``wasSuccessful``
+function.
+
+* **Solidity Function Signature:** ``wasSuccessful() returns (bool)``
+* **ABI Signature:** ``0x9241200``
+
+
+Is Cancelled
+^^^^^^^^^^^^
+
+**bool isCancelled**
+
+Boolean as to whether this call has been cancelled. Retrieved with the
+``isCancelled`` function.
+
+* **Solidity Function Signature:** ``isCancelled() returns (bool)``
+* **ABI Signature:** ``0x95ee1221``
+
+
+Bidder
+^^^^^^
+
+**address bidder**
+
+Address of the account that has claimed this call for execution.  Retrieved
+with the ``bidder`` function.
+
+* **Solidity Function Signature:** ``bidder() returns (address)``
+* **ABI Signature:** ``0xf496d882``
+
+
+Bid Amount
+^^^^^^^^^^
+
+**uint bidAmount**
+
+Ammount that the ``bidder`` has agreed to pay for the call. Retrieved with the
+with the ``bidAmount`` function.
+
+* **Solidity Function Signature:** ``bidAmount() returns (uint)``
+* **ABI Signature:** ``0xaec2393b``
+
+
+Bidder Deposit
+^^^^^^^^^^^^^^
+
+**uint bidderDeposit**
+
+Ammount that the ``bidder`` put down as a deposit. Retrieved with the
+with the ``bidderDeposit`` function.
+
+* **Solidity Function Signature:** ``bidderDeposit() returns (uint)``
+* **ABI Signature:** ``0x5f08db0a``
+
+
 Functions of a Call Contract
 ----------------------------
 
@@ -158,14 +232,20 @@ Cancel
 ^^^^^^
 
 Cancels the scheduled call, suiciding the call contract and sending any funds
-to the scheduler's address.  This function cannot be called from 10 blocks
+to the scheduler's address.  This function cannot be called from 265 blocks
 prior to the **target block** for the call through the end of the grace period.
 
-* **Solidity Function Signature:** ``cancel() public onlyscheduler``
+Before the call, only the scheduler may cancel the call.  Afterwards, anyone
+may cancel it.
+
+* **Solidity Function Signature:** ``cancel() public``
 * **ABI Signature:** ``0xea8a1af0``
 
 
-Is Alive
-^^^^^^^^
+Execute
+^^^^^^^
 
-Always returns ``true``.  Useful to check if the contract has been suicided.
+TODO!!
+
+* **Solidity Function Signature:** ``execute() public``
+* **ABI Signature:** ``0x61461954``

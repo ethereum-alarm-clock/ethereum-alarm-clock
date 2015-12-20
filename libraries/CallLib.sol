@@ -94,11 +94,11 @@ library CallLib {
             uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
 
             uint basePayment;
-            if (self.bidder == 0x0) {
-                basePayment = call.basePayment();
+            if (self.bidder == executor) {
+                basePayment = self.bidAmount;
             }
             else {
-                basePayment = self.bidAmount;
+                basePayment = call.basePayment();
             }
             uint payment = self.bidderDeposit + basePayment * gasScalar / 100; 
             uint fee = call.baseFee() * gasScalar / 100;

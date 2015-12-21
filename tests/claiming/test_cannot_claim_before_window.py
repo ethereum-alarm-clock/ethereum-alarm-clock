@@ -24,11 +24,11 @@ def test_claiming_too_early(deploy_client, deployed_contracts, deploy_future_blo
 
     deploy_client.wait_for_block(first_claim_block - 2)
 
-    assert call.bidder() == "0x0000000000000000000000000000000000000000"
+    assert call.claimer() == "0x0000000000000000000000000000000000000000"
 
     txn_h = call.claim(value=2 * base_payment)
     txn_r = deploy_client.wait_for_transaction(txn_h)
 
     assert int(txn_r['blockNumber'], 16) == first_claim_block - 1
 
-    assert call.bidder() == "0x0000000000000000000000000000000000000000"
+    assert call.claimer() == "0x0000000000000000000000000000000000000000"

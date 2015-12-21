@@ -33,7 +33,7 @@ def test_cannot_execute_if_claimed_by_other(deploy_client, deployed_contracts,
     claim_txn_h = call.claim(value=2 * call.basePayment())
     claim_txn_r = deploy_client.wait_for_transaction(claim_txn_h)
 
-    assert call.bidder() == deploy_coinbase
+    assert call.claimer() == deploy_coinbase
 
     deploy_client.wait_for_block(call.targetBlock())
 

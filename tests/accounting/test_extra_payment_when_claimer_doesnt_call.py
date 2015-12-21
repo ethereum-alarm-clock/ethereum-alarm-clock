@@ -44,16 +44,16 @@ def test_claim_deposit_goes_to_caller(deploy_client, deployed_contracts,
     before_call_balance = call.get_balance()
 
     assert call.wasCalled() is False
-    assert call.bidder() == deploy_coinbase
-    assert call.bidderDeposit() == deposit_amount
+    assert call.claimer() == deploy_coinbase
+    assert call.claimerDeposit() == deposit_amount
 
     ffa_txn_h = call.execute(_from=exe_addr)
     ffa_txn_r = deploy_client.wait_for_transaction(ffa_txn_h)
     ffa_txn = deploy_client.get_transaction_by_hash(ffa_txn_h)
 
     assert call.wasCalled() is True
-    assert call.bidder() == deploy_coinbase
-    assert call.bidderDeposit() == 0
+    assert call.claimer() == deploy_coinbase
+    assert call.claimerDeposit() == 0
 
     execute_logs = CallLib.CallExecuted.get_transaction_logs(ffa_txn_h)
     assert len(execute_logs) == 1

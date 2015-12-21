@@ -30,13 +30,13 @@ def test_claiming_during_growth_window(deploy_client, deployed_contracts,
 
     deploy_client.wait_for_block(claim_at_block - 1)
 
-    assert call.bidder() == "0x0000000000000000000000000000000000000000"
+    assert call.claimer() == "0x0000000000000000000000000000000000000000"
 
     txn_h = call.claim(value=2 * base_payment)
     txn_r = deploy_client.wait_for_transaction(txn_h)
 
     assert int(txn_r['blockNumber'], 16) == claim_at_block
 
-    assert call.bidder() == deploy_coinbase
-    assert call.bidderDeposit() == 2 * base_payment
-    assert call.bidAmount() == 42 * base_payment / 240
+    assert call.claimer() == deploy_coinbase
+    assert call.claimerDeposit() == 2 * base_payment
+    assert call.claimAmount() == 42 * base_payment / 240

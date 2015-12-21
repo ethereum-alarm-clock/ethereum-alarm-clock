@@ -24,9 +24,9 @@ def test_cannot_claim_during_call_window(deploy_client, deployed_contracts,
 
     deploy_client.wait_for_block(target_block + 1)
 
-    assert call.bidder() == "0x0000000000000000000000000000000000000000"
+    assert call.claimer() == "0x0000000000000000000000000000000000000000"
 
     txn_h = call.claim(value=2 * base_payment)
     txn_r = deploy_client.wait_for_transaction(txn_h)
 
-    assert call.bidder() == "0x0000000000000000000000000000000000000000"
+    assert call.claimer() == "0x0000000000000000000000000000000000000000"

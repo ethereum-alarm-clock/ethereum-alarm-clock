@@ -12,9 +12,9 @@ library CallLib {
                 uint anchorGasPrice;
                 uint suggestedGas;
 
-                address bidder;
-                uint bidAmount;
-                uint bidderDeposit;
+                address claimer;
+                uint claimAmount;
+                uint claimerDeposit;
 
                 bool wasSuccessful;
                 bool wasCalled;
@@ -86,25 +86,26 @@ library CallLib {
                 return;
             }
             
+            // Mark the call has having been executed.
+            self.wasCalled = true;
             // Make the call
             self.wasSuccessful = self.contractAddress.call.gas(msg.gas - overhead)(self.abiSignature, self.callData);
-            self.wasCalled = true;
 
             // Compute the scalar (0 - 200) for the fee.
             uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
 
             uint basePayment;
-            if (self.bidder == executor) {
-                basePayment = self.bidAmount;
+            if (self.claimer == executor) {
+                basePayment = self.claimAmount;
             }
             else {
                 basePayment = call.basePayment();
             }
-            uint payment = self.bidderDeposit + basePayment * gasScalar / 100; 
+            uint payment = self.claimerDeposit + basePayment * gasScalar / 100; 
             uint fee = call.baseFee() * gasScalar / 100;
 
             // zero out the deposit
-            self.bidderDeposit = 0;
+            self.claimerDeposit = 0;
 
             // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed
             // amount that represents the gas usage of the commands that
@@ -123,8 +124,8 @@ library CallLib {
 
         function cancel(Call storage self, address sender) public {
                 Cancelled(sender);
-                if (self.bidderDeposit >= 0) {
-                    sendSafe(self.bidder, self.bidderDeposit);
+                if (self.claimerDeposit >= 0) {
+                    sendSafe(self.claimer, self.claimerDeposit);
                 }
                 var call = FutureCall(this);
                 sendSafe(call.schedulerAddress(), address(this).balance);
@@ -138,27 +139,27 @@ library CallLib {
          *    remain profitable.  Any form of bidding war is likely to eat into
          *    profits.
          */
-        event Claimed(address executor, uint bidAmount);
+        event Claimed(address executor, uint claimAmount);
 
-        // The duration (in blocks) during which the maximum bid will slowly rise
+        // The duration (in blocks) during which the maximum claim will slowly rise
         // towards the basePayment amount.
-        uint constant BID_GROWTH_WINDOW = 240;
+        uint constant CLAIM_GROWTH_WINDOW = 240;
 
-        // The duration (in blocks) after the BID_WINDOW that bidding will
+        // The duration (in blocks) after the CLAIM_WINDOW that claiming will
         // remain open.
-        uint constant MAXIMUM_BID_WINDOW = 15;
+        uint constant MAXIMUM_CLAIM_WINDOW = 15;
 
         // The duration (in blocks) before the call's target block during which
-        // all actions are frozen.  This includes bidding, cancellation,
+        // all actions are frozen.  This includes claiming, cancellation,
         // registering call data.
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
         /*
-         *  The maximum allowed bid slowly rises across a window of blocks
-         *  BID_GROWTH_WINDOW prior to the call.  No bidder is allowed to bid
-         *  above this value.  This is intended to prevent bidding wars in that
-         *  each caller should know how much they are willing to execute a call
-         *  for.
+         *  The maximum allowed claim amount slowly rises across a window of
+         *  blocks CLAIM_GROWTH_WINDOW prior to the call.  No claimer is
+         *  allowed to claim above this value.  This is intended to prevent
+         *  bidding wars in that each caller should know how much they are
+         *  willing to execute a call for.
          */
         function getBidAmountForBlock(uint block_number) constant returns (uint) {
             /*
@@ -170,25 +171,25 @@ library CallLib {
 
             uint last_block = call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
             
-            // bid window has closed
+            // claim window has closed
             if (block_number > last_block) return call.basePayment();
 
-            uint first_block = last_block - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW;
+            uint first_block = last_block - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW;
             
-            // bid window has not begun
+            // claim window has not begun
             if (block_number < first_block) return 0;
 
-            // in the maximum bid window.
-            if (block_number > last_block - MAXIMUM_BID_WINDOW) return call.basePayment();
+            // in the maximum claim window.
+            if (block_number > last_block - MAXIMUM_CLAIM_WINDOW) return call.basePayment();
 
             uint x = block_number - first_block;
 
-            return call.basePayment() * x / BID_GROWTH_WINDOW;
+            return call.basePayment() * x / CLAIM_GROWTH_WINDOW;
         }
 
         function claim(Call storage self, address executor, uint deposit_amount, uint basePayment) public returns (bool) {
                 // Already claimed
-                if (self.bidder != 0x0) return false;
+                if (self.claimer != 0x0) return false;
 
                 // Insufficient Deposit
                 if (deposit_amount < 2 * basePayment) return false;
@@ -196,16 +197,16 @@ library CallLib {
                 var call = FutureBlockCall(this);
 
                 // Too early
-                if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) return false;
+                if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) return false;
 
                 // Too late
                 if (block.number > call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return false;
-                self.bidAmount = getBidAmountForBlock(block.number);
-                self.bidder = executor;
-                self.bidderDeposit = deposit_amount;
+                self.claimAmount = getBidAmountForBlock(block.number);
+                self.claimer = executor;
+                self.claimerDeposit = deposit_amount;
 
-                // Log the bid.
-                Claimed(executor, self.bidAmount);
+                // Log the claim.
+                Claimed(executor, self.claimAmount);
         }
 
         function checkExecutionAuthorization(Call storage self, address executor, uint block_number) returns (bool) {
@@ -219,10 +220,10 @@ library CallLib {
                 // Invalid, not in call window.
                 if (block_number < targetBlock || block_number > targetBlock + call.gracePeriod()) throw;
 
-                // Within the reserved call window so if there is a bidder, the
-                // executor must be the biddor.
+                // Within the reserved call window so if there is a claimer, the
+                // executor must be the claimdor.
                 if (block_number - targetBlock < CALL_WINDOW_SIZE) {
-                    return (self.bidder == 0x0 || self.bidder == executor);
+                    return (self.claimer == 0x0 || self.claimer == executor);
                 }
 
                 // Must be in the free-for-all period.
@@ -262,16 +263,16 @@ contract FutureCall {
             return call.suggestedGas;
         }
 
-        function bidder() constant returns (address) {
-            return call.bidder;
+        function claimer() constant returns (address) {
+            return call.claimer;
         }
 
-        function bidAmount() constant returns (uint) {
-            return call.bidAmount;
+        function claimAmount() constant returns (uint) {
+            return call.claimAmount;
         }
 
-        function bidderDeposit() constant returns (uint) {
-            return call.bidderDeposit;
+        function claimerDeposit() constant returns (uint) {
+            return call.claimerDeposit;
         }
 
         function wasSuccessful() constant returns (bool) {
@@ -379,6 +380,12 @@ contract FutureBlockCall is FutureCall {
         }
 
         function beforeExecute(address executor) public returns (bool) {
+            if (call.wasCalled) {
+                // Not being called within call window.
+                CallLib.CallAborted(executor, "ALREADY_CALLED");
+                return false;
+            }
+
             if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
                 // Not being called within call window.
                 CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
@@ -412,13 +419,13 @@ contract FutureBlockCall is FutureCall {
                 return EXTRA_GAS;
         }
 
-        uint constant BID_GROWTH_WINDOW = 240;
-        uint constant MAXIMUM_BID_WINDOW = 15;
+        uint constant CLAIM_GROWTH_WINDOW = 240;
+        uint constant MAXIMUM_CLAIM_WINDOW = 15;
         uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
         function cancel() public notcancelled {
-            // Before the bid window
-            if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_BID_WINDOW - BID_GROWTH_WINDOW) {
+            // Before the claim window
+            if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) {
                 // already cancelled
                 if (msg.sender != schedulerAddress) throw;
                 CallLib.cancel(call, msg.sender);

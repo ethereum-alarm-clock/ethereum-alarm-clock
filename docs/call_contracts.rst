@@ -29,9 +29,9 @@ values.
 * **bool wasCalled:** whether the call was called.
 * **bool wasSuccessful:** whether the call was successful during execution.
 * **bool isCancelled:** whether the call was cancelled.
-* **address bidder:** the address that has claimed this contract.
-* **uint bidAmount:** the amount that the bidder agreed to execute the contract for.
-* **uint bidderDeposit:** the amount that the bidder has put up for deposit.
+* **address claimer:** the address that has claimed this contract.
+* **uint claimAmount:** the amount that the claimer agreed to execute the contract for.
+* **uint claimerDeposit:** the amount that the claimer has put up for deposit.
 
 
 Contract Address
@@ -189,40 +189,40 @@ Boolean as to whether this call has been cancelled. Retrieved with the
 * **ABI Signature:** ``0x95ee1221``
 
 
-Bidder
-^^^^^^
+Claimer
+^^^^^^^
 
-**address bidder**
+**address claimer**
 
 Address of the account that has claimed this call for execution.  Retrieved
-with the ``bidder`` function.
+with the ``claimer`` function.
 
-* **Solidity Function Signature:** ``bidder() returns (address)``
-* **ABI Signature:** ``0xf496d882``
-
-
-Bid Amount
-^^^^^^^^^^
-
-**uint bidAmount**
-
-Ammount that the ``bidder`` has agreed to pay for the call. Retrieved with the
-with the ``bidAmount`` function.
-
-* **Solidity Function Signature:** ``bidAmount() returns (uint)``
-* **ABI Signature:** ``0xaec2393b``
+* **Solidity Function Signature:** ``claimer() returns (address)``
+* **ABI Signature:** ``0xd379be23``
 
 
-Bidder Deposit
-^^^^^^^^^^^^^^
+Claim Amount
+^^^^^^^^^^^^
 
-**uint bidderDeposit**
+**uint claimAmount**
 
-Ammount that the ``bidder`` put down as a deposit. Retrieved with the
-with the ``bidderDeposit`` function.
+Ammount that the ``claimer`` has agreed to pay for the call. Retrieved with the
+with the ``claimAmount`` function.
 
-* **Solidity Function Signature:** ``bidderDeposit() returns (uint)``
-* **ABI Signature:** ``0x5f08db0a``
+* **Solidity Function Signature:** ``claimAmount() returns (uint)``
+* **ABI Signature:** ``0x830953ab``
+
+
+Claim Deposit
+^^^^^^^^^^^^^
+
+**uint claimerDeposit**
+
+Ammount that the ``claimer`` put down as a deposit. Retrieved with the
+with the ``claimerDeposit`` function.
+
+* **Solidity Function Signature:** ``claimerDeposit() returns (uint)``
+* **ABI Signature:** ``0x3233c686``
 
 
 Functions of a Call Contract
@@ -245,7 +245,12 @@ may cancel it.
 Execute
 ^^^^^^^
 
-TODO!!
+Triggers the execution of the call.  This can only be done during the window
+between the ``targetBlock`` through the end of the ``gracePeriod``.  If the
+call has been claimed, then only the claiming address can execute the call
+during the first 16 blocks.  If the claming address does not execute the call
+during this time, anyone who subsequently executes the call will receive their
+deposit.
 
 * **Solidity Function Signature:** ``execute() public``
 * **ABI Signature:** ``0x61461954``

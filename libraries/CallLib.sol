@@ -161,7 +161,7 @@ library CallLib {
          *  bidding wars in that each caller should know how much they are
          *  willing to execute a call for.
          */
-        function getBidAmountForBlock(uint block_number) constant returns (uint) {
+        function getClaimAmountForBlock(uint block_number) constant returns (uint) {
             /*
              *   [--growth-window--][--max-window--][--freeze-window--]
              *
@@ -201,7 +201,7 @@ library CallLib {
 
                 // Too late
                 if (block.number > call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return false;
-                self.claimAmount = getBidAmountForBlock(block.number);
+                self.claimAmount = getClaimAmountForBlock(block.number);
                 self.claimer = executor;
                 self.claimerDeposit = deposit_amount;
 
@@ -287,12 +287,12 @@ contract FutureCall {
             return call.isCancelled;
         }
 
-        function getBidAmountForBlock() constant returns (uint) {
-            return CallLib.getBidAmountForBlock(block.number);
+        function getClaimAmountForBlock() constant returns (uint) {
+            return CallLib.getClaimAmountForBlock(block.number);
         }
 
-        function getBidAmountForBlock(uint block_number) constant returns (uint) {
-            return CallLib.getBidAmountForBlock(block_number);
+        function getClaimAmountForBlock(uint block_number) constant returns (uint) {
+            return CallLib.getClaimAmountForBlock(block_number);
         }
 
         function () {

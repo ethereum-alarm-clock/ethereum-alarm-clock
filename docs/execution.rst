@@ -111,6 +111,9 @@ the call window for the scheduled call.  As part of the claim, you will need to
 put down a deposit, which is returned to you if you when you execute the call.
 Failing to execute the call will forfeit your deposit.
 
+Claim Amount
+^^^^^^^^^^^^
+
 A call can be claimed during the 255 blocks prior to the freeze window.  This
 period is referred to as the claim window.  The amount that you are agreeing to
 be paid for the call is based on whichever block the call is claimed on.  The
@@ -128,11 +131,44 @@ amount over the course of the first 240 blocks in the claim window.  The last
 A claim must be accompainied by a deposit that is at least twice the call's
 ``basePayment`` amount.
 
+
+Getting your Deposit Back
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
 If you claim a call and do not execute it within the first 16 blocks of the
 call window, then you will risk losing your deposit.  Once the first 16 blocks
 have passed, the call can be executed by anyone.  At this point, the first
 person to execute the call will receive the deposit as part of their payment
 (and incentive to pick up claimed calls that have not been called).
+
+
+Claim API
+^^^^^^^^^
+
+To claim a contract
+
+* **Solidity Function Signature:** ``claim()``
+* **ABI Signature:** ``0x4e71d92d``
+
+To check what the ``claimAmount`` will be for a given block number use the
+``getClaimAmountForBlock`` function.  This will return an amount in wei that
+represents the base payment value for the call if claimed on that block.
+
+* **Solidity Function Signature:** ``getClaimAmountForBlock(uint blockNumber)``
+* **ABI Signature:** ``0xf5562753``
+
+This function also has a shortcut that uses the current block number
+
+* **Solidity Function Signature:** ``getClaimAmountForBlock()``
+* **ABI Signature:** ``0x4f059a43``
+
+You can check if a call has already been claimed with the ``claimer`` function.
+This function will return either the empty address ``0x0`` if the call has not
+been claimed, or the address of the claimer if it has.
+
+* **Solidity Function Signature:** ``claimer() returns (address)``
+* **ABI Signature:** ``0xd379be23``
+
 
 Safeguards
 ----------

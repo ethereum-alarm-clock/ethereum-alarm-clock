@@ -8,6 +8,7 @@ fees associated with executing the call.
 These funds must be presented upfront at the time of scheduling and are held by
 the call contract until execution.
 
+
 Call Payment and Fees
 ---------------------
 
@@ -15,8 +16,8 @@ When a call is scheduled, the scheduler can either provide values for the
 payment and fee, or leave them off in favor of using the default values.
 
 The account which executes the scheduled call is reimbursed 100% of the gas
-cost + payment for their service as well as sending the fee to the creator of
-the service.
+cost + payment for their service.
+
 
 The GasPriceScalar multiplier
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -123,5 +124,5 @@ transaction will be executed.
 Overhead
 --------
 
-The gas overhead that you can expect to pay for your function is about 100,000
+The gas overhead that you can expect to pay for your function is about 130,000
 gas.

@@ -57,42 +57,9 @@ scheduling contract from a solidity contract.
         function getBondBalance(address callerAddress) constant returns (uint);
 
         /*
-         *  Caller Pool Membership
-         */
-        function getGenerationForCall(bytes32 callKey) constant returns (uint);
-        function getGenerationSize(uint generationId) constant returns (uint);
-        function getGenerationStartAt(uint generationId) constant returns (uint);
-        function getGenerationEndAt(uint generationId) constant returns (uint);
-        function getCurrentGenerationId() constant returns (uint);
-        function getNextGenerationId() constant returns (uint);
-        function isInPool() constant returns (bool);
-        function isInPool(address callerAddress) constant returns (bool);
-        function isInGeneration(uint generationId) constant returns (bool);
-        function isInGeneration(address callerAddress, uint generationId) constant returns (bool);
-
-        /*
-         *  Caller Pool Metadata
-         */
-        function getPoolFreezePeriod() constant returns (uint);
-        function getPoolOverlapSize() constant returns (uint);
-        function getPoolRotationDelay() constant returns (uint);
-
-        /*
-         *  Caller Pool Entering and Exiting
-         */
-        function canEnterPool() constant returns (bool);
-        function canEnterPool(address callerAddress) constant returns (bool);
-        function canExitPool() constant returns (bool);
-        function canExitPool(address callerAddress) constant returns (bool);
-        function enterPool() public;
-        function exitPool() public;
-
-        /*
          *  Next Call API
          */
         function getCallWindowSize() constant returns (uint);
-        function getGenerationIdForCall(address callAddress) constant returns (uint);
-        function getDesignatedCaller(address callAddress, uint blockNumber) constant returns (bool, address);
         function getNextCall(uint blockNumber) constant returns (bytes32);
         function getNextCallSibling(address callAddress) constant returns (bytes32);
     }

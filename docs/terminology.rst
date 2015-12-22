@@ -14,7 +14,6 @@ General
     Alarm Service
         Generic terms for the service as a whole.
 
-    Scheduler
     Scheduler Contract
         The solidity contract responsible for scheduling a function call.
 

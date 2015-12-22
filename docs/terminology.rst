@@ -14,7 +14,6 @@ General
     Alarm Service
         Generic terms for the service as a whole.
 
-    Scheduler
     Scheduler Contract
         The solidity contract responsible for scheduling a function call.
 
@@ -27,10 +26,6 @@ General
         A contract function call that has been registered with the Alarm
         service to be executed at a specified time in the future (currently
         denoted by a block number).
-
-    Caller Pool
-        A group of ethereum addresses that have registered to be execute
-        scheduled function calls.
 
 
 Calls and Call Scheduling
@@ -52,6 +47,14 @@ Calls and Call Scheduling
     Grace Period
         The number of blocks after the **target block** that a scheduled call
         can be be called.
+
+    Freeze Window
+        The 10 blocks directly preceeding the target block for a call
+
+    Claim Window
+        The 255 block window prior to the Freeze Window during which the call
+        may be claimed for exclusive rights to execution during the first 16
+        blocks of the call window.
 
     Call Window
         Used to refer to either the full window of blocks during which a

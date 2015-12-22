@@ -131,13 +131,14 @@ contract of some sort.
     // Now schedule the call
     > signature = ... // the 4-byte ABI function signature for the wallet function that transfers funds.
     > targetBlock = eth.getBlock('latest') + 100  // 100 blocks in the future.
-    > alarm.scheduleCall.sendTransaction(walletAddress, signature, targetBlock, {from: eth.coinbase})
+    > alarm.scheduleCall.sendTransaction(walletAddress, signature, targetBlock, {from: eth.coinbase, value: web3.toWei(10, "ether")})
+
 
 Registering Call Data
 ---------------------
 
 If a function call requires arguments then it is up to the scheduler to
-register the call data prior to call execution. 
+register the call data.  This needs to be done prior to execution.
 
 The call contract allows for call data registration via two mechanisms.  The
 primary mechanism is through the fallback function on the contract.  This will
@@ -181,6 +182,7 @@ the existing function signatures on the call contract, you can use the
 * **Solidity Function Signature:** ``registerData()``
 * **ABI Signature:** ``0xb0f07e44``
 
+
 In solidity, this would look something like the following.
 
 .. code-block::
@@ -215,11 +217,11 @@ A scheduled call can be cancelled by its scheduler up to 10 blocks
 before it's target block.  To cancel a scheduled call use the ``cancel``
 function.
 
-* **Solidity Function Signature:** ``cancel(address callAddress)``
+* **Solidity Function Signature:** ``cancel()``
 * **ABI Signature:** ``0xea8a1af0``
 
-This will result in the call contract suiciding, and sending any remaining
-funds to the scheduler's address.
+This will cause the call to be set as **cancelled**, which will return any
+funds currently being held by the contract.
 
 
 Looking up a Call

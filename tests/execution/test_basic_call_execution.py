@@ -15,6 +15,7 @@ def test_execution_of_call_with_single_bool(deploy_client, deployed_contracts,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setBool)
+    deploy_client.wait_for_block(call.targetBlock())
 
     assert client_contract.v_bool() is False
 
@@ -29,6 +30,7 @@ def test_execution_of_call_with_single_int(deploy_client, deployed_contracts,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setInt)
+    deploy_client.wait_for_block(call.targetBlock())
 
     signature = call.registerData.encoded_abi_signature
     data = abi.encode_single(abi.process_type('int256'), -1234567890)
@@ -53,6 +55,7 @@ def test_execution_of_call_with_single_uint(deploy_client, deployed_contracts,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setUInt)
+    deploy_client.wait_for_block(call.targetBlock())
 
     signature = call.registerData.encoded_abi_signature
     data = abi.encode_single(abi.process_type('uint256'), 1234567890)
@@ -79,6 +82,7 @@ def test_execution_of_call_with_single_address(deploy_client,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setAddress)
+    deploy_client.wait_for_block(call.targetBlock())
 
     signature = call.registerData.encoded_abi_signature
     data = abi.encode_single(abi.process_type('address'), deploy_coinbase[2:])
@@ -105,6 +109,7 @@ def test_execution_of_call_with_single_bytes32(deploy_client,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setBytes32)
+    deploy_client.wait_for_block(call.targetBlock())
 
     value = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f'
     signature = call.registerData.encoded_abi_signature
@@ -134,6 +139,7 @@ def test_execution_of_call_with_single_bytes(deploy_client,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setBytes)
+    deploy_client.wait_for_block(call.targetBlock())
 
     value = 'abcd'
 
@@ -175,6 +181,7 @@ def test_execution_of_call_with_many_values(deploy_client,
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(client_contract.setMany)
+    deploy_client.wait_for_block(call.targetBlock())
 
     values = (
         1234567890,

@@ -43,56 +43,9 @@ scheduling contract from a solidity contract.
         function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address);
 
         /*
-         *  Call Execution API
-         */
-        function execute(address callAddress) public;
-
-        /*
-         *  Caller Pool bonding
-         */
-        function getMinimumBond() constant returns (uint);
-        function depositBond() public;
-        function withdrawBond(uint value) public;
-        function getBondBalance() constant returns (uint);
-        function getBondBalance(address callerAddress) constant returns (uint);
-
-        /*
-         *  Caller Pool Membership
-         */
-        function getGenerationForCall(bytes32 callKey) constant returns (uint);
-        function getGenerationSize(uint generationId) constant returns (uint);
-        function getGenerationStartAt(uint generationId) constant returns (uint);
-        function getGenerationEndAt(uint generationId) constant returns (uint);
-        function getCurrentGenerationId() constant returns (uint);
-        function getNextGenerationId() constant returns (uint);
-        function isInPool() constant returns (bool);
-        function isInPool(address callerAddress) constant returns (bool);
-        function isInGeneration(uint generationId) constant returns (bool);
-        function isInGeneration(address callerAddress, uint generationId) constant returns (bool);
-
-        /*
-         *  Caller Pool Metadata
-         */
-        function getPoolFreezePeriod() constant returns (uint);
-        function getPoolOverlapSize() constant returns (uint);
-        function getPoolRotationDelay() constant returns (uint);
-
-        /*
-         *  Caller Pool Entering and Exiting
-         */
-        function canEnterPool() constant returns (bool);
-        function canEnterPool(address callerAddress) constant returns (bool);
-        function canExitPool() constant returns (bool);
-        function canExitPool(address callerAddress) constant returns (bool);
-        function enterPool() public;
-        function exitPool() public;
-
-        /*
          *  Next Call API
          */
         function getCallWindowSize() constant returns (uint);
-        function getGenerationIdForCall(address callAddress) constant returns (uint);
-        function getDesignatedCaller(address callAddress, uint blockNumber) constant returns (bool, address);
         function getNextCall(uint blockNumber) constant returns (bytes32);
         function getNextCallSibling(address callAddress) constant returns (bytes32);
     }
@@ -107,27 +60,35 @@ contract from a solidity contract.
 .. code-block:: solidity
 
     contract CallContractAPI {
-        uint public targetBlock;
+        bytes public callData;
+        address public contractAddress;
         uint8 public gracePeriod;
-
-        address public owner;
         address public schedulerAddress;
-
+        uint public suggestedGas;
+        bool public isCancelled;
+        bool public wasCalled;
+        bool public wasSuccessful;
+        uint public anchorGasPrice;
         uint public basePayment;
+        bytes4 public abiSignature;
         uint public baseFee;
+        uint public targetBlock;
 
-        function contractAddress() constant returns (address);
-        function abiSignature() constant returns (bytes4);
-        function callData() constant returns (bytes);
-        function anchorGasPrice() constant returns (uint);
-        function suggestedGas() constant returns (uint);
+        function execute() public;
+        function cancel() public;
 
-        function isAlive() constant public;
+        function claim() public;
 
-        // cancel and registerData are only callable by the scheduler of the
-        call contract.
-        function cancel() public onlyscheduler;
-        function registerData() public onlyscheduler;
+        address public claimer;
+        uint public claimerDeposit;
+        uint public claimAmount;
+
+        function checkExecutionAuthorization(address executor, uint256 block_number) public returns (bool)
+
+        function getClaimAmountForBlock() public returns (uint);
+        function getClaimAmountForBlock(uint256 block_number) public returns (uint);
+
+        function registerData() public;
     }
 
 

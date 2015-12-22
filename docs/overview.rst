@@ -11,9 +11,8 @@ author of the service)
 Scheduling Function Calls
 -------------------------
 
-Scheduling a function call 
-When a contract, or individual wants to schedule a function call with the Alarm
-service it will perform the following steps.
+Contracts, or individuals can schedule a function calls with the Alarm
+service by doing the following.
 
 1. Schedule the function call with the service, providing basic information
    such as what function to call and when it should be called.
@@ -24,7 +23,7 @@ service it will perform the following steps.
 Call Scheduling
 ^^^^^^^^^^^^^^^
 
-Function calls can be scheduled for any block at least 40 blocks *(~10 minutes)*
+Function calls can be scheduled for any block at least 305 blocks *(~75 minutes)*
 in the future.  Scheduling is done by providing the Alarm service with the
 following information:
 
@@ -57,16 +56,17 @@ Instead, it uses the function ABI signature and raw call data to execute the
 function call.
 
 To do this, any data that needs to be used in the call must be registered prior
-to scheduling the call.  Functions which do not have any arguments can skip
-this step.
+to scheduling the call.
+
+.. note:: Functions which do not have any arguments can skip this step.
 
 
 Execution of scheduled calls
 ----------------------------
 
 Scheduled function calls can be executed by anyone who wishes to initiate the
-transaction.  This will likely be an automated process that monitors for
-upcoming scheduled calls and executes them at the appropriate block.
+transaction.  Each call has a payment amount associated with it which is paid
+to the executor of the call.
 
 
 Cost
@@ -94,8 +94,10 @@ shortcoming of the service, but rather a fundamental limitation of the ethereum
 network.  Nobody is capable of forcing a transaction to be included in a
 specific block.
 
-The design of this service is meant to provide the proper motivation for calls
-to be executed, but it is entirely possible that certain calls will be missed
+The Alarm service has been designed such that it **should** become more
+reliable as more people use it.
+
+However, it is entirely possible that certain calls will be missed
 due to unforseen circumstances.  Providing a higher Payment amount is a
 potential way to get your scheduled call handled at a higher priority as it
 will be more profitable to execute.

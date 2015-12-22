@@ -11,10 +11,11 @@ the gas cost used for executing the transaction.
 Executing a call
 ----------------
 
-Use the ``execute`` function to execute a scheduled call.
+Use the ``execute`` function to execute a scheduled call.  This function is
+present on the call contract itself (as opposed to the scheduling service).
 
-* **Solidity Function Signature:** ``execute(address callAddress)``
-* **ABI Signature:** ``0xfcf36918``
+* **Solidity Function Signature:** ``execute() public``
+* **ABI Signature:** ``0x61461954``
 
 When this function is called, the following things happen.
 
@@ -22,13 +23,13 @@ When this function is called, the following things happen.
    pass.  If any fail, the function exits early without executing the scheduled
    call:
 
-   * the call has not already been suicided
+   * the call has not already been called.
    * the current block number is within the range this call is allowed to be
      executed.
    * the caller is allowed to execute the function (see caller pool)
 2. The call is executed
 3. The gas cost and fees are computed and paid.
-4. The call contract suicides, sending any remaining funds to the scheduling
+4. The call contract sends any remaining funds to the scheduling
    address.
 
 
@@ -95,70 +96,78 @@ about.
     sure they are not cancelled.
 
 
-Designated Callers
-------------------
+The Freeze Window
+-----------------
 
-If the Caller Pool has any bonded callers in the current active pool, then only
-designated callers will be allowed to execute a scheduled call.  The exception
-to this restriction is the last few blocks within the call's grace period which
-the call enters *free-for-all* mode during which anyone may execute it.
+The 10 blocks prior to a call's target block are called the **freeze window**.  During this window, nothing about a call can change.  This means that it cannot be cancelled or claimed.
 
-If there are no bonded callers in the Caller Pool then the Alarm service will
-operate in *free-for-all* mode for all calls meaning anyone may execute any
-call at any block during the call window.
 
-How callers designated
-^^^^^^^^^^^^^^^^^^^^^^
+Claiming a call
+---------------
 
-Each call has a window during which it is allowed to be executed.  This window
-begins at the specified ``targetBlock`` and extends through ``targetBlock +
-gracePeriod``.   This window is inclusive of it's bounding blocks.
+Claiming a call is the process through which you as a call executor can
+guarantee the exclusive right to execute the call during the first 16 blocks of
+the call window for the scheduled call.  As part of the claim, you will need to
+put down a deposit, which is returned to you if you when you execute the call.
+Failing to execute the call will forfeit your deposit.
 
-For each 16 block section of the call window, the caller pool associated with
-the ``targetBlock`` is selected.  The members of the pool can be though of as a
-circular queue, meaning that when you iterate through them, when you reach the
-last member, you start back over at the first member.  For each call, a random
-starting position is selected in the member queue and the 16 block sections of
-the call window are assigned in order to the membes of the call pool beginning
-at this randomly chosen index..
-
-The last two 16 block sections (17-32 blocks depending on the gracePeriod) are not
-allocated, but are considered *free-for-all* allowing anyone to call.
-
-Use the ``getDesignatedCaller`` function to determine which caller from the
-caller pool has been designated for the block.
-
-* **Solidity Function Signature:** ``getDesignatedCaller(address callAddress, uint256 blockNumber) returns (bool, address)``
-* **ABI Signature:** ``0x5a8dd79f``
-
-* **callAddress:** specifies the address of the call contract.
-* **blockNumber:** the block number (during the call window) in question.
-
-This returns a boolean and an address.  The boolean designates whether this
-scheduled call was designated (if there are no registered caller pool members
-then all calls operate in free-for-all mode).  The address is the designated
-caller.  If the returned address is ``0x0`` then this call can be executed by
-anyone on the provided block number.
-
-Missing the call window
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Anytime a caller fails to execute a scheduled call during the 4 block window
-reserved for them, the next caller has the opportunity to claim a portion of
-their bond merely by executing the call during their window.  When this
-happens, the previous caller who missed their call window has the current
-minimum bond amount deducted from their bond balance and transferred to the
-caller who executed the call.  The caller who missed their call is also removed
-from the pool.  This removal takes 416 blocks to take place as it occurs within
-the same mechanism as if they removed themselves from the pool.
-
-Free For All
+Claim Amount
 ^^^^^^^^^^^^
 
-When a call enters the last two 16-block chunks of its call window it enters
-free-for-all mode.  During these blocks anyone, even unbonded callers, can
-execute the call.  The sender of the executing transaction will be rewarded the
-bond bonus from all callers who missed their call window.
+A call can be claimed during the 255 blocks prior to the freeze window.  This
+period is referred to as the claim window.  The amount that you are agreeing to
+be paid for the call is based on whichever block the call is claimed on.  The
+amount can be calculated using the following formula.
+
+* Let ``i`` be the index of the block within the 255 block claim window.
+* Let ``basePayment`` be the payment amount specified by the call contract.
+* If within the first 240 blocks of the window: ``payment = basePayment * i / 240``
+* If within the last 15 blocks of the window: ``payment = basePayment``
+
+This formula results in a linear growth from 0 to the full ``basePayment``
+amount over the course of the first 240 blocks in the claim window.  The last
+15 blocks are all set at the full ``basePayment`` amount.
+
+A claim must be accompainied by a deposit that is at least twice the call's
+``basePayment`` amount.
+
+
+Getting your Deposit Back
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you claim a call and do not execute it within the first 16 blocks of the
+call window, then you will risk losing your deposit.  Once the first 16 blocks
+have passed, the call can be executed by anyone.  At this point, the first
+person to execute the call will receive the deposit as part of their payment
+(and incentive to pick up claimed calls that have not been called).
+
+
+Claim API
+^^^^^^^^^
+
+To claim a contract
+
+* **Solidity Function Signature:** ``claim()``
+* **ABI Signature:** ``0x4e71d92d``
+
+To check what the ``claimAmount`` will be for a given block number use the
+``getClaimAmountForBlock`` function.  This will return an amount in wei that
+represents the base payment value for the call if claimed on that block.
+
+* **Solidity Function Signature:** ``getClaimAmountForBlock(uint blockNumber)``
+* **ABI Signature:** ``0xf5562753``
+
+This function also has a shortcut that uses the current block number
+
+* **Solidity Function Signature:** ``getClaimAmountForBlock()``
+* **ABI Signature:** ``0x4f059a43``
+
+You can check if a call has already been claimed with the ``claimer`` function.
+This function will return either the empty address ``0x0`` if the call has not
+been claimed, or the address of the claimer if it has.
+
+* **Solidity Function Signature:** ``claimer() returns (address)``
+* **ABI Signature:** ``0xd379be23``
 
 
 Safeguards
@@ -167,8 +176,6 @@ Safeguards
 There are a limited set of safeguards that Alarm protects those executing calls
 from.
 
-* Enforces the ability to pay for the maximum possible transaction cost up
-  front.
 * Ensures that the call cannot cause the executing transaction to fail due to
   running out of gas (like an infinite loop).
 * Ensures that the funds to be used for payment are locked during the call
@@ -179,17 +186,17 @@ Tips for executing scheduled calls
 
 The following tips may be useful if you wish to execute calls.
 
-Only look in the next 40 blocks
+Only look in the next 265 blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since calls cannot be scheduled less than 40 blocks in the future, you can
-count on the call ordering remaining static for the next 40 blocks.
+Since calls cannot be scheduled less than 265 blocks in the future, you can
+count on the call ordering remaining static for the next 265 blocks.
 
-No cancellation in next 8 blocks
+No cancellation in next 265 blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since calls cannot be cancelled less than 8 blocks in the future, you don't
-need to check cancellation status during the 8 blocks prior to its target
+Since calls cannot be cancelled less than 265 blocks in the future, you don't
+need to check cancellation status during the 265 blocks prior to its target
 block.
 
 Check that it was not already called
@@ -198,8 +205,19 @@ Check that it was not already called
 If you are executing a call after the target block but before the grace period
 has run out, it is good to check that it has not already been called.
 
-Check that the scheduler can pay
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Compute how much gas to provide
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is good to check that the scheduler has sufficient funds to pay for the
-call's potential gas cost plus fees.
+If you want to guarantee that you will be 100% reimbursed for your gas
+expenditures, then you need to compute how much gas the contract can pay for.
+The *overhead* involved in execution is approximately 140,000 gas.  The
+following formula should be a close approximation to how much gas a contract
+can afford.
+
+* let ``gasPrice`` be the gas price for the executing transaction.
+* let ``balance`` be the ether balance of the contract.
+* let ``claimerDeposit`` be the claimer's deposit amount.
+* let ``basePayment`` be the base payment amount for the contract.  This may
+  either be the value specified by the scheduler, or the ``claimAmount`` if the
+  contract has been claimed.
+* ``gas = (balance - 2 * basePayment - claimerDeposit) / gasPrice``

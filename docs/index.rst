@@ -20,11 +20,9 @@ Contents:
    overview
    scheduling
    call_contracts
-   pool
    execution
    costs_and_fees
    abi
-   pool.api
    events
    terminology
    changelog

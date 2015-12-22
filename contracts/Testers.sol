@@ -1,11 +1,3 @@
-contract SchedulerTestAPI {
-        // Pool functions
-        function depositBond() public;
-        function enterPool() public;
-        function exitPool() public;
-}
-
-
 contract TestDataRegistry {
         uint8 public wasSuccessful = 0;
 
@@ -89,8 +81,8 @@ contract TestDataRegistry {
 contract TestCallExecution {
         uint8 public wasSuccessful;
 
-        function doExecution(address to, address callAddress) {
-            bool result = to.call(bytes4(sha3("execute(address)")), callAddress);
+        function doExecution(address to) {
+            bool result = to.call(bytes4(sha3("execute()")));
             if (result) {
                 wasSuccessful = 1;
             }
@@ -178,26 +170,5 @@ contract TestErrors {
                         tx.origin.send(1);
                 }
                 value = true;
-        }
-}
-
-
-contract JoinsPool {
-        SchedulerTestAPI scheduler;
-
-        function setCallerPool(address to) public {
-                scheduler = SchedulerTestAPI(to);
-        }
-
-        function deposit(uint value) public {
-                scheduler.depositBond.value(value)();
-        }
-
-        function enter() public {
-                scheduler.enterPool();
-        }
-
-        function exit() public {
-                scheduler.exitPool();
         }
 }

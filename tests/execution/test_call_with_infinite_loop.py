@@ -9,6 +9,7 @@ def test_execution_of_call_that_contains_infinite_loop(deploy_client,
                                                        deploy_future_block_call):
     client_contract = deployed_contracts.TestErrors
     call = deploy_future_block_call(client_contract.doInfinite)
+    deploy_client.wait_for_block(call.targetBlock())
 
     assert client_contract.value() is False
 

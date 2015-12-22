@@ -38,7 +38,6 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     assert call.contractAddress() == client_contract._meta.address
     assert call.abiSignature() == client_contract.setBool.encoded_abi_signature
     assert call.anchorGasPrice() == int(scheduling_txn['gasPrice'], 16)
-    assert call.suggestedGas() == 1000000
     assert call.claimer() == "0x0000000000000000000000000000000000000000"
     assert call.claimAmount() == 0
     assert call.claimerDeposit() == 0

@@ -1,3 +1,6 @@
+import "owned";
+
+
 contract SchedulerAPI {
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address);
     //function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address);
@@ -7,7 +10,7 @@ contract SchedulerAPI {
 }
 
 
-contract TestDataRegistry {
+contract TestDataRegistry is owned {
         uint8 public wasSuccessful = 0;
 
         function reset() public {
@@ -120,7 +123,7 @@ contract TestCallExecution is TestDataRegistry {
 
         function scheduleSetBool(address to, uint targetBlock, bool v) public {
             SchedulerAPI arst = SchedulerAPI(to);
-            address call_address = arst.scheduleCall.value(msg.value)(address(this), bytes4(sha3("setBool()")), targetBlock);
+            address call_address = arst.scheduleCall.value(this.balance)(address(this), bytes4(sha3("setBool()")), targetBlock);
             call_address.call(bytes4(sha3("registerData()")), v);
         }
 
@@ -132,7 +135,7 @@ contract TestCallExecution is TestDataRegistry {
 
         function scheduleSetUInt(address to, uint targetBlock, uint v) public {
             SchedulerAPI arst = SchedulerAPI(to);
-            address call_address = arst.scheduleCall.value(msg.value)(address(this), bytes4(sha3("setUInt(uint256)")), targetBlock);
+            address call_address = arst.scheduleCall.value(this.balance)(address(this), bytes4(sha3("setUInt(uint256)")), targetBlock);
             call_address.call(bytes4(sha3("registerData()")), v);
         }
 
@@ -188,7 +191,7 @@ contract TestCallExecution is TestDataRegistry {
 }
 
 
-contract TestErrors {
+contract TestErrors is owned {
         bool public value;
 
         function doFail() public {

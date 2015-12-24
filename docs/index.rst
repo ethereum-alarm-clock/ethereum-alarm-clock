@@ -21,7 +21,7 @@ Contents:
    scheduling
    call_contracts
    execution
-   execution_client
+   client
    costs_and_fees
    abi
    events

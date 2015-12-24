@@ -1,8 +1,27 @@
+contract SchedulerAPI {
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address);
+    //function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address);
+    //function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address);
+    //function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address);
+    //function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address);
+}
+
+
 contract TestDataRegistry {
         uint8 public wasSuccessful = 0;
 
         function reset() public {
             wasSuccessful = 0;
+        }
+
+        function registerBool(address to, bool v) public {
+            bool result = to.call(bytes4(sha3("registerData()")), v);
+            if (result) {
+                wasSuccessful = 1;
+            }
+            else {
+                wasSuccessful = 2;
+            }
         }
 
         function registerUInt(address to, uint v) public {
@@ -78,7 +97,7 @@ contract TestDataRegistry {
 }
 
 
-contract TestCallExecution {
+contract TestCallExecution is TestDataRegistry {
         uint8 public wasSuccessful;
 
         function doExecution(address to) {
@@ -99,11 +118,23 @@ contract TestCallExecution {
 
         bool public v_bool;
 
+        function scheduleSetBool(address to, uint targetBlock, bool v) public {
+            SchedulerAPI arst = SchedulerAPI(to);
+            address call_address = arst.scheduleCall.value(msg.value)(address(this), bytes4(sha3("setBool()")), targetBlock);
+            call_address.call(bytes4(sha3("registerData()")), v);
+        }
+
         function setBool() public {
             v_bool = true;
         }
 
         uint public v_uint;
+
+        function scheduleSetUInt(address to, uint targetBlock, uint v) public {
+            SchedulerAPI arst = SchedulerAPI(to);
+            address call_address = arst.scheduleCall.value(msg.value)(address(this), bytes4(sha3("setUInt(uint256)")), targetBlock);
+            call_address.call(bytes4(sha3("registerData()")), v);
+        }
 
         function setUInt(uint v) public {
             v_uint = v;

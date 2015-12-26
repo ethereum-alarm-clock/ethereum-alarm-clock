@@ -77,3 +77,9 @@ contract Canary {
         return (block.number < callContract.targetBlock() + 255);
     }
 }
+
+
+contract CanaryV6 is Canary {
+    function CanaryV6() Canary(0xe109ecb193841af9da3110c80fdd365d1c23be2a) {
+    }
+}

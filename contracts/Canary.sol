@@ -29,7 +29,6 @@ contract Canary {
     function Canary(address _scheduler) {
             owner = msg.sender;
             scheduler = SchedulerInterface(_scheduler);
-            aliveSince = now;
     }
 
     function() {
@@ -49,32 +48,44 @@ contract Canary {
 
     }
 
-    event Heartbeat(uint blockNumber, uint heartbeatCount, address callerAddress, address originAddress, address nextCallerAddress);
+    function initialize() public {
+        // ensure we are not already initialized.
+        if (aliveSince != 0) return;
+
+        // mark when the canary came to life.
+        aliveSince = now;
+
+        // schedule the first call
+        scheduleHeartbeat();
+    }
+
+    function scheduleHeartbeat() public {
+        // schedule the call (~2 hours from now)
+        address call_address = scheduler.scheduleCall.value(2 ether)(address(this), 0x3defb962, block.number + 480, 2000000, 255, 1 finney, 0);
+        if (call_address != 0x0) {
+            callContract = CallContractAPI(call_address);
+        }
+    }
 
     function heartbeat() public {
         // Ran out of funds.
         if (this.balance < 2 ether) return;
+
+        // Not being called by the callContract.
+        if (msg.sender != address(callContract)) return;
+
         // The canary has died!
         if (!isAlive()) return;
-        // Not being called by the callContract
-        if (address(callContract) != 0x0 && msg.sender != address(callContract)) return;
+
+        // schedule the next call.
+        scheduleHeartbeat();
 
         // Increment the heartbeat count
         heartbeatCount += 1;
-
-        // schedule the call (~2 hours from now)
-        address call_address = scheduler.scheduleCall.value(2 ether)(address(this), bytes4(sha3("heartbeat()")), block.number + 480, 2000000, 255, 1 finney, 0);
-        if (call_address != 0x0) {
-            callContract = CallContractAPI(call_address);
-        }
-
-        // Log the heartbeat
-        Heartbeat(block.number, heartbeatCount, msg.sender, tx.origin, address(callContract));
     }
 
     function isAlive() constant returns (bool) {
-        if (address(callContract) == 0x0) return true;
-        return (block.number < callContract.targetBlock() + 255);
+        return (aliveSince > 0 && block.number < callContract.targetBlock() + 255);
     }
 }
 

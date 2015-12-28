@@ -37,7 +37,7 @@ contract Canary {
         }
     }
 
-    function cancel() {
+    function cancel() public {
         // not authorized
         if (msg.sender != owner) throw;
         // need to wait until the 

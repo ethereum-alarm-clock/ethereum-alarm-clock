@@ -54,28 +54,94 @@ contract Scheduler {
         return GroveLib.exists(callIndex, bytes32(callAddress));
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation());
+    function scheduleCall(uint targetBlock) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, msg.sender, 0x0, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation());
+    function scheduleCall(address contractAddress,
+                          uint targetBlock) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, 0x0, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation());
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          uint targetBlock) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation());
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseDonation) public returns (address) {
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseDonation, msg.value);
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          uint targetBlock,
+                          uint suggestedGas) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, bytes callData, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseDonation) public returns (address) {
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseDonation, msg.value);
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint suggestedGas) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod,
+                          uint basePayment) public returns (address) {
+        bytes memory callData;
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod,
+                          uint basePayment) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod,
+                          uint basePayment,
+                          uint baseDonation) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, basePayment, baseDonation, msg.value);
     }
 
     /*

@@ -27,7 +27,7 @@ library CallLib {
         Callable,
         Executed,
         Cancelled,
-        Missed,
+        Missed
     }
 
     function state(Call storage self) constant returns (State) {
@@ -250,7 +250,7 @@ library CallLib {
         return true;
     }
 
-    function isCancellable(Call storage self, address caller) {
+    function isCancellable(Call storage self, address caller) returns (bool) {
         // TODO: needs tests
         if (self.wasCalled) return false;
         if (self.isCancelled) return false;
@@ -259,12 +259,12 @@ library CallLib {
 
         if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) {
             // only cancellable by scheduler prior to call.
-            if (caller != self.schedulerAddress) return false;
+            if (caller != call.schedulerAddress()) return false;
         }
 
         if (block.number > call.targetBlock() + call.gracePeriod()) {
             // already called
-            if (call.wasCalled) return false;
+            if (self.wasCalled) return false;
         }
         return true;
     }
@@ -308,10 +308,10 @@ contract FutureCall {
         Callable,
         Executed,
         Cancelled,
-        Missed,
+        Missed
     }
 
-    modifier in_state(State state) { if (CallLib.state(call) == state) _ }
+    modifier in_state(State state) { if (uint(CallLib.state(call)) == uint(state)) _ }
 
     /*
      *  API for FutureXXXXCalls to implement.
@@ -390,7 +390,7 @@ contract FutureCall {
         if (msg.sender == schedulerAddress && msg.data.length > 0) {
 
             // cannot register call data at this point.
-            if (CallLib.state(call) != State.Waiting) throw;
+            if (uint(CallLib.state(call)) != uint(State.Waiting)) throw;
             // cannot overwrite call data
             if (call.callData.length != 0) throw;
             call.callData = msg.data;
@@ -511,11 +511,11 @@ contract FutureBlockCall is FutureCall {
     uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
     function isCancellable() public returns (bool) {
-        return CallLib.isCancellable(msg.sender);
+        return CallLib.isCancellable(call, msg.sender);
     }
 
     function cancel() public {
-        if CallLib.isCancellable(call, msg.sender) {
+        if (CallLib.isCancellable(call, msg.sender)) {
             CallLib.cancel(call, msg.sender);
         }
     }

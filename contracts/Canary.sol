@@ -82,6 +82,7 @@ contract Canary {
 
         // Increment the heartbeat count
         heartbeatCount += 1;
+        lastHeartbeat = now;
     }
 
     function isAlive() constant returns (bool) {

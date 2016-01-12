@@ -6,7 +6,18 @@ contract Scheduler {
     /*
      *  Address: 0xe109ecb193841af9da3110c80fdd365d1c23be2a
      */
+
+    // callIndex tracks the ordering of scheduled calls based on their block numbers.
     GroveLib.Index callIndex;
+
+    // callOrigin tracks the origin scheduler contract for each scheduled call.
+    mapping (address => address) callOrigin;
+
+    uint constant CALL_API_VERSION = 1;
+
+    function callAPIVersion() constant returns (uint) {
+        return CALL_API_VERSION;
+    }
 
     /*
      *  Call Scheduling
@@ -19,7 +30,7 @@ contract Scheduler {
         return 1 ether;
     }
 
-    function getDefaultFee() constant returns (uint) {
+    function getDefaultDonation() constant returns (uint) {
         return 100 finney;
     }
 
@@ -28,15 +39,15 @@ contract Scheduler {
     }
 
     function getMinimumCallCost() constant returns (uint) {
-        return getMinimumCallCost(getDefaultPayment(), getDefaultFee());
+        return getMinimumCallCost(getDefaultPayment(), getDefaultDonation());
     }
 
     function getMinimumCallCost(uint basePayment) constant returns (uint) {
-        return getMinimumCallCost(basePayment, getDefaultFee());
+        return getMinimumCallCost(basePayment, getDefaultDonation());
     }
 
-    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {
-        return SchedulerLib.getMinimumCallCost(basePayment, baseFee);
+    function getMinimumCallCost(uint basePayment, uint baseDonation) constant returns (uint) {
+        return SchedulerLib.getMinimumCallCost(basePayment, baseDonation);
     }
 
     function isKnownCall(address callAddress) constant returns (bool) {
@@ -44,23 +55,27 @@ contract Scheduler {
     }
 
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultFee());
+        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation());
     }
 
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation());
     }
 
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultFee());
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation());
     }
 
     function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address) {
-        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultFee());
+        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation());
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);
+    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseDonation) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseDonation, msg.value);
+    }
+
+    function scheduleCall(address contractAddress, bytes4 abiSignature, bytes callData, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseDonation) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseDonation, msg.value);
     }
 
     /*

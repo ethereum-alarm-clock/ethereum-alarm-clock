@@ -49,12 +49,12 @@ library SchedulerLib {
                           address contractAddress,
                           bytes4 abiSignature,
                           bytes callData,
+                          uint8 gracePeriod,
+                          uint16 requiredStackDepth,
                           uint targetBlock,
                           uint suggestedGas,
-                          uint8 gracePeriod,
                           uint basePayment,
                           uint baseDonation,
-                          uint requiredStackDepth,
                           uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
@@ -87,7 +87,7 @@ library SchedulerLib {
             return;
         }
 
-        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, callData, suggestedGas, basePayment, baseDonation);
+        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, callData, suggestedGas, requiredStackDepth, basePayment, baseDonation);
 
         // Put the call into the grove index.
         GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));

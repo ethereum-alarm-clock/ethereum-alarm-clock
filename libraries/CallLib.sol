@@ -11,6 +11,7 @@ library CallLib {
         bytes callData;
         uint anchorGasPrice;
         uint suggestedGas;
+        uint16 requiredStackDepth;
 
         address claimer;
         uint claimAmount;
@@ -40,6 +41,24 @@ library CallLib {
         if (block.number < call.targetBlock()) return State.Frozen;
         if (block.number < call.targetBlock() + call.gracePeriod()) return State.Callable;
         return State.Missed;
+    }
+
+    /*
+     *  Stack Depth Lib
+     */
+    // This will probably work with a value of 390 but no need to cut it
+    // that close in the case that the optimizer changes slightly or
+    // something causing that number to rise slightly.
+    uint constant GAS_PER_DEPTH = 400;
+
+    function check_depth(address self, uint n) constant returns (bool) {
+            if (n == 0) return true;
+            return self.call.gas(GAS_PER_DEPTH * n)(0x21835af6, n - 1);
+    }
+
+    function __dig(uint n) constant returns (bool) {
+            if (n == 0) return true;
+            if (!address(this).callcode(0x21835af6, n - 1)) throw;
     }
 
     // The number of blocks that each caller in the pool has to complete their
@@ -285,6 +304,7 @@ contract FutureCall {
 
     function FutureCall(address _schedulerAddress,
                         uint _suggestedGas,
+                        uint16 _requiredStackDepth,
                         address _contractAddress,
                         bytes4 _abiSignature,
                         bytes _callData,
@@ -297,6 +317,7 @@ contract FutureCall {
         baseDonation = _baseDonation;
 
         call.suggestedGas = _suggestedGas;
+        call.requiredStackDepth = _requiredStackDepth;
         call.anchorGasPrice = tx.gasprice;
         call.contractAddress = _contractAddress;
         call.abiSignature = _abiSignature;
@@ -353,6 +374,10 @@ contract FutureCall {
 
     function suggestedGas() constant returns (uint) {
         return call.suggestedGas;
+    }
+
+    function requiredStackDepth() constant returns (uint16) {
+        return call.requiredStackDepth;
     }
 
     function claimer() constant returns (address) {
@@ -465,9 +490,10 @@ contract FutureBlockCall is FutureCall {
                              bytes4 _abiSignature,
                              bytes _callData,
                              uint _suggestedGas,
+                             uint16 _requiredStackDepth,
                              uint _basePayment,
                              uint _baseDonation)
-        FutureCall(_schedulerAddress, _suggestedGas, _contractAddress, _abiSignature, _callData, _basePayment, _baseDonation)
+        FutureCall(_schedulerAddress, _suggestedGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _basePayment, _baseDonation)
     {
         // TODO: split this constructor across this contract and the
         // parent contract FutureCall
@@ -478,6 +504,13 @@ contract FutureBlockCall is FutureCall {
     }
 
     function beforeExecute(address executor) public returns (bool) {
+        //if (call.requiredStackDepth > 0 && executor != tx.origin) {
+        //    if (!check_depth(call.requiredStackDepth)) {
+        //        // Not being called within call window.
+        //        CallLib.CallAborted(executor, "STACK_DEPTH_TOO_LOW");
+        //        return false;
+        //    }
+        //}
         if (call.wasCalled) {
             // Not being called within call window.
             CallLib.CallAborted(executor, "ALREADY_CALLED");

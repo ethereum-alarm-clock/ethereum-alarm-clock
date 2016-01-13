@@ -511,7 +511,7 @@ contract FutureBlockCall is FutureCall {
             return GAS_OVERHEAD;
     }
 
-    uint constant EXTRA_GAS = 73000;
+    uint constant EXTRA_GAS = 76000;
 
     function getExtraGas() constant returns (uint) {
             return EXTRA_GAS;

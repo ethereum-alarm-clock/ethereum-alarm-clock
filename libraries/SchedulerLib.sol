@@ -42,7 +42,20 @@ library SchedulerLib {
         return 2 * (baseDonation + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, bytes callData, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseDonation, uint endowment) public returns (address) {
+    uint constant MAXIMUM_STACK_DEPTH = 1023;
+
+    function scheduleCall(GroveLib.Index storage self,
+                          address schedulerAddress,
+                          address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint suggestedGas,
+                          uint8 gracePeriod,
+                          uint basePayment,
+                          uint baseDonation,
+                          uint requiredStackDepth,
+                          uint endowment) public returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -56,6 +69,10 @@ library SchedulerLib {
             // Don't allow scheduling further than
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
+        }
+        else if (requiredStackDepth > MAXIMUM_STACK_DEPTH) {
+            // Cannot require stack depth greater than MAXIMUM_STACK_DEPTH
+            reason = "STACK_DEPTH_TOO_LARGE";
         }
         else if (gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";

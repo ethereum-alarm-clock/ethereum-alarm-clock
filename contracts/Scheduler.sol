@@ -26,12 +26,16 @@ contract Scheduler {
         return SchedulerLib.getMinimumGracePeriod();
     }
 
+    uint constant DEFAULT_PAYMENT_GAS = 20000000;
+
     function getDefaultPayment() constant returns (uint) {
-        return 1 ether;
+        return tx.gasprice * DEFAULT_PAYMENT_GAS;
     }
 
+    uint constant DEFAULT_DONATION_GAS = 2000000;
+
     function getDefaultDonation() constant returns (uint) {
-        return 100 finney;
+        return tx.gasprice * DEFAULT_DONATION_GAS;
     }
 
     function getMinimumCallGas() constant returns (uint) {

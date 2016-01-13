@@ -95,3 +95,9 @@ contract CanaryV6 is Canary {
     function CanaryV6() Canary(0xe109ecb193841af9da3110c80fdd365d1c23be2a) {
     }
 }
+
+
+contract CanaryTestnet is Canary {
+    function CanaryTestnet() Canary(0xb8da699d7fb01289d4ef718a55c3174971092bef) {
+    }
+}

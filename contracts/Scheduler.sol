@@ -54,22 +54,26 @@ contract Scheduler {
         return GroveLib.exists(callIndex, bytes32(callAddress));
     }
 
+    bytes constant EMPTY_CALL_DATA = "";
+
     function scheduleCall(uint targetBlock) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, msg.sender, 0x0, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, msg.sender, 0x0, EMPTY_CALL_DATA, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,
                           uint targetBlock) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, 0x0, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, 0x0, EMPTY_CALL_DATA, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+    }
+
+    function scheduleCall(bytes4 abiSignature,
+                          uint targetBlock) public returns (address) {
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, msg.sender, abiSignature, EMPTY_CALL_DATA, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,
                           bytes4 abiSignature,
                           uint targetBlock) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, EMPTY_CALL_DATA, targetBlock, 0, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,
@@ -83,8 +87,7 @@ contract Scheduler {
                           bytes4 abiSignature,
                           uint targetBlock,
                           uint suggestedGas) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, EMPTY_CALL_DATA, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,
@@ -100,8 +103,7 @@ contract Scheduler {
                           uint targetBlock,
                           uint suggestedGas,
                           uint8 gracePeriod) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, EMPTY_CALL_DATA, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,
@@ -119,8 +121,7 @@ contract Scheduler {
                           uint suggestedGas,
                           uint8 gracePeriod,
                           uint basePayment) public returns (address) {
-        bytes memory callData;
-        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, callData, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation(), msg.value);
+        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, EMPTY_CALL_DATA, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultDonation(), msg.value);
     }
 
     function scheduleCall(address contractAddress,

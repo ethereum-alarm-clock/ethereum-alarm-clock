@@ -15,7 +15,7 @@ def test_gas_accounting_for_call_exception(deploy_client, deployed_contracts,
         client_contract.doFail,
         target_block=deploy_client.get_block_number() + 1000,
         payment=12345,
-        fee=54321,
+        donation=54321,
     )
 
     deploy_client.wait_for_block(call.targetBlock())

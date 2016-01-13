@@ -15,7 +15,7 @@ def test_execution_payment(deploy_client, deployed_contracts,
         client_contract.setBool,
         target_block=deploy_client.get_block_number() + 1000,
         payment=12345,
-        fee=54321,
+        donation=54321,
     )
 
     deploy_client.wait_for_block(call.targetBlock())

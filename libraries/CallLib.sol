@@ -36,9 +36,10 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return State.Frozen;
-        if (block.number < call.targetBlock()) return State.Callable;
-        if (block.number > call.targetBlock() + call.gracePeriod()) return State.Missed;
+        if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return State.Waiting;
+        if (block.number < call.targetBlock()) return State.Frozen;
+        if (block.number < call.targetBlock() + call.gracePeriod()) return State.Callable;
+        return State.Missed;
     }
 
     // The number of blocks that each caller in the pool has to complete their
@@ -312,6 +313,16 @@ contract FutureCall {
     }
 
     modifier in_state(State state) { if (uint(CallLib.state(call)) == uint(state)) _ }
+
+    function state() constant returns (State) {
+        var state = CallLib.state(call);
+        if (uint(state) == uint(State.Waiting)) return State.Waiting;
+        if (uint(state) == uint(State.Frozen)) return State.Frozen;
+        if (uint(state) == uint(State.Callable)) return State.Callable;
+        if (uint(state) == uint(State.Executed)) return State.Executed;
+        if (uint(state) == uint(State.Cancelled)) return State.Cancelled;
+        if (uint(state) == uint(State.Missed)) return State.Missed;
+    }
 
     /*
      *  API for FutureXXXXCalls to implement.

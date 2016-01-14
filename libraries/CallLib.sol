@@ -43,24 +43,6 @@ library CallLib {
         return State.Missed;
     }
 
-    /*
-     *  Stack Depth Lib
-     */
-    // This will probably work with a value of 390 but no need to cut it
-    // that close in the case that the optimizer changes slightly or
-    // something causing that number to rise slightly.
-    uint constant GAS_PER_DEPTH = 400;
-
-    function check_depth(address self, uint n) constant returns (bool) {
-            if (n == 0) return true;
-            return self.call.gas(GAS_PER_DEPTH * n)(0x21835af6, n - 1);
-    }
-
-    function __dig(uint n) constant returns (bool) {
-            if (n == 0) return true;
-            if (!address(this).callcode(0x21835af6, n - 1)) throw;
-    }
-
     // The number of blocks that each caller in the pool has to complete their
     // call.
     uint constant CALL_WINDOW_SIZE = 16;
@@ -85,6 +67,11 @@ library CallLib {
             return value;
         }
         return 0;
+    }
+
+    function checkDepth(uint n) constant returns (bool) {
+            if (n == 0) return true;
+            return checkDepth(n - 1);
     }
 
     function getGasScalar(uint base_gas_price, uint gas_price) constant returns (uint) {
@@ -504,13 +491,9 @@ contract FutureBlockCall is FutureCall {
     }
 
     function beforeExecute(address executor) public returns (bool) {
-        //if (call.requiredStackDepth > 0 && executor != tx.origin) {
-        //    if (!check_depth(call.requiredStackDepth)) {
-        //        // Not being called within call window.
-        //        CallLib.CallAborted(executor, "STACK_DEPTH_TOO_LOW");
-        //        return false;
-        //    }
-        //}
+        if (call.requiredStackDepth > 0 && executor != tx.origin) {
+            CallLib.checkDepth(call.requiredStackDepth);
+        }
         if (call.wasCalled) {
             // Not being called within call window.
             CallLib.CallAborted(executor, "ALREADY_CALLED");

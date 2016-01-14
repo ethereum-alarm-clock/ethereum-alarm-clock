@@ -43,7 +43,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
     def _deploy_future_block_call(contract_function, scheduler_address=None,
                                   target_block=None, grace_period=64,
                                   suggested_gas=100000, payment=1, donation=1,
-                                  endowment=None, call_data=""):
+                                  endowment=None, call_data="", require_depth=0):
         if endowment is None:
             endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + donation
 
@@ -64,6 +64,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
                 contract_function.encoded_abi_signature,
                 call_data,
                 suggested_gas,
+                require_depth,
                 payment,
                 donation,
             ),

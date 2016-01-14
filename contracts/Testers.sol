@@ -195,6 +195,10 @@ contract TestCallExecution is TestDataRegistry {
 contract TestErrors is owned {
     bool public value;
 
+    function reset() public {
+        value = false;
+    }
+
     function doFail() public {
         throw;
         value = true;
@@ -207,29 +211,19 @@ contract TestErrors is owned {
         value = true;
     }
 
-    function scheduleStackDepth(address to, uint requiredDepth) public {
-        SchedulerAPI arst = SchedulerAPI(to);
-        address call_address = arst.scheduleCall.value(this.balance)(address(this), bytes4(sha3("setBool()")), targetBlock);
-        call_address.call(bytes4(sha3("registerData()")), v);
+    function proxyCall(address to, uint depth) public returns (bool) {
+        if (depth > 0) {
+            TestErrors me = TestErrors(address(this));
+            me.proxyCall(to, depth - 1);
+        }
+
+        return to.call(bytes4(sha3("execute()")));
     }
 
     function doStackExtension(uint depth) public {
-        if (!check_depth(depth)) 
-        while (true) {
-                tx.origin.send(1);
+        if (depth > 0) {
+            doStackExtension(depth - 1);
         }
         value = true;
-    }
-
-    uint constant GAS_PER_DEPTH = 400;
-
-    function check_depth(uint n) constant returns (bool) {
-        if (n == 0) return true;
-        return address(this).call.gas(GAS_PER_DEPTH * n)(0x21835af6, n - 1);
-    }
-
-    function __dig(uint n) constant returns (bool) {
-        if (n == 0) return true;
-        if (!address(this).callcode(0x21835af6, n - 1)) throw;
     }
 }

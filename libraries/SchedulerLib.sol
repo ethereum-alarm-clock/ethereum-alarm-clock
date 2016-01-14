@@ -44,6 +44,20 @@ library SchedulerLib {
 
     uint constant MAXIMUM_STACK_DEPTH = 1023;
 
+    struct CallConfig {
+        address schedulerAddress;
+        address contractAddress;
+        bytes4 abiSignature;
+        bytes callData;
+        uint8 gracePeriod;
+        uint16 requiredStackDepth;
+        uint targetBlock;
+        uint suggestedGas;
+        uint basePayment;
+        uint baseDonation;
+        uint endowment;
+    }
+
     function scheduleCall(GroveLib.Index storage self,
                           address schedulerAddress,
                           address contractAddress,
@@ -56,6 +70,24 @@ library SchedulerLib {
                           uint basePayment,
                           uint baseDonation,
                           uint endowment) public returns (address) {
+        CallConfig memory callConfig = CallConfig({
+            schedulerAddress: schedulerAddress,
+            contractAddress: contractAddress,
+            abiSignature: abiSignature,
+            callData: callData,
+            gracePeriod: gracePeriod,
+            requiredStackDepth: requiredStackDepth,
+            targetBlock: targetBlock,
+            suggestedGas: suggestedGas,
+            basePayment: basePayment,
+            baseDonation: baseDonation,
+            endowment: endowment,
+        });
+        return _scheduleCall(self, callConfig);
+    }
+
+    function _scheduleCall(GroveLib.Index storage self,
+                          CallConfig memory callConfig) internal returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -65,29 +97,40 @@ library SchedulerLib {
         */
         bytes32 reason;
 
-        if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
+        if (callConfig.targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
             // Don't allow scheduling further than
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
-        else if (requiredStackDepth > MAXIMUM_STACK_DEPTH) {
+        else if (callConfig.requiredStackDepth > MAXIMUM_STACK_DEPTH) {
             // Cannot require stack depth greater than MAXIMUM_STACK_DEPTH
             reason = "STACK_DEPTH_TOO_LARGE";
         }
-        else if (gracePeriod < getMinimumGracePeriod()) {
+        else if (callConfig.gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
         }
-        else if (endowment < 2 * (baseDonation + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
+        else if (callConfig.endowment < 2 * (callConfig.baseDonation + callConfig.basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
             reason = "INSUFFICIENT_FUNDS";
         }
 
         if (reason != 0x0) {
-            CallRejected(schedulerAddress, reason);
-            AccountingLib.sendRobust(schedulerAddress, endowment);
+            CallRejected(callConfig.schedulerAddress, reason);
+            AccountingLib.sendRobust(callConfig.schedulerAddress, callConfig.endowment);
             return;
         }
 
-        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, callData, suggestedGas, requiredStackDepth, basePayment, baseDonation);
+        var call = new FutureBlockCall.value(callConfig.endowment)(
+                callConfig.schedulerAddress,
+                callConfig.targetBlock,
+                callConfig.gracePeriod,
+                callConfig.contractAddress,
+                callConfig.abiSignature,
+                callConfig.callData,
+                callConfig.suggestedGas,
+                callConfig.requiredStackDepth,
+                callConfig.basePayment,
+                callConfig.baseDonation
+        );
 
         // Put the call into the grove index.
         GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));

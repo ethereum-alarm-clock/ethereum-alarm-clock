@@ -1,4 +1,5 @@
 import "owned";
+import "libraries/CallLib.sol";
 
 
 contract SchedulerAPI {
@@ -211,19 +212,26 @@ contract TestErrors is owned {
         value = true;
     }
 
-    function proxyCall(address to, uint depth) public returns (bool) {
-        if (depth > 0) {
-            TestErrors me = TestErrors(address(this));
-            me.proxyCall(to, depth - 1);
-        }
+    address public callAddress;
 
-        return to.call(bytes4(sha3("execute()")));
+    function setCallAddress(address _callAddress) {
+        callAddress = _callAddress;
+    }
+
+    function proxyCall(uint depth) public returns (bool) {
+        if (depth > 0) {
+            return address(this).call(bytes4(sha3("proxyCall(uint256)")), depth - 1);
+        }
+        else {
+            return callAddress.call(bytes4(sha3("execute()")));
+        }
     }
 
     function doStackExtension(uint depth) public {
-        if (depth > 0) {
-            doStackExtension(depth - 1);
-        }
+        CallLib.checkDepth(depth);
         value = true;
+    }
+    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+        return 12345;
     }
 }

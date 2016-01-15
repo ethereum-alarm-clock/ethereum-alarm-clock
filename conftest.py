@@ -48,7 +48,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
             endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + donation
 
         if target_block is None:
-            target_block = deploy_client.get_block_number() + 40
+            target_block = deploy_client.get_block_number()
 
         if scheduler_address is None:
             scheduler_address = deploy_coinbase

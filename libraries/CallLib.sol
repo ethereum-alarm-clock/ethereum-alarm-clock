@@ -10,7 +10,7 @@ library CallLib {
         bytes4 abiSignature;
         bytes callData;
         uint anchorGasPrice;
-        uint suggestedGas;
+        uint requiredGas;
         uint16 requiredStackDepth;
 
         address claimer;
@@ -105,13 +105,12 @@ library CallLib {
         _CallAborted(executor, reason);
     }
 
-    function execute(Call storage self, uint start_gas, address executor, uint overhead, uint extraGas) public {
+    function execute(Call storage self,
+                     uint start_gas,
+                     address executor,
+                     uint overhead,
+                     uint extraGas) public {
         FutureCall call = FutureCall(this);
-
-        // If the pre-execution checks do not pass, exit early.
-        if (!call.beforeExecute(executor)) {
-            return;
-        }
         
         // Mark the call has having been executed.
         self.wasCalled = true;
@@ -290,7 +289,7 @@ contract FutureCall {
     CallLib.Call call;
 
     function FutureCall(address _schedulerAddress,
-                        uint _suggestedGas,
+                        uint _requiredGas,
                         uint16 _requiredStackDepth,
                         address _contractAddress,
                         bytes4 _abiSignature,
@@ -303,7 +302,7 @@ contract FutureCall {
         basePayment = _basePayment;
         baseDonation = _baseDonation;
 
-        call.suggestedGas = _suggestedGas;
+        call.requiredGas = _requiredGas;
         call.requiredStackDepth = _requiredStackDepth;
         call.anchorGasPrice = tx.gasprice;
         call.contractAddress = _contractAddress;
@@ -359,8 +358,8 @@ contract FutureCall {
         return call.anchorGasPrice;
     }
 
-    function suggestedGas() constant returns (uint) {
-        return call.suggestedGas;
+    function requiredGas() constant returns (uint) {
+        return call.requiredGas;
     }
 
     function requiredStackDepth() constant returns (uint16) {
@@ -476,11 +475,11 @@ contract FutureBlockCall is FutureCall {
                              address _contractAddress,
                              bytes4 _abiSignature,
                              bytes _callData,
-                             uint _suggestedGas,
+                             uint _requiredGas,
                              uint16 _requiredStackDepth,
                              uint _basePayment,
                              uint _baseDonation)
-        FutureCall(_schedulerAddress, _suggestedGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _basePayment, _baseDonation)
+        FutureCall(_schedulerAddress, _requiredGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _basePayment, _baseDonation)
     {
         // TODO: split this constructor across this contract and the
         // parent contract FutureCall
@@ -489,6 +488,9 @@ contract FutureBlockCall is FutureCall {
         targetBlock = _targetBlock;
         gracePeriod = _gracePeriod;
     }
+
+    // TODO: figure out how to quantify this value.
+    uint constant REQUIRED_GAS_OVERHEAD = 0;
 
     function beforeExecute(address executor) public returns (bool) {
         if (call.requiredStackDepth > 0 && executor != tx.origin) {
@@ -510,6 +512,11 @@ contract FutureBlockCall is FutureCall {
         // exit early.
         if (!CallLib.checkExecutionAuthorization(call, executor, block.number)) {
             CallLib.CallAborted(executor, "NOT_AUTHORIZED");
+            return;
+        }
+
+        if (msg.gas < call.requiredGas + REQUIRED_GAS_OVERHEAD) {
+            CallLib.CallAborted(executor, "NOT_ENOUGH_GAS");
             return;
         }
 

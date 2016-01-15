@@ -6,6 +6,7 @@ from ethereum import utils
 
 deploy_contracts = [
     "CallLib",
+    "Scheduler",
     "TestCallExecution",
 ]
 

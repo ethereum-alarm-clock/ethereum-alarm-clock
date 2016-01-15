@@ -20,11 +20,18 @@ library SchedulerLib {
     // Measured Minimum is closer to 150,000
     uint constant MINIMUM_CALL_GAS = 200000;
 
+    // The maximum possible depth that stack depth checking can achieve.
+    uint constant MAXIMUM_STACK_CHECK = 339;
+
     event CallScheduled(address call_address);
 
     event CallRejected(address indexed schedulerAddress, bytes32 reason);
 
     uint constant CALL_WINDOW_SIZE = 16;
+
+    function getMaximumStackCheck() constant returns (uint) {
+        return MAXIMUM_STACK_CHECK;
+    }
 
     function getCallWindowSize() constant returns (uint) {
         return CALL_WINDOW_SIZE;
@@ -42,8 +49,6 @@ library SchedulerLib {
         return 2 * (baseDonation + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
     }
 
-    uint constant MAXIMUM_STACK_DEPTH = 1023;
-
     struct CallConfig {
         address schedulerAddress;
         address contractAddress;
@@ -52,7 +57,7 @@ library SchedulerLib {
         uint8 gracePeriod;
         uint16 requiredStackDepth;
         uint targetBlock;
-        uint suggestedGas;
+        uint requiredGas;
         uint basePayment;
         uint baseDonation;
         uint endowment;
@@ -66,7 +71,7 @@ library SchedulerLib {
                           uint8 gracePeriod,
                           uint16 requiredStackDepth,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint basePayment,
                           uint baseDonation,
                           uint endowment) public returns (address) {
@@ -78,7 +83,7 @@ library SchedulerLib {
             gracePeriod: gracePeriod,
             requiredStackDepth: requiredStackDepth,
             targetBlock: targetBlock,
-            suggestedGas: suggestedGas,
+            requiredGas: requiredGas,
             basePayment: basePayment,
             baseDonation: baseDonation,
             endowment: endowment,
@@ -102,9 +107,9 @@ library SchedulerLib {
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
-        else if (callConfig.requiredStackDepth > MAXIMUM_STACK_DEPTH) {
-            // Cannot require stack depth greater than MAXIMUM_STACK_DEPTH
-            reason = "STACK_DEPTH_TOO_LARGE";
+        else if (callConfig.requiredStackDepth > MAXIMUM_STACK_CHECK) {
+            // Cannot require stack depth greater than MAXIMUM_STACK_CHECK
+            reason = "STACK_CHECK_TOO_LARGE";
         }
         else if (callConfig.gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
@@ -126,7 +131,7 @@ library SchedulerLib {
                 callConfig.contractAddress,
                 callConfig.abiSignature,
                 callConfig.callData,
-                callConfig.suggestedGas,
+                callConfig.requiredGas,
                 callConfig.requiredStackDepth,
                 callConfig.basePayment,
                 callConfig.baseDonation

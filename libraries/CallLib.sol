@@ -37,7 +37,7 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return State.Waiting;
+        if (block.number + BEFORE_CALL_FREEZE_WINDOW < call.targetBlock()) return State.Waiting;
         if (block.number < call.targetBlock()) return State.Frozen;
         if (block.number < call.targetBlock() + call.gracePeriod()) return State.Callable;
         return State.Missed;
@@ -67,11 +67,6 @@ library CallLib {
             return value;
         }
         return 0;
-    }
-
-    function checkDepth(uint n) constant returns (bool) {
-            if (n == 0) return true;
-            return checkDepth(n - 1);
     }
 
     function getGasScalar(uint base_gas_price, uint gas_price) constant returns (uint) {
@@ -322,13 +317,7 @@ contract FutureCall {
     modifier in_state(State state) { if (uint(CallLib.state(call)) == uint(state)) _ }
 
     function state() constant returns (State) {
-        var state = CallLib.state(call);
-        if (uint(state) == uint(State.Waiting)) return State.Waiting;
-        if (uint(state) == uint(State.Frozen)) return State.Frozen;
-        if (uint(state) == uint(State.Callable)) return State.Callable;
-        if (uint(state) == uint(State.Executed)) return State.Executed;
-        if (uint(state) == uint(State.Cancelled)) return State.Cancelled;
-        if (uint(state) == uint(State.Missed)) return State.Missed;
+        return State(CallLib.state(call));
     }
 
     /*
@@ -492,32 +481,44 @@ contract FutureBlockCall is FutureCall {
     // TODO: figure out how to quantify this value.
     uint constant REQUIRED_GAS_OVERHEAD = 0;
 
+    function checkDepth(uint depth) public returns (bool) {
+        if (depth == 0) {
+            return true;
+        }
+        else if (msg.sender == address(this)) {
+            return checkDepth(depth - 1);
+        }
+        else {
+            return address(this).call(bytes4(sha3("checkDepth(uint256)")), depth - 1);
+        }
+    }
+
     function beforeExecute(address executor) public returns (bool) {
+        bytes32 reason;
+
         if (call.requiredStackDepth > 0 && executor != tx.origin) {
-            CallLib.checkDepth(call.requiredStackDepth);
+            if (!checkDepth(call.requiredStackDepth)) {
+                reason = "STACK_TOO_DEEP";
+            }
         }
-        if (call.wasCalled) {
+        else if (call.wasCalled) {
             // Not being called within call window.
-            CallLib.CallAborted(executor, "ALREADY_CALLED");
-            return false;
+            reason = "ALREADY_CALLED";
         }
-
-        if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
+        else if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
             // Not being called within call window.
-            CallLib.CallAborted(executor, "NOT_IN_CALL_WINDOW");
+            reason = "NOT_IN_CALL_WINDOW";
+        }
+        else if (!CallLib.checkExecutionAuthorization(call, executor, block.number)) {
+            reason = "NOT_AUTHORIZED";
+        }
+        else if (msg.gas < call.requiredGas + REQUIRED_GAS_OVERHEAD) {
+            reason = "NOT_ENOUGH_GAS";
+        }
+
+        if (reason != 0x0) {
+            CallLib.CallAborted(executor, reason);
             return false;
-        }
-
-        // If they are not authorized to execute the call at this time,
-        // exit early.
-        if (!CallLib.checkExecutionAuthorization(call, executor, block.number)) {
-            CallLib.CallAborted(executor, "NOT_AUTHORIZED");
-            return;
-        }
-
-        if (msg.gas < call.requiredGas + REQUIRED_GAS_OVERHEAD) {
-            CallLib.CallAborted(executor, "NOT_ENOUGH_GAS");
-            return;
         }
 
         return true;

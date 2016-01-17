@@ -218,17 +218,36 @@ contract TestErrors is owned {
         callAddress = _callAddress;
     }
 
+    uint public d;
+
     function proxyCall(uint depth) public returns (bool) {
-        if (depth > 0) {
-            return address(this).call(bytes4(sha3("proxyCall(uint256)")), depth - 1);
+        if (depth == 0) {
+            // WHY DOESN"T THIS WORK!!!
+            if (!checkDepth(10)) throw;
+            return callAddress.call(bytes4(sha3("execute()")));
+        }
+        else if (msg.sender == address(this)) {
+            return proxyCall(depth - 1);
         }
         else {
-            return callAddress.call(bytes4(sha3("execute()")));
+            return address(this).call(bytes4(sha3("proxyCall(uint256)")), depth - 1);
+        }
+    }
+
+    function checkDepth(uint depth) public returns (bool) {
+        if (depth == 0) {
+            return true;
+        }
+        else if (msg.sender == address(this)) {
+            return checkDepth(depth - 1);
+        }
+        else {
+            return address(this).call(bytes4(sha3("checkDepth(uint256)")), depth - 1);
         }
     }
 
     function doStackExtension(uint depth) public {
-        CallLib.checkDepth(depth);
+        if (!checkDepth(depth)) throw;
         value = true;
     }
     function allowance(address _owner, address _spender) constant returns (uint256 remaining) {

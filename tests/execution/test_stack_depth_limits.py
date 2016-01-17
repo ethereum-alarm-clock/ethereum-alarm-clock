@@ -13,9 +13,9 @@ deploy_contracts = [
 
 MAX_DEPTH = 1024
 
-OUTER_MAX = 116
-CHECK_MAX = 339
-INNER_MAX = 339
+OUTER_MAX = 337
+CHECK_MAX = 340
+INNER_MAX = 340
 
 
 def test_stack_depth(deploy_client, deployed_contracts,
@@ -67,11 +67,11 @@ def test_stack_depth(deploy_client, deployed_contracts,
         return depth
 
     outer_max = find_maxima('depth_outer', depth_check=0, depth_inner=0)
-    #print "outer max", outer_max
+    print "outer max", outer_max
     check_max = find_maxima('depth_check', depth_outer=0, depth_inner=0)
-    #print "check max", check_max
+    print "check max", check_max
     inner_max = find_maxima('depth_inner', depth_outer=0, depth_check=0)
-    #print "inner max", inner_max
+    print "inner max", inner_max
 
     assert outer_max == OUTER_MAX
     assert check_max == CHECK_MAX

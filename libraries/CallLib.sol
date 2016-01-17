@@ -95,10 +95,7 @@ library CallLib {
 
     event CallExecuted(address indexed executor, uint gasCost, uint payment, uint donation, bool success);
 
-    event _CallAborted(address executor, bytes32 reason);
-    function CallAborted(address executor, bytes32 reason) public {
-        _CallAborted(executor, reason);
-    }
+    event CallAborted(address executor, bytes32 reason);
 
     function execute(Call storage self,
                      uint start_gas,
@@ -267,6 +264,45 @@ library CallLib {
             // already called
             if (self.wasCalled) return false;
         }
+        return true;
+    }
+
+    // The amount of gas that is required as overhead for call execution.
+    uint constant REQUIRED_GAS_OVERHEAD = 0;
+
+    function beforeExecuteForFutureBlockCall(Call storage self, address executor) returns (bool) {
+        bytes32 reason;
+
+        var call = FutureBlockCall(this);
+
+        if (self.requiredStackDepth > 0 && executor != tx.origin) {
+            if (!call.checkDepth(self.requiredStackDepth)) {
+                reason = "STACK_TOO_DEEP";
+            }
+        }
+        else if (self.wasCalled) {
+            // Not being called within call window.
+            reason = "ALREADY_CALLED";
+        }
+        else if (block.number < call.targetBlock() || block.number > call.targetBlock() + call.gracePeriod()) {
+            // Not being called within call window.
+            reason = "NOT_IN_CALL_WINDOW";
+        }
+        else if (!checkExecutionAuthorization(self, executor, block.number)) {
+            // Someone has claimed this call and they currently have exclusive
+            // rights to execute it.
+            reason = "NOT_AUTHORIZED";
+        }
+        else if (msg.gas < self.requiredGas + REQUIRED_GAS_OVERHEAD) {
+            // The executor has not provided sufficient gas
+            reason = "NOT_ENOUGH_GAS";
+        }
+
+        if (reason != 0x0) {
+            CallAborted(executor, reason);
+            return false;
+        }
+
         return true;
     }
 }
@@ -481,47 +517,21 @@ contract FutureBlockCall is FutureCall {
     // TODO: figure out how to quantify this value.
     uint constant REQUIRED_GAS_OVERHEAD = 0;
 
-    function checkDepth(uint depth) public returns (bool) {
-        if (depth == 0) {
-            return true;
-        }
-        else if (msg.sender == address(this)) {
-            return checkDepth(depth - 1);
-        }
-        else {
-            return address(this).call(bytes4(sha3("checkDepth(uint256)")), depth - 1);
-        }
+    uint constant GAS_PER_DEPTH = 700;
+
+    function checkDepth(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
     }
 
+    function __dig(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        if (!address(this).callcode(bytes4(sha3("__dig(uint256)")), n - 1)) throw;
+    }
+
+
     function beforeExecute(address executor) public returns (bool) {
-        bytes32 reason;
-
-        if (call.requiredStackDepth > 0 && executor != tx.origin) {
-            if (!checkDepth(call.requiredStackDepth)) {
-                reason = "STACK_TOO_DEEP";
-            }
-        }
-        else if (call.wasCalled) {
-            // Not being called within call window.
-            reason = "ALREADY_CALLED";
-        }
-        else if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {
-            // Not being called within call window.
-            reason = "NOT_IN_CALL_WINDOW";
-        }
-        else if (!CallLib.checkExecutionAuthorization(call, executor, block.number)) {
-            reason = "NOT_AUTHORIZED";
-        }
-        else if (msg.gas < call.requiredGas + REQUIRED_GAS_OVERHEAD) {
-            reason = "NOT_ENOUGH_GAS";
-        }
-
-        if (reason != 0x0) {
-            CallLib.CallAborted(executor, reason);
-            return false;
-        }
-
-        return true;
+        return CallLib.beforeExecuteForFutureBlockCall(call, executor);
     }
 
     function afterExecute(address executor) internal {

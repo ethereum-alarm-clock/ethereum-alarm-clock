@@ -21,7 +21,8 @@ library SchedulerLib {
     uint constant MINIMUM_CALL_GAS = 200000;
 
     // The maximum possible depth that stack depth checking can achieve.
-    uint constant MAXIMUM_STACK_CHECK = 339;
+    // Actual check limit is 1021.  Actual call limit is 1021
+    uint constant MAXIMUM_STACK_CHECK = 1000;
 
     event CallScheduled(address call_address);
 

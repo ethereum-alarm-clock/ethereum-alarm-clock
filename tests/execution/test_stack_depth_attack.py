@@ -24,9 +24,9 @@ def test_stack_depth_does_not_call_if_cannot_reach_depth(deploy_client,
     call = deploy_future_block_call(
         client_contract.doStackExtension,
         call_data=client_contract.doStackExtension.abi_args_signature([340]),
-        require_depth=340,
+        require_depth=1000,
     )
-    assert call.requiredStackDepth() == 340
+    assert call.requiredStackDepth() == 1000
 
     client_contract.setCallAddress(call._meta.address)
 
@@ -36,7 +36,7 @@ def test_stack_depth_does_not_call_if_cannot_reach_depth(deploy_client,
 
     # Call such that the stack has been "significantly" extended prior to
     # executing the call.
-    bad_call_txn_hash = client_contract.proxyCall(337)
+    bad_call_txn_hash = client_contract.proxyCall(1000)
     bad_call_txn_receipt = deploy_client.wait_for_transaction(bad_call_txn_hash)
 
     assert call.wasCalled() is False

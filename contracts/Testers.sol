@@ -222,28 +222,26 @@ contract TestErrors is owned {
 
     function proxyCall(uint depth) public returns (bool) {
         if (depth == 0) {
-            // WHY DOESN"T THIS WORK!!!
-            if (!checkDepth(10)) throw;
             return callAddress.call(bytes4(sha3("execute()")));
         }
         else if (msg.sender == address(this)) {
-            return proxyCall(depth - 1);
+            return address(this).callcode(bytes4(sha3("proxyCall(uint256)")), depth - 1);
         }
         else {
             return address(this).call(bytes4(sha3("proxyCall(uint256)")), depth - 1);
         }
     }
 
-    function checkDepth(uint depth) public returns (bool) {
-        if (depth == 0) {
-            return true;
-        }
-        else if (msg.sender == address(this)) {
-            return checkDepth(depth - 1);
-        }
-        else {
-            return address(this).call(bytes4(sha3("checkDepth(uint256)")), depth - 1);
-        }
+    uint constant GAS_PER_DEPTH = 700;
+
+    function checkDepth(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
+    }
+
+    function __dig(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        if (!address(this).callcode(bytes4(sha3("__dig(uint256)")), n - 1)) throw;
     }
 
     function doStackExtension(uint depth) public {

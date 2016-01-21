@@ -23,7 +23,9 @@ library CallLib {
     }
 
     enum State {
-        Waiting,
+        Pending,
+        Unclaimed,
+        Claimed,
         Frozen,
         Callable,
         Executed,
@@ -37,7 +39,15 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (block.number + BEFORE_CALL_FREEZE_WINDOW < call.targetBlock()) return State.Waiting;
+        if (block.number + CLAIM_GROWTH_WINDOW + MAXIMUM_CLAIM_WINDOW + BEFORE_CALL_FREEZE_WINDOW < call.targetBlock()) return State.Pending;
+        if (block.number + BEFORE_CALL_FREEZE_WINDOW < call.targetBlock()) {
+            if (self.claimer == 0x0) {
+                return State.Unclaimed;
+            }
+            else {
+                return State.Claimed;
+            }
+        }
         if (block.number < call.targetBlock()) return State.Frozen;
         if (block.number < call.targetBlock() + call.gracePeriod()) return State.Callable;
         return State.Missed;
@@ -250,21 +260,16 @@ library CallLib {
 
     function isCancellable(Call storage self, address caller) returns (bool) {
         // TODO: needs tests
-        if (self.wasCalled) return false;
-        if (self.isCancelled) return false;
-
+        var _state = state(self);
         var call = FutureBlockCall(this);
 
-        if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) {
-            // only cancellable by scheduler prior to call.
-            if (caller != call.schedulerAddress()) return false;
+        if (_state == State.Pending && caller == call.schedulerAddress()) {
+            return true;
         }
 
-        if (block.number > call.targetBlock() + call.gracePeriod()) {
-            // already called
-            if (self.wasCalled) return false;
-        }
-        return true;
+        if (_state == State.Missed) return true;
+
+        return false;
     }
 
     // The amount of gas that is required as overhead for call execution.
@@ -340,7 +345,9 @@ contract FutureCall {
     }
 
     enum State {
-        Waiting,
+        Pending,
+        Unclaimed,
+        Claimed,
         Frozen,
         Callable,
         Executed,
@@ -348,7 +355,7 @@ contract FutureCall {
         Missed
     }
 
-    modifier in_state(State state) { if (uint(CallLib.state(call)) == uint(state)) _ }
+    modifier in_state(State _state) { if (state() == _state) _ }
 
     function state() constant returns (State) {
         return State(CallLib.state(call));
@@ -435,14 +442,14 @@ contract FutureCall {
         if (msg.sender == schedulerAddress && msg.data.length > 0) {
 
             // cannot register call data at this point.
-            if (uint(CallLib.state(call)) != uint(State.Waiting)) throw;
+            if (uint(CallLib.state(call)) != uint(State.Pending)) throw;
             // cannot overwrite call data
             if (call.callData.length != 0) throw;
             call.callData = msg.data;
         }
     }
 
-    function registerData() public in_state(State.Waiting) {
+    function registerData() public in_state(State.Pending) {
         // only scheduler can register call data.
         if (msg.sender != schedulerAddress) throw;
         // cannot write over call data
@@ -450,7 +457,7 @@ contract FutureCall {
         CallLib.extractCallData(call, msg.data);
     }
 
-    function claim() public in_state(State.Waiting) returns (bool) {
+    function claim() public in_state(State.Unclaimed) returns (bool) {
         bool success = CallLib.claim(call, msg.sender, msg.value, basePayment);
         if (!success) {
             if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;

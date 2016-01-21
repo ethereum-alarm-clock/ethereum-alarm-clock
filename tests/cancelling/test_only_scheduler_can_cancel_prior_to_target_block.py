@@ -27,5 +27,6 @@ def test_only_scheduler_can_cancel_prior_to_target_block(deploy_client,
 
     assert call.isCancelled() is False
 
-    with pytest.raises(TransactionFailed):
-        call.cancel(_from=encode_hex(accounts[1]))
+    cancel_txn_hash = call.cancel(_from=encode_hex(accounts[1]))
+    cancel_txn_receipt = deploy_client.wait_for_transaction(cancel_txn_hash)
+    assert len(CallLib.Cancelled.get_transaction_logs(cancel_txn_hash)) == 0

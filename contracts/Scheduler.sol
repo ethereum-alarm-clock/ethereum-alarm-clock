@@ -69,7 +69,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, msg.sender,
-            0x0, EMPTY_CALL_DATA, 255, 0,
+            0x0, EMPTY_CALL_DATA, 255, 10,
             block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -78,8 +78,17 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, msg.sender,
-            0x0, EMPTY_CALL_DATA, 255, 0,
+            0x0, EMPTY_CALL_DATA, 255, 10,
             targetBlock, 0, getDefaultPayment(), getDefaultDonation(), msg.value
+        );
+    }
+
+    function scheduleCall(bytes4 abiSignature) public returns (address) {
+        return SchedulerLib.scheduleCall(
+            callIndex,
+            msg.sender, msg.sender,
+            abiSignature, EMPTY_CALL_DATA, 255, 10,
+            block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
@@ -87,16 +96,17 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            0x0, EMPTY_CALL_DATA, 255, 0,
+            0x0, EMPTY_CALL_DATA, 255, 10,
             block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
-    function scheduleCall(address contractAddress, bytes4 abiSignature) public returns (address) {
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, EMPTY_CALL_DATA, 255, 0,
+            abiSignature, EMPTY_CALL_DATA, 255, 10,
             block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -107,7 +117,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, callData, 255, 0,
+            abiSignature, callData, 255, 10,
             block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -117,7 +127,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            0x0, EMPTY_CALL_DATA, 255, 0,
+            0x0, EMPTY_CALL_DATA, 255, 10,
             targetBlock, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -127,7 +137,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, msg.sender,
-            abiSignature, EMPTY_CALL_DATA, 255, 0,
+            abiSignature, EMPTY_CALL_DATA, 255, 10,
             targetBlock, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -138,7 +148,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, EMPTY_CALL_DATA, 255, 0,
+            abiSignature, EMPTY_CALL_DATA, 255, 10,
             targetBlock, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -150,7 +160,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, callData, 255, 0,
+            abiSignature, callData, 255, 10,
             targetBlock, 0, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -162,7 +172,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, EMPTY_CALL_DATA, 255, 0,
+            abiSignature, EMPTY_CALL_DATA, 255, 10,
             targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -175,7 +185,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, callData, 255, 0,
+            abiSignature, callData, 255, 10,
             targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -188,7 +198,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, EMPTY_CALL_DATA, gracePeriod, 0,
+            abiSignature, EMPTY_CALL_DATA, gracePeriod, 10,
             targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -202,7 +212,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, callData, gracePeriod, 0,
+            abiSignature, callData, gracePeriod, 10,
             targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
@@ -216,7 +226,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, EMPTY_CALL_DATA, gracePeriod, 0,
+            abiSignature, EMPTY_CALL_DATA, gracePeriod, 10,
             targetBlock, suggestedGas, basePayment, getDefaultDonation(), msg.value
         );
     }
@@ -231,7 +241,7 @@ contract Scheduler {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
-            abiSignature, callData, gracePeriod, 0,
+            abiSignature, callData, gracePeriod, 10,
             targetBlock, suggestedGas, basePayment, getDefaultDonation(), msg.value
         );
     }

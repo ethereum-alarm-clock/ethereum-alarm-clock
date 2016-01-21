@@ -10,6 +10,10 @@ library SchedulerLib {
     /*
      *  Call Scheduling API
      */
+    function version() constant returns (uint16, uint16, uint16) {
+        return (0, 7, 0);
+    }
+
     // Ten minutes into the future.
     uint constant MAX_BLOCKS_IN_FUTURE = 40;
 
@@ -125,7 +129,7 @@ library SchedulerLib {
             return;
         }
 
-        var call = new FutureBlockCall.value(callConfig.endowment)(
+        var call = (new FutureBlockCall).value(callConfig.endowment)(
                 callConfig.schedulerAddress,
                 callConfig.targetBlock,
                 callConfig.gracePeriod,

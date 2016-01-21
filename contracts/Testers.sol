@@ -166,9 +166,8 @@ contract TestCallExecution is TestDataRegistry {
         bytes public v_bytes;
 
         function setBytes(bytes v) public {
-            Bytes(v);
-            Bytes(msg.data);
             v_bytes = v;
+            wasSuccessful = 1;
         }
 
         uint public vm_a;
@@ -178,11 +177,7 @@ contract TestCallExecution is TestDataRegistry {
         address public vm_e;
         bytes public vm_f;
 
-        event Bytes(bytes f);
-
         function setMany(uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            Bytes(f);
-            Bytes(msg.data);
             vm_a = a;
             vm_b = b;
             vm_c = c;

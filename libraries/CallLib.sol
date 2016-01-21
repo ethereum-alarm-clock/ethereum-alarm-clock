@@ -1,4 +1,4 @@
-import "libraries/GroveLib.sol";
+import "libraries/AccountingLib.sol";
 
 
 library CallLib {
@@ -275,10 +275,8 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (self.requiredStackDepth > 0 && executor != tx.origin) {
-            if (!call.checkDepth(self.requiredStackDepth)) {
-                reason = "STACK_TOO_DEEP";
-            }
+        if (self.requiredStackDepth > 0 && executor != tx.origin && !call.checkDepth(self.requiredStackDepth)) {
+            reason = "STACK_TOO_DEEP";
         }
         else if (self.wasCalled) {
             // Not being called within call window.

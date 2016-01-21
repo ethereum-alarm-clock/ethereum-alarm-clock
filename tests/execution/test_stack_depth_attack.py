@@ -42,9 +42,9 @@ def test_stack_depth_does_not_call_if_cannot_reach_depth(deploy_client,
     assert call.wasCalled() is False
     assert client_contract.value() is False
 
-    logs = deployed_contracts.CallLib._CallAborted.get_transaction_logs(bad_call_txn_hash)
+    logs = deployed_contracts.CallLib.CallAborted.get_transaction_logs(bad_call_txn_hash)
     assert logs
-    log_data = deployed_contracts.CallLib._CallAborted.get_log_data(logs[0])
+    log_data = deployed_contracts.CallLib.CallAborted.get_log_data(logs[0])
     assert log_data['reason'].startswith('STACK_TOO_DEEP')
 
     call_txn_hash = client_contract.proxyCall(0)

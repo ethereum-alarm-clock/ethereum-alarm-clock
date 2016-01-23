@@ -14,8 +14,8 @@ deploy_contracts = [
 MAX_DEPTH = 2048
 
 OUTER_MAX = 1021
-CHECK_MAX = 1021
-INNER_MAX = 1021
+CHECK_MAX = 1022
+INNER_MAX = 1022
 
 
 def test_stack_depth(deploy_client, deployed_contracts,

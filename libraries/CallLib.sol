@@ -68,6 +68,13 @@ library CallLib {
         }
     }
 
+    uint constant GAS_PER_DEPTH = 700;
+
+    function checkDepth(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
+    }
+
     function sendSafe(address to_address, uint value) public returns (uint) {
         if (value > address(this).balance) {
             value = address(this).balance;
@@ -280,7 +287,7 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (self.requiredStackDepth > 0 && executor != tx.origin && !call.checkDepth(self.requiredStackDepth)) {
+        if (self.requiredStackDepth > 0 && executor != tx.origin && !checkDepth(self.requiredStackDepth)) {
             reason = "STACK_TOO_DEEP";
         }
         else if (self.wasCalled) {
@@ -434,26 +441,32 @@ contract FutureCall {
     /*
      *  Call Data registration
      */
-    function () {
+    function () returns (bool) {
         /*
          * Fallback to allow sending funds to this contract.
          * (also allows registering raw call data)
          */
-        if (msg.sender == schedulerAddress && msg.data.length > 0) {
+        // only scheduler can register call data.
+        if (msg.sender != schedulerAddress) return false;
+        // cannot write over call data
+        if (call.callData.length > 0) return false;
 
-            // cannot register call data at this point.
-            if (uint(CallLib.state(call)) != uint(State.Pending)) throw;
-            // cannot overwrite call data
-            if (call.callData.length != 0) throw;
-            call.callData = msg.data;
-        }
+        var _state = state();
+        if (_state != State.Pending && _state != State.Unclaimed && _state != State.Claimed) return false;
+
+        call.callData = msg.data;
+        return true;
     }
 
-    function registerData() public in_state(State.Pending) {
+    function registerData() public returns (bool) {
         // only scheduler can register call data.
-        if (msg.sender != schedulerAddress) throw;
+        if (msg.sender != schedulerAddress) return false;
         // cannot write over call data
-        if (call.callData.length > 0) throw;
+        if (call.callData.length > 0) return false;
+
+        var _state = state();
+        if (_state != State.Pending && _state != State.Unclaimed && _state != State.Claimed) return false;
+
         CallLib.extractCallData(call, msg.data);
     }
 
@@ -523,11 +536,6 @@ contract FutureBlockCall is FutureCall {
     uint constant REQUIRED_GAS_OVERHEAD = 0;
 
     uint constant GAS_PER_DEPTH = 700;
-
-    function checkDepth(uint n) constant returns (bool) {
-        if (n == 0) return true;
-        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
-    }
 
     function __dig(uint n) constant returns (bool) {
         if (n == 0) return true;

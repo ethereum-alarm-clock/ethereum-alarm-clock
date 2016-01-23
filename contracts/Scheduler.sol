@@ -83,6 +83,16 @@ contract Scheduler {
         );
     }
 
+    function scheduleCall(bytes4 abiSignature,
+                          bytes callData) public returns (address) {
+        return SchedulerLib.scheduleCall(
+            callIndex,
+            msg.sender, msg.sender,
+            abiSignature, callData, 255, 10,
+            block.number + MAX_BLOCKS_IN_FUTURE, 0, getDefaultPayment(), getDefaultDonation(), msg.value
+        );
+    }
+
     function scheduleCall(bytes4 abiSignature) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,

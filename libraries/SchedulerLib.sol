@@ -24,6 +24,10 @@ library SchedulerLib {
     // Measured Minimum is closer to 150,000
     uint constant MINIMUM_CALL_GAS = 200000;
 
+
+    // The minimum depth required to execute a call.
+    uint constant MINIMUM_STACK_CHECK = 10;
+
     // The maximum possible depth that stack depth checking can achieve.
     // Actual check limit is 1021.  Actual call limit is 1021
     uint constant MAXIMUM_STACK_CHECK = 1000;
@@ -33,6 +37,10 @@ library SchedulerLib {
     event CallRejected(address indexed schedulerAddress, bytes32 reason);
 
     uint constant CALL_WINDOW_SIZE = 16;
+
+    function getMinimumStackCheck() constant returns (uint) {
+        return MINIMUM_STACK_CHECK;
+    }
 
     function getMaximumStackCheck() constant returns (uint) {
         return MAXIMUM_STACK_CHECK;
@@ -112,9 +120,10 @@ library SchedulerLib {
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
-        else if (callConfig.requiredStackDepth > MAXIMUM_STACK_CHECK) {
-            // Cannot require stack depth greater than MAXIMUM_STACK_CHECK
-            reason = "STACK_CHECK_TOO_LARGE";
+        else if (MINIMUM_STACK_CHECK > callConfig.requiredStackDepth || callConfig.requiredStackDepth > MAXIMUM_STACK_CHECK) {
+            // Cannot require stack depth greater than MAXIMUM_STACK_CHECK or
+            // less than MINIMUM_STACK_CHECK
+            reason = "STACK_CHECK_OUT_OF_RANGE";
         }
         else if (callConfig.gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";

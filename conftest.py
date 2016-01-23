@@ -137,7 +137,12 @@ def denoms():
 def get_call(SchedulerLib, FutureBlockCall, deploy_client):
     def _get_call(txn_hash):
         call_scheduled_logs = SchedulerLib.CallScheduled.get_transaction_logs(txn_hash)
-        assert len(call_scheduled_logs) == 1
+        if not len(call_scheduled_logs):
+            call_rejected_logs = SchedulerLib.CallRejected.get_transaction_logs(txn_hash)
+            if len(call_rejected_logs):
+                reject_data = SchedulerLib.CallRejected.get_log_data(call_rejected_logs[0])
+                raise ValueError("CallRejected: {0}".format(reject_data))
+            raise ValueError("No scheduled call found")
         call_scheduled_data = SchedulerLib.CallScheduled.get_log_data(call_scheduled_logs[0])
 
         call_address = call_scheduled_data['call_address']

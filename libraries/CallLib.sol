@@ -532,7 +532,7 @@ contract FutureBlockCall is FutureCall {
         gracePeriod = _gracePeriod;
     }
 
-    // TODO: figure out how to quantify this value.
+    // TODO: figure out this value.
     uint constant REQUIRED_GAS_OVERHEAD = 0;
 
     uint constant GAS_PER_DEPTH = 700;

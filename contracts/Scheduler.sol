@@ -26,6 +26,7 @@ contract Scheduler {
         return SchedulerLib.getMinimumGracePeriod();
     }
 
+    // TODO: this needs to be a reasonable number.  too high right now.
     // Based on a gas price of 50,000 lovelace targeting 1 ether
     uint constant DEFAULT_PAYMENT_GAS = 20000000;
 
@@ -178,12 +179,12 @@ contract Scheduler {
     function scheduleCall(address contractAddress,
                           bytes4 abiSignature,
                           uint targetBlock,
-                          uint suggestedGas) public returns (address) {
+                          uint requiredGas) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, 255, 10,
-            targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
@@ -191,25 +192,25 @@ contract Scheduler {
                           bytes4 abiSignature,
                           bytes callData,
                           uint targetBlock,
-                          uint suggestedGas) public returns (address) {
+                          uint requiredGas) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, 255, 10,
-            targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
     function scheduleCall(address contractAddress,
                           bytes4 abiSignature,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint8 gracePeriod) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, gracePeriod, 10,
-            targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
@@ -217,27 +218,27 @@ contract Scheduler {
                           bytes4 abiSignature,
                           bytes callData,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint8 gracePeriod) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, gracePeriod, 10,
-            targetBlock, suggestedGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
         );
     }
 
     function scheduleCall(address contractAddress,
                           bytes4 abiSignature,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint8 gracePeriod,
                           uint basePayment) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, gracePeriod, 10,
-            targetBlock, suggestedGas, basePayment, getDefaultDonation(), msg.value
+            targetBlock, requiredGas, basePayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -245,14 +246,14 @@ contract Scheduler {
                           bytes4 abiSignature,
                           bytes callData,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint8 gracePeriod,
                           uint basePayment) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, gracePeriod, 10,
-            targetBlock, suggestedGas, basePayment, getDefaultDonation(), msg.value
+            targetBlock, requiredGas, basePayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -260,7 +261,7 @@ contract Scheduler {
                           bytes4 abiSignature,
                           bytes callData,
                           uint targetBlock,
-                          uint suggestedGas,
+                          uint requiredGas,
                           uint16 requiredStackDepth,
                           uint8 gracePeriod,
                           uint basePayment,
@@ -269,7 +270,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, gracePeriod, requiredStackDepth,
-            targetBlock, suggestedGas, basePayment, baseDonation, msg.value
+            targetBlock, requiredGas, basePayment, baseDonation, msg.value
         );
     }
 

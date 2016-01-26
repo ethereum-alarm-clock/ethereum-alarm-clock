@@ -22,6 +22,7 @@ Contents:
    scheduling
    call_contracts
    execution
+   reliability
    client
    costs_and_fees
    abi

@@ -15,92 +15,132 @@ Lifecycle of a Call Contract
 * **creation** - The call contract is created as part of call scheduling.
 * **data-registered** - The data for the call is registered with the contract.
   This step can be skipped for function calls that take no arguments.
+* **claiming** - The contract can be claimed which will grant the claimer
+  exclusive rights to execution during the first 16 blocks of the call window.
 * **locked** - The contract is locked, preventing cancellation starting 10 blocks
   before the call's target block through the last block in the call window.
 * **execution** - The executing transaction is sent, which triggers the call
   contract to execute the function call.
 * **payment** - payments are sent to the executor and the creator of the alarm
   service.
-* **suicide** - The contract suicides itself, sending the remainder of it's
-  funds to the call scheduler.
+* **finalization** - The contract sends any remaining funds to the address
+  which scheduled the call.
+
 
 Scheduling the Call
 -------------------
 
 Function calls are scheduled with the ``scheduleCall`` function on the Alarm
 service.  This creates a new **call contract** that represents the function
-call.
+call.  The primary signature for this function which accepts all allowed
+configuration options is as follows.
 
-* **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address)``
-* **ABI Signature:** ``0x8b676ae8``
+.. code-block:: solidity
 
-The ``scheduleCall`` function takes the following parameters:
-
-**Required Arguments**
-
-* **address contractAddress:** The address of the contract for the function
-  call.
-* **bytes4 abiSignature:** The 4 byte ABI signature of the function to be
-  called.
-* **uint targetBlock:** The block number the call should be executed on.
-
-**Optional Arguments**
-
-* **uint suggestedGas:** A suggestion to the call executor as to how much gas
-  should be provided to execute the call. (default: 0)
-* **uint8 gracePeriod:** The number of blocks after ``targetBlock`` that it is
-  ok to still execute this call.  Cannot be less than 64. (default: 255)
-* **uint basePayment:** The base amount in wei that should be paid to the
-  executor of the call. (default: 1 ether)
-* **uint baseFee:** The base amount in wei that should be paid to the
-  creator of the alarm service. (default: 100 finney)
+    function scheduleCall(address contractAddress,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint targetBlock,
+                          uint requiredGas,
+                          uint16 requiredStackDepth,
+                          uint8 gracePeriod,
+                          uint basePayment,
+                          uint baseDonation) public returns (address);
 
 
-+----------+------------+
-| gasPrice | multiplier |
-+==========+============+
-|    15    |    1.20    |
-+----------+------------+   
-|    16    |    1.17    |
-+----------+------------+
-|    17    |    1.13    |
-+----------+------------+
-|    18    |    1.09    |
-+----------+------------+
-|    19    |    1.05    |
-+----------+------------+
-|    20    |    1.00    |
-+----------+------------+
-|    21    |    0.95    |
-+----------+------------+
-|    22    |    0.91    |
-+----------+------------+
-|    23    |    0.87    |
-+----------+------------+
-|    24    |    0.83    |
-+----------+------------+
-|    25    |    0.80    |
-+----------+------------+
-|    26    |    0.77    |
-+----------+------------+
-|    27    |    0.74    |
-+----------+------------+
-|    28    |    0.71    |
-+----------+------------+
-|    29    |    0.69    |
-+----------+------------+
-|    30    |    0.67    |
-+----------+------------+
-|    31    |    0.65    |
-+----------+------------+
-|    32    |    0.63    |
-+----------+------------+
-|    33    |    0.61    |
-+----------+------------+
-|    34    |    0.59    |
-+----------+------------+
-|    35    |    0.57    |
-+----------+------------+
+Call Scheduling Arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+**address contractAddress:**
+
+The address of the contract that the call should be called on.
+
+If omitted then ``msg.sender`` is used in it's place.
+
+
+**bytes4 abiSignature:**
+
+The 4 byte ABI signature of the function to be called.
+
+If omitted then it is assumed that the ``callData`` is appropriately prefixed
+with the function signature.  TODO: implement this.
+
+
+**bytes callData:**
+
+The call data that should be sent with the call.  
+
+If omitted then it is assumed that the function should be called with no data.
+
+.. note::
+
+    If the abiSignature argument was specified then this should **not** include
+    the 4-byte function signature.
+
+
+**uint targetBlock:**
+
+The block number the call should be executed on.  This must be at least 10
+blocks in the future.
+
+If omitted then the call will be scheduled for 10 blocks in the future.
+
+
+**uint8 gracePeriod:**
+
+The number of blocks after ``targetBlock`` during which the call may still be
+executed.  Cannot be less than 64 or greater than 255.
+
+If omitted the maximum value of 255 is used.
+
+
+**uint requiredGas:**
+
+The amount of gas required to be sent along with the executing transaction.
+
+If omitted this defaults to 200,000.  TODO: implement this.
+
+
+**uint16 requiredStackDepth:**
+
+The number of call stack frames should be checked prior to execution of the
+function call cannot be less than 10 or greater than 1,000.  Prior to call
+execution the call contract will check that the stack can be extended by this
+number.  If this fails then execution is aborted.
+
+If omitted then this defaults to 10.  TODO: implement this
+
+
+**uint basePayment:**
+
+The base amount in wei that should be paid to the executor of the call.  When
+validating that enough ether has been endowed to the call contract then the
+maximum possible payment value of ``2 * basePayment`` is used.
+
+If omitted this defaults to 1 ether.  TODO: fix this value
+
+
+**uint baseDonation:**
+
+The base amount in wei that should be donated to the creator of the service.
+
+
+If omitted this defaults to 100 finney.  TODO: fix this value
+
+
+Alternate Call Signatures
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+The ``scheduleCall`` function can be called with most any combination of these
+arguments with the simplest version of this function being to call it with no
+arguments (``scheduleCall()``) in which case the default values for each
+argument are used.
+
+
+The following alternative call signatures are also available for the
+``scheduleCall`` function.
 
 
 The optional arguments are implemented through the following alternate

@@ -59,23 +59,25 @@ Execution of scheduled calls
 ----------------------------
 
 Scheduled function calls can be executed by anyone who wishes to initiate the
-transaction.  Each call has a payment amount associated with it which is paid
-to the executor of the call.
+transaction who inturn is paid whatever amount was specified as the payment
+value for the call.
 
 
 Cost
 ^^^^
 
-In addition to the gas costs, schedulers are also encouraged to pay the call
-executor as well as the creator of the service for their effort.  This value
-can be specified by the scheduler, meaning that you may choose to offer any
-amount for the execution of your function..
+In addition to the gas costs, schedulers are also encouraged include a payment
+amount for the executor of the call.  This value can be specified by the
+scheduler, meaning that you may choose to offer any amount for the execution of
+your function.
 
 The scheduling function uses the following defaults if specific values are not
 provided.
 
+* TODO: these values need to be updated.
 * Payment to the executor: **1 ether**
 * Payment to the service creator: **100 finney**
+
 
 Guarantees
 ----------

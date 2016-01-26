@@ -67,6 +67,7 @@ library SchedulerLib {
         address contractAddress;
         bytes4 abiSignature;
         bytes callData;
+        uint callValue;
         uint8 gracePeriod;
         uint16 requiredStackDepth;
         uint targetBlock;
@@ -76,13 +77,14 @@ library SchedulerLib {
         uint endowment;
     }
 
-    function scheduleCall(GroveLib.Index storage self,
+    function scheduleCall(GroveLib.Index storage callIndex,
                           address schedulerAddress,
                           address contractAddress,
                           bytes4 abiSignature,
                           bytes callData,
                           uint8 gracePeriod,
                           uint16 requiredStackDepth,
+                          uint callValue,
                           uint targetBlock,
                           uint requiredGas,
                           uint basePayment,
@@ -95,17 +97,42 @@ library SchedulerLib {
             callData: callData,
             gracePeriod: gracePeriod,
             requiredStackDepth: requiredStackDepth,
+            callValue: callValue,
             targetBlock: targetBlock,
             requiredGas: requiredGas,
             basePayment: basePayment,
             baseDonation: baseDonation,
             endowment: endowment,
         });
-        return _scheduleCall(self, callConfig);
+        return _scheduleCall(callIndex, callConfig);
     }
 
-    function _scheduleCall(GroveLib.Index storage self,
-                          CallConfig memory callConfig) internal returns (address) {
+    function scheduleCall(GroveLib.Index storage callIndex,
+                          address[2] addresses,
+                          bytes4 abiSignature,
+                          bytes callData,
+                          uint8 gracePeriod,
+                          uint16 requiredStackDepth,
+                          uint[6] uints) public returns (address) {
+        CallConfig memory callConfig = CallConfig({
+            schedulerAddress: addresses[0],
+            contractAddress: addresses[1],
+            abiSignature: abiSignature,
+            callData: callData,
+            gracePeriod: gracePeriod,
+            requiredStackDepth: requiredStackDepth,
+            callValue: uints[0],
+            targetBlock: uints[1],
+            requiredGas: uints[2],
+            basePayment: uints[3],
+            baseDonation: uints[4],
+            endowment: uints[5],
+        });
+        return _scheduleCall(callIndex, callConfig);
+
+    }
+
+    function _scheduleCall(GroveLib.Index storage callIndex, CallConfig memory callConfig) internal returns (address) {
         /*
         * Primary API for scheduling a call.
         *
@@ -145,6 +172,7 @@ library SchedulerLib {
                 callConfig.contractAddress,
                 callConfig.abiSignature,
                 callConfig.callData,
+                callConfig.callValue,
                 callConfig.requiredGas,
                 callConfig.requiredStackDepth,
                 callConfig.basePayment,
@@ -152,7 +180,7 @@ library SchedulerLib {
         );
 
         // Put the call into the grove index.
-        GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));
+        GroveLib.insert(callIndex, bytes32(address(call)), int(call.targetBlock()));
 
         CallScheduled(address(call));
 

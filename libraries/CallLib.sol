@@ -9,6 +9,7 @@ library CallLib {
         address contractAddress;
         bytes4 abiSignature;
         bytes callData;
+        uint callValue;
         uint anchorGasPrice;
         uint requiredGas;
         uint16 requiredStackDepth;
@@ -112,6 +113,8 @@ library CallLib {
 
     event CallExecuted(address indexed executor, uint gasCost, uint payment, uint donation, bool success);
 
+    bytes4 constant EMPTY_SIGNATURE = 0x0000;
+
     event CallAborted(address executor, bytes32 reason);
 
     function execute(Call storage self,
@@ -123,8 +126,20 @@ library CallLib {
         
         // Mark the call has having been executed.
         self.wasCalled = true;
+
         // Make the call
-        self.wasSuccessful = self.contractAddress.call.gas(msg.gas - overhead)(self.abiSignature, self.callData);
+        if (self.abiSignature == EMPTY_SIGNATURE && self.callData.length == 0) {
+            self.wasSuccessful = self.contractAddress.call.value(self.callValue).gas(msg.gas - overhead)();
+        }
+        else if (self.abiSignature == EMPTY_SIGNATURE) {
+            self.wasSuccessful = self.contractAddress.call.value(self.callValue).gas(msg.gas - overhead)(self.callData);
+        }
+        else if (self.callData.length == 0) {
+            self.wasSuccessful = self.contractAddress.call.value(self.callValue).gas(msg.gas - overhead)(self.abiSignature);
+        }
+        else {
+            self.wasSuccessful = self.contractAddress.call.value(self.callValue).gas(msg.gas - overhead)(self.abiSignature, self.callData);
+        }
 
         // Compute the scalar (0 - 200) for the donation.
         uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
@@ -335,6 +350,7 @@ contract FutureCall {
                         address _contractAddress,
                         bytes4 _abiSignature,
                         bytes _callData,
+                        uint _callValue,
                         uint _basePayment,
                         uint _baseDonation)
     {
@@ -349,6 +365,7 @@ contract FutureCall {
         call.contractAddress = _contractAddress;
         call.abiSignature = _abiSignature;
         call.callData = _callData;
+        call.callValue = _callValue;
     }
 
     enum State {
@@ -518,11 +535,12 @@ contract FutureBlockCall is FutureCall {
                              address _contractAddress,
                              bytes4 _abiSignature,
                              bytes _callData,
+                             uint _callValue,
                              uint _requiredGas,
                              uint16 _requiredStackDepth,
                              uint _basePayment,
                              uint _baseDonation)
-        FutureCall(_schedulerAddress, _requiredGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _basePayment, _baseDonation)
+        FutureCall(_schedulerAddress, _requiredGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _callValue, _basePayment, _baseDonation)
     {
         // TODO: split this constructor across this contract and the
         // parent contract FutureCall

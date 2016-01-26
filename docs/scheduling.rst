@@ -139,28 +139,11 @@ arguments (``scheduleCall()``) in which case the default values for each
 argument are used.
 
 
-The following alternative call signatures are also available for the
-``scheduleCall`` function.
+TODO: fill in with call signatures.
 
 
-The optional arguments are implemented through the following alternate
-invocation signatures.  The default value for each of the optional arguments
-will be used if any of the following signatures are used.
-
-* **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address)``
-* **ABI Signature:** ``0x1991313``
-
-
-* **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address)``
-* **ABI Signature:** ``0x49ae734``
-
-
-* **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address)``
-* **ABI Signature:** ``0x480b70bd``
-
-
-* **Solidity Function Signature:** ``function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address)``
-* **ABI Signature:** ``0x68402460``
+Call Contract Address
+^^^^^^^^^^^^^^^^^^^^^
 
 If the ``scheduleCall`` function is being used from within a contract, the
 address of the newly created call contract is returned.  If instead, the

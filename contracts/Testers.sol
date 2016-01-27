@@ -106,6 +106,22 @@ contract TestDataRegistry is owned {
 contract TestCallExecution is TestDataRegistry {
         uint8 public wasSuccessful;
 
+        function reset() public {
+            v_bool = false;
+            v_uint = 0;
+            v_int = 0;
+            v_bytes32 = 0x0;
+            v_address = 0x0;
+            v_bytes.length = 0;
+
+            vm_a = 0;
+            vm_b = 0;
+            vm_c = 0;
+            vm_d = 0x0;
+            vm_e = 0x0;
+            vm_f.length = 0;
+        }
+
         function doExecution(address to) {
             bool result = to.call(bytes4(sha3("execute()")));
             if (result) {
@@ -169,6 +185,10 @@ contract TestCallExecution is TestDataRegistry {
         function setBytes(bytes v) public {
             v_bytes = v;
             wasSuccessful = 1;
+        }
+
+        function setCallData() public {
+            v_bytes = msg.data;
         }
 
         uint public vm_a;

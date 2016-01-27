@@ -15,7 +15,10 @@ library SchedulerLib {
     }
 
     // Ten minutes into the future.
-    uint constant MAX_BLOCKS_IN_FUTURE = 40;
+    uint constant MIN_BLOCKS_IN_FUTURE = 10;
+
+    // max of uint8
+    uint8 constant DEFAULT_GRACE_PERIOD = 255;
 
     // The minimum gas required to execute a scheduled call on a function that
     // does almost nothing.  This is an approximation and assumes the worst
@@ -53,6 +56,10 @@ library SchedulerLib {
         return 2 * CALL_WINDOW_SIZE;
     }
 
+    function getDefaultGracePeriod() constant returns (uint8) {
+        return DEFAULT_GRACE_PERIOD;
+    }
+
     function getMinimumCallGas() constant returns (uint) {
         return MINIMUM_CALL_GAS;
     }
@@ -63,6 +70,10 @@ library SchedulerLib {
 
     function getMinimumCallCost(uint basePayment, uint baseDonation) constant returns (uint) {
         return 2 * (baseDonation + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
+    }
+
+    function getFirstSchedulableBlock() constant returns (uint) {
+        return block.number + MIN_BLOCKS_IN_FUTURE;
     }
 
     function getMinimumEndowment(uint basePayment,
@@ -150,15 +161,15 @@ library SchedulerLib {
         /*
         * Primary API for scheduling a call.
         *
-        * - No sooner than MAX_BLOCKS_IN_FUTURE
+        * - No sooner than MIN_BLOCKS_IN_FUTURE
         * - Grace Period must be longer than the minimum grace period.
         * - msg.value must be >= MIN_GAS * tx.gasprice + 2 * (baseDonation + basePayment)
         */
         bytes32 reason;
 
-        if (callConfig.targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {
+        if (callConfig.targetBlock < block.number + MIN_BLOCKS_IN_FUTURE) {
             // Don't allow scheduling further than
-            // MAX_BLOCKS_IN_FUTURE
+            // MIN_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
         else if (getMinimumStackCheck() > callConfig.requiredStackDepth || callConfig.requiredStackDepth > getMaximumStackCheck()) {
@@ -169,11 +180,8 @@ library SchedulerLib {
         else if (callConfig.gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
         }
-        else if (callConfig.requiredGas < getMinimumCallGas()) {
-            reason = "REQUIRED_GAS_TOO_LOW";
-        }
-        else if (callConfig.requiredGas > getMaximumCallGas()) {
-            reason = "REQUIRED_GAS_TOO_HIGH";
+        else if (callConfig.requiredGas < getMinimumCallGas() || callConfig.requiredGas > getMaximumCallGas()) {
+            reason = "REQUIRED_GAS_OUT_OF_RANGE";
         }
         else if (callConfig.endowment < getMinimumEndowment(callConfig.basePayment, callConfig.baseDonation, callConfig.callValue, callConfig.requiredGas)) {
             reason = "INSUFFICIENT_FUNDS";

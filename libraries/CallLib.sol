@@ -219,38 +219,49 @@ library CallLib {
          */
         var call = FutureBlockCall(this);
 
-        uint last_block = call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
+        uint cutoff = call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
         
         // claim window has closed
-        if (block_number > last_block) return call.basePayment();
+        if (block_number > cutoff) return call.basePayment();
 
-        uint first_block = last_block - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW;
-        
-        // claim window has not begun
-        if (block_number < first_block) return 0;
+        cutoff -= MAXIMUM_CLAIM_WINDOW;
 
         // in the maximum claim window.
-        if (block_number > last_block - MAXIMUM_CLAIM_WINDOW) return call.basePayment();
+        if (block_number > cutoff) return call.basePayment();
 
-        uint x = block_number - first_block;
+        cutoff -= CLAIM_GROWTH_WINDOW;
 
-        return call.basePayment() * x / CLAIM_GROWTH_WINDOW;
+        if (block_number > cutoff) {
+            uint x = block_number - cutoff;
+
+            return call.basePayment() * x / CLAIM_GROWTH_WINDOW;
+        }
+
+        return 0;
+    }
+
+    function lastClaimBlock() constant returns (uint) {
+        var call = FutureBlockCall(this);
+        return call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;
+    }
+
+    function maxClaimBlock() constant returns (uint) {
+        return lastClaimBlock() - MAXIMUM_CLAIM_WINDOW;
+    }
+
+    function firstClaimBlock() constant returns (uint) {
+        return maxClaimBlock() - CLAIM_GROWTH_WINDOW;
     }
 
     function claim(Call storage self, address executor, uint deposit_amount, uint basePayment) public returns (bool) {
-        // Already claimed
-        if (self.claimer != 0x0) return false;
-
+        /*
+         *  Warning! this does not check whether the function is already
+         *  claimed or whether we are within the claim window.  This must be
+         *  done at the contract level.
+         */
         // Insufficient Deposit
         if (deposit_amount < 2 * basePayment) return false;
 
-        var call = FutureBlockCall(this);
-
-        // Too early
-        if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) return false;
-
-        // Too late
-        if (block.number > call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return false;
         self.claimAmount = getClaimAmountForBlock(block.number);
         self.claimer = executor;
         self.claimerDeposit = deposit_amount;
@@ -491,6 +502,18 @@ contract FutureCall {
         CallLib.extractCallData(call, msg.data);
     }
 
+    function firstClaimBlock() constant returns (uint) {
+        return CallLib.firstClaimBlock();
+    }
+
+    function maxClaimBlock() constant returns (uint) {
+        return CallLib.maxClaimBlock();
+    }
+
+    function lastClaimBlock() constant returns (uint) {
+        return CallLib.lastClaimBlock();
+    }
+
     function claim() public in_state(State.Unclaimed) returns (bool) {
         bool success = CallLib.claim(call, msg.sender, msg.value, basePayment);
         if (!success) {
@@ -590,7 +613,7 @@ contract FutureBlockCall is FutureCall {
     uint constant MAXIMUM_CLAIM_WINDOW = 15;
     uint constant BEFORE_CALL_FREEZE_WINDOW = 10;
 
-    function isCancellable() public returns (bool) {
+    function isCancellable() constant public returns (bool) {
         return CallLib.isCancellable(call, msg.sender);
     }
 

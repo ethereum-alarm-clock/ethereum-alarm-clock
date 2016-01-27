@@ -40,7 +40,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
         get_contract_address_from_txn,
     )
 
-    def _deploy_future_block_call(contract_function, scheduler_address=None,
+    def _deploy_future_block_call(contract_function=None, scheduler_address=None,
                                   target_block=None, grace_period=255,
                                   required_gas=1000000, payment=1, donation=1,
                                   endowment=None, call_data="",
@@ -54,6 +54,13 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
         if scheduler_address is None:
             scheduler_address = deploy_coinbase
 
+        if contract_function is None:
+            abi_signature = ""
+            contract_address = scheduler_address
+        else:
+            abi_signature = contract_function.encoded_abi_signature
+            contract_address = contract_function._contract._meta.address
+
         deploy_txn_hash = deploy_contract(
             deploy_client,
             FutureBlockCall,
@@ -61,8 +68,8 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
                 scheduler_address,
                 target_block,
                 grace_period,
-                contract_function._contract._meta.address,
-                contract_function.encoded_abi_signature,
+                contract_address,
+                abi_signature,
                 call_data,
                 call_value,
                 required_gas,

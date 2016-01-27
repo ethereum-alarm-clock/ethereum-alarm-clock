@@ -19,6 +19,11 @@ def test_call_rejected_for_insufficient_endowment(deploy_client,
 
     # 1 wei short
     endowment = 5 * denoms.ether + 2 * (scheduler.getDefaultPayment() + scheduler.getDefaultDonation()) + scheduler.getDefaultRequiredGas() * deploy_client.get_gas_price() - 1
+    assert endowment == scheduler.getMinimumEndowment(
+        scheduler.getDefaultPayment(),
+        scheduler.getDefaultDonation(),
+        5 * denoms.ether,
+    ) - 1
 
     scheduling_txn_hash = scheduler.scheduleCall(
         client_contract._meta.address,
@@ -46,7 +51,12 @@ def test_call_accepted_for_sufficient_endowment(deploy_client,
     targetBlock = scheduler.getFirstSchedulableBlock() + 1
 
     # 1 wei short
-    endowment = 5 * denoms.ether + 2 * (scheduler.getDefaultPayment() + scheduler.getDefaultDonation()) + scheduler.getDefaultRequiredGas() * deploy_client.get_gas_price() - 1
+    endowment = 5 * denoms.ether + 2 * (scheduler.getDefaultPayment() + scheduler.getDefaultDonation()) + scheduler.getDefaultRequiredGas() * deploy_client.get_gas_price()
+    assert endowment == scheduler.getMinimumEndowment(
+        scheduler.getDefaultPayment(),
+        scheduler.getDefaultDonation(),
+        5 * denoms.ether,
+    )
 
     scheduling_txn_hash = scheduler.scheduleCall(
         client_contract._meta.address,
@@ -62,4 +72,4 @@ def test_call_accepted_for_sufficient_endowment(deploy_client,
     assert call.callValue() == 5 * denoms.ether
     assert call.basePayment() == scheduler.getDefaultPayment()
     assert call.baseDonation() == scheduler.getDefaultDonation()
-    assert call.requiredGas == scheduler.getDefaultRequiredGas()
+    assert call.requiredGas() == scheduler.getDefaultRequiredGas()

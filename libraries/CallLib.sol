@@ -408,6 +408,10 @@ contract FutureCall {
         return call.callData;
     }
 
+    function callValue() constant returns (uint) {
+        return call.callValue;
+    }
+
     function anchorGasPrice() constant returns (uint) {
         return call.anchorGasPrice;
     }

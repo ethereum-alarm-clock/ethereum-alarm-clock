@@ -24,7 +24,6 @@ library SchedulerLib {
     // Measured Minimum is closer to 150,000
     uint constant MINIMUM_CALL_GAS = 200000;
 
-
     // The minimum depth required to execute a call.
     uint16 constant MINIMUM_STACK_CHECK = 10;
 
@@ -56,6 +55,10 @@ library SchedulerLib {
 
     function getMinimumCallGas() constant returns (uint) {
         return MINIMUM_CALL_GAS;
+    }
+
+    function getMaximumCallGas() constant returns (uint) {
+        return block.gaslimit - getMinimumCallGas();
     }
 
     function getMinimumCallCost(uint basePayment, uint baseDonation) constant returns (uint) {
@@ -167,11 +170,12 @@ library SchedulerLib {
             reason = "GRACE_TOO_SHORT";
         }
         else if (callConfig.requiredGas < getMinimumCallGas()) {
-            // TODO: test this
             reason = "REQUIRED_GAS_TOO_LOW";
         }
+        else if (callConfig.requiredGas > getMaximumCallGas()) {
+            reason = "REQUIRED_GAS_TOO_HIGH";
+        }
         else if (callConfig.endowment < getMinimumEndowment(callConfig.basePayment, callConfig.baseDonation, callConfig.callValue, callConfig.requiredGas)) {
-            // TODO: test this
             reason = "INSUFFICIENT_FUNDS";
         }
 

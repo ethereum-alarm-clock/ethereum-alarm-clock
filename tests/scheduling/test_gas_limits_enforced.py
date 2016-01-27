@@ -1,24 +1,18 @@
 
 deploy_contracts = [
-    "CallLib",
     "Scheduler",
     "TestCallExecution",
 ]
 
 
 def test_call_rejected_for_too_low_gas_requirement(deploy_client,
-                                                   deployed_contracts,
-                                                   deploy_future_block_call,
-                                                   denoms, FutureBlockCall,
-                                                   CallLib, SchedulerLib,
-                                                   get_call_rejection_data,
-                                                   deploy_coinbase):
+                                                   deployed_contracts, denoms,
+                                                   get_call_rejection_data,):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
     targetBlock = scheduler.getFirstSchedulableBlock() + 10
 
-    # 1 wei short
     assert 100 < scheduler.getMinimumCallGas()
 
     scheduling_txn_hash = scheduler.scheduleCall(
@@ -37,19 +31,14 @@ def test_call_rejected_for_too_low_gas_requirement(deploy_client,
 
 
 def test_call_rejected_for_too_high_gas_requirement(deploy_client,
-                                                    deployed_contracts,
-                                                    deploy_future_block_call,
-                                                    denoms, FutureBlockCall,
-                                                    CallLib, SchedulerLib,
-                                                    get_call_rejection_data,
-                                                    deploy_coinbase):
+                                                    deployed_contracts, denoms,
+                                                    get_call_rejection_data,):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
     targetBlock = scheduler.getFirstSchedulableBlock() + 10
 
-    # 1 wei short
-    assert 100 < scheduler.getMinimumCallGas()
+    assert 3141592 > scheduler.getMaximumCallGas()
 
     scheduling_txn_hash = scheduler.scheduleCall(
         client_contract._meta.address,

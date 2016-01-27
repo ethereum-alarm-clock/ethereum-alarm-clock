@@ -26,11 +26,11 @@ library SchedulerLib {
 
 
     // The minimum depth required to execute a call.
-    uint constant MINIMUM_STACK_CHECK = 10;
+    uint16 constant MINIMUM_STACK_CHECK = 10;
 
     // The maximum possible depth that stack depth checking can achieve.
     // Actual check limit is 1021.  Actual call limit is 1021
-    uint constant MAXIMUM_STACK_CHECK = 1000;
+    uint16 constant MAXIMUM_STACK_CHECK = 1000;
 
     event CallScheduled(address call_address);
 
@@ -38,11 +38,11 @@ library SchedulerLib {
 
     uint constant CALL_WINDOW_SIZE = 16;
 
-    function getMinimumStackCheck() constant returns (uint) {
+    function getMinimumStackCheck() constant returns (uint16) {
         return MINIMUM_STACK_CHECK;
     }
 
-    function getMaximumStackCheck() constant returns (uint) {
+    function getMaximumStackCheck() constant returns (uint16) {
         return MAXIMUM_STACK_CHECK;
     }
 
@@ -60,6 +60,17 @@ library SchedulerLib {
 
     function getMinimumCallCost(uint basePayment, uint baseDonation) constant returns (uint) {
         return 2 * (baseDonation + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;
+    }
+
+    function getMinimumEndowment(uint basePayment,
+                                 uint baseDonation,
+                                 uint callValue,
+                                 uint requiredGas) constant returns (uint endowment) {
+            endowment += tx.gasprice * requiredGas;
+            endowment += 2 * (basePayment + baseDonation);
+            endowment += callValue;
+
+            return endowment;
     }
 
     struct CallConfig {
@@ -147,7 +158,7 @@ library SchedulerLib {
             // MAX_BLOCKS_IN_FUTURE
             reason = "TOO_SOON";
         }
-        else if (MINIMUM_STACK_CHECK > callConfig.requiredStackDepth || callConfig.requiredStackDepth > MAXIMUM_STACK_CHECK) {
+        else if (getMinimumStackCheck() > callConfig.requiredStackDepth || callConfig.requiredStackDepth > getMaximumStackCheck()) {
             // Cannot require stack depth greater than MAXIMUM_STACK_CHECK or
             // less than MINIMUM_STACK_CHECK
             reason = "STACK_CHECK_OUT_OF_RANGE";
@@ -155,7 +166,12 @@ library SchedulerLib {
         else if (callConfig.gracePeriod < getMinimumGracePeriod()) {
             reason = "GRACE_TOO_SHORT";
         }
-        else if (callConfig.endowment < 2 * (callConfig.baseDonation + callConfig.basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {
+        else if (callConfig.requiredGas < getMinimumCallGas()) {
+            // TODO: test this
+            reason = "REQUIRED_GAS_TOO_LOW";
+        }
+        else if (callConfig.endowment < getMinimumEndowment(callConfig.basePayment, callConfig.baseDonation, callConfig.callValue, callConfig.requiredGas)) {
+            // TODO: test this
             reason = "INSUFFICIENT_FUNDS";
         }
 

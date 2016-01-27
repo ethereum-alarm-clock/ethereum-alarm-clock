@@ -43,9 +43,10 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
     def _deploy_future_block_call(contract_function, scheduler_address=None,
                                   target_block=None, grace_period=255,
                                   required_gas=1000000, payment=1, donation=1,
-                                  endowment=None, call_data="", require_depth=0):
+                                  endowment=None, call_data="",
+                                  require_depth=0, call_value=0):
         if endowment is None:
-            endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + donation
+            endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + donation + call_value
 
         if target_block is None:
             target_block = deploy_client.get_block_number()
@@ -63,6 +64,7 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
                 contract_function._contract._meta.address,
                 contract_function.encoded_abi_signature,
                 call_data,
+                call_value,
                 required_gas,
                 require_depth,
                 payment,
@@ -149,6 +151,17 @@ def get_call(SchedulerLib, FutureBlockCall, deploy_client):
         call = FutureBlockCall(call_address, deploy_client)
         return call
     return _get_call
+
+
+@pytest.fixture(scope="module")
+def get_call_rejection_data(SchedulerLib):
+    def _get_rejection_data(txn_hash):
+        rejection_logs = SchedulerLib.CallRejected.get_transaction_logs(txn_hash)
+        assert len(rejection_logs) == 1
+        rejection_data = SchedulerLib.CallRejected.get_log_data(rejection_logs[0])
+
+        return rejection_data
+    return _get_rejection_data
 
 
 @pytest.fixture(scope="module")

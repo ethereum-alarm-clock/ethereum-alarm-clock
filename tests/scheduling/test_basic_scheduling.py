@@ -2,7 +2,6 @@ deploy_contracts = [
     "CallLib",
     "Scheduler",
     "TestCallExecution",
-    "TestDataRegistry",
 ]
 
 

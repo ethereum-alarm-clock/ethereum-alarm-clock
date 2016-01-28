@@ -11,7 +11,7 @@ def test_minimum_endowment_enforced(deploy_client, deployed_contracts,
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
-    minimum_endowment = scheduler.getMinimumCallCost(denoms.ether, 100 * denoms.finney)
+    minimum_endowment = scheduler.getMinimumEndowment(denoms.ether, 100 * denoms.finney)
     now_block = deploy_client.get_block_number()
 
     bad_scheduling_txn = scheduler.scheduleCall(

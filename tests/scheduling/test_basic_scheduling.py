@@ -30,9 +30,10 @@ def test_basic_call_scheduling(deploy_client, deployed_contracts,
     # Sanity check for all of the queriable call values.
     assert call.targetBlock() == targetBlock
     assert call.gracePeriod() == 255
-    assert call.suggestedGas() == 1000000
-    assert call.basePayment() == denoms.ether
-    assert call.baseFee() == 100 * denoms.finney
+    assert call.requiredGas() == 1000000
+    assert call.callValue() == 0
+    assert call.basePayment() == scheduler.defaultPayment()
+    assert call.baseDonation() == scheduler.defaultPayment() / 100
     assert call.schedulerAddress() == deploy_coinbase
     assert call.contractAddress() == client_contract._meta.address
     assert call.abiSignature() == client_contract.setBool.encoded_abi_signature

@@ -7,6 +7,15 @@ contract Scheduler {
      *  Address: 0xe109ecb193841af9da3110c80fdd365d1c23be2a
      */
 
+    // The starting value (0.01 USD at 1eth:$2 exchange rate)
+    uint constant INITIAL_DEFAUlT_PAYMENT = 5 finney;
+
+    uint public defaultPayment;
+
+    function Scheduler() {
+        defaultPayment = INITIAL_DEFAUlT_PAYMENT;
+    }
+
     // callIndex tracks the ordering of scheduled calls based on their block numbers.
     GroveLib.Index callIndex;
 
@@ -26,27 +35,41 @@ contract Scheduler {
         return SchedulerLib.getMinimumGracePeriod();
     }
 
-    // TODO: this needs to be a reasonable number.  too high right now.
-    // Based on a gas price of 50,000 lovelace targeting 1 ether
-    uint constant DEFAULT_PAYMENT_GAS = 20000000;
+    // Default payment and donation values
+    modifier only_known_call { if (isKnownCall(msg.sender)) _ }
 
-    function getDefaultPayment() constant returns (uint) {
-        return tx.gasprice * DEFAULT_PAYMENT_GAS;
+    function updateDefaultPayment() public only_known_call {
+        var call = FutureBlockCall(msg.sender);
+        var basePayment = call.basePayment();
+
+        if (call.wasCalled() && call.claimer() != 0x0 && basePayment > 0 && defaultPayment > 1) {
+            var index = call.claimAmount() * 100 / basePayment;
+
+            if (index > 66) {
+                // increase by 0.01%
+                defaultPayment = defaultPayment * 10001 / 10000;
+            }
+            else if (index < 33) {
+                // decrease by 0.01%
+                defaultPayment = defaultPayment * 9999 / 10000;
+            }
+        }
     }
 
-    // Based on a gas price of 50,000 lovelace targeting 100 finney
-    uint constant DEFAULT_DONATION_GAS = 2000000;
-
     function getDefaultDonation() constant returns (uint) {
-        return tx.gasprice * DEFAULT_DONATION_GAS;
+        return defaultPayment / 100;
     }
 
     function getMinimumCallGas() constant returns (uint) {
         return SchedulerLib.getMinimumCallGas();
     }
 
+    function getMaximumCallGas() constant returns (uint) {
+        return SchedulerLib.getMaximumCallGas();
+    }
+
     function getMinimumEndowment() constant returns (uint) {
-        return SchedulerLib.getMinimumEndowment(getDefaultPayment(), getDefaultDonation(), 0, getDefaultRequiredGas());
+        return SchedulerLib.getMinimumEndowment(defaultPayment, getDefaultDonation(), 0, getDefaultRequiredGas());
     }
 
     function getMinimumEndowment(uint basePayment) constant returns (uint) {
@@ -107,7 +130,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -116,7 +139,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -125,7 +148,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             DEFAULT_FN_SIGNATURE, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -135,7 +158,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -144,7 +167,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -153,7 +176,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -163,7 +186,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -174,7 +197,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -185,7 +208,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -197,7 +220,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -207,7 +230,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, getFirstSchedulableBlock(), getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -217,7 +240,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -228,7 +251,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             DEFAULT_FN_SIGNATURE, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            callValue, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -238,7 +261,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -249,7 +272,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -260,7 +283,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -272,7 +295,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -285,7 +308,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            callValue, targetBlock, getDefaultRequiredGas(), getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, targetBlock, getDefaultRequiredGas(), defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -296,7 +319,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -308,7 +331,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -320,7 +343,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -333,7 +356,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, getDefaultGracePeriod(), getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -345,7 +368,7 @@ contract Scheduler {
             callIndex,
             msg.sender, msg.sender,
             abiSignature, EMPTY_CALL_DATA, gracePeriod, getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -359,7 +382,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, gracePeriod, getDefaultStackCheck(),
-            callValue, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            callValue, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -372,7 +395,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, EMPTY_CALL_DATA, gracePeriod, getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 
@@ -386,7 +409,7 @@ contract Scheduler {
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, gracePeriod, getDefaultStackCheck(),
-            DEFAULT_CALL_VALUE, targetBlock, requiredGas, getDefaultPayment(), getDefaultDonation(), msg.value
+            DEFAULT_CALL_VALUE, targetBlock, requiredGas, defaultPayment, getDefaultDonation(), msg.value
         );
     }
 

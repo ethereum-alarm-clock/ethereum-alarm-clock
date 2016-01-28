@@ -141,6 +141,8 @@ library CallLib {
             self.wasSuccessful = self.contractAddress.call.value(self.callValue).gas(msg.gas - overhead)(self.abiSignature, self.callData);
         }
 
+        call.origin().call(bytes4(sha3("updateDefaultPayment()")));
+
         // Compute the scalar (0 - 200) for the donation.
         uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);
 
@@ -292,7 +294,6 @@ library CallLib {
     }
 
     function isCancellable(Call storage self, address caller) returns (bool) {
-        // TODO: needs tests
         var _state = state(self);
         var call = FutureBlockCall(this);
 
@@ -304,9 +305,6 @@ library CallLib {
 
         return false;
     }
-
-    // The amount of gas that is required as overhead for call execution.
-    uint constant REQUIRED_GAS_OVERHEAD = 0;
 
     function beforeExecuteForFutureBlockCall(Call storage self, address executor) returns (bool) {
         bytes32 reason;
@@ -329,7 +327,7 @@ library CallLib {
             // rights to execute it.
             reason = "NOT_AUTHORIZED";
         }
-        else if (msg.gas < self.requiredGas + REQUIRED_GAS_OVERHEAD) {
+        else if (msg.gas < self.requiredGas) {
             // The executor has not provided sufficient gas
             reason = "NOT_ENOUGH_GAS";
         }
@@ -355,6 +353,8 @@ contract FutureCall {
 
     CallLib.Call call;
 
+    address public origin;
+
     function FutureCall(address _schedulerAddress,
                         uint _requiredGas,
                         uint16 _requiredStackDepth,
@@ -365,6 +365,7 @@ contract FutureCall {
                         uint _basePayment,
                         uint _baseDonation)
     {
+        origin = msg.sender;
         schedulerAddress = _schedulerAddress;
 
         basePayment = _basePayment;
@@ -569,16 +570,12 @@ contract FutureBlockCall is FutureCall {
                              uint _baseDonation)
         FutureCall(_schedulerAddress, _requiredGas, _requiredStackDepth, _contractAddress, _abiSignature, _callData, _callValue, _basePayment, _baseDonation)
     {
-        // TODO: split this constructor across this contract and the
         // parent contract FutureCall
         schedulerAddress = _schedulerAddress;
 
         targetBlock = _targetBlock;
         gracePeriod = _gracePeriod;
     }
-
-    // TODO: figure out this value.
-    uint constant REQUIRED_GAS_OVERHEAD = 0;
 
     uint constant GAS_PER_DEPTH = 700;
 
@@ -603,7 +600,7 @@ contract FutureBlockCall is FutureCall {
             return GAS_OVERHEAD;
     }
 
-    uint constant EXTRA_GAS = 76000;
+    uint constant EXTRA_GAS = 77000;
 
     function getExtraGas() constant returns (uint) {
             return EXTRA_GAS;

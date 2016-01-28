@@ -13,7 +13,7 @@ deploy_contracts = [
 
 MAX_DEPTH = 2048
 
-OUTER_MAX = 1021
+OUTER_MAX = 1020
 CHECK_MAX = 1022
 INNER_MAX = 1022
 

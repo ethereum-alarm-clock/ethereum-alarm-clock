@@ -16,7 +16,7 @@ def test_cannot_schedule_too_soon(deploy_client, deployed_contracts,
     scheduling_txn = scheduler.scheduleCall(
         client_contract._meta.address,
         client_contract.setBool.encoded_abi_signature,
-        now_block+ 40 + 10 + 255 - 1,
+        scheduler.getFirstSchedulableBlock() - 1,
         1000000,
         value=10 * denoms.ether,
         gas=3000000,

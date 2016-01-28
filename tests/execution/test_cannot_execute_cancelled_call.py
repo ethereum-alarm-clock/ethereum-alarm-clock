@@ -17,7 +17,7 @@ def test_execution_of_call_with_single_bool(deploy_client, deployed_contracts,
 
     call = deploy_future_block_call(
         client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 50
+        target_block=deploy_client.get_block_number() + 400
     )
 
     # cancel it

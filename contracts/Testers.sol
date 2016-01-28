@@ -122,6 +122,9 @@ contract TestCallExecution is TestDataRegistry {
             vm_f.length = 0;
         }
 
+        function noop() {
+        }
+
         function doExecution(address to) {
             bool result = to.call(bytes4(sha3("execute()")));
             if (result) {

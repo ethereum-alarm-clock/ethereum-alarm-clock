@@ -5,8 +5,8 @@ deploy_contracts = [
 ]
 
 
-SCHEDULING_COSTS_MIN = 1070000
-SCHEDULING_COSTS_MAX = 1090000
+SCHEDULING_COSTS_MIN = 1090000
+SCHEDULING_COSTS_MAX = 1120000
 
 
 def test_cost_of_scheduling_no_args(deploy_client, deployed_contracts, denoms,

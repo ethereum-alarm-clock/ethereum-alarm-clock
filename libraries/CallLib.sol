@@ -311,8 +311,9 @@ library CallLib {
 
         var call = FutureBlockCall(this);
 
-        if (self.requiredStackDepth > 0 && executor != tx.origin && !checkDepth(self.requiredStackDepth)) {
-            reason = "STACK_TOO_DEEP";
+        if (msg.gas < self.requiredGas) {
+            // The executor has not provided sufficient gas
+            reason = "NOT_ENOUGH_GAS";
         }
         else if (self.wasCalled) {
             // Not being called within call window.
@@ -327,9 +328,8 @@ library CallLib {
             // rights to execute it.
             reason = "NOT_AUTHORIZED";
         }
-        else if (msg.gas < self.requiredGas) {
-            // The executor has not provided sufficient gas
-            reason = "NOT_ENOUGH_GAS";
+        else if (self.requiredStackDepth > 0 && executor != tx.origin && !checkDepth(self.requiredStackDepth)) {
+            reason = "STACK_TOO_DEEP";
         }
 
         if (reason != 0x0) {

@@ -13,7 +13,7 @@ def test_donation(deploy_client, deployed_contracts,
 
     call = deploy_future_block_call(
         client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
+        target_block=deploy_client.get_block_number() + 400,
         payment=12345,
         donation=54321,
     )

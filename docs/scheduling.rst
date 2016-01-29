@@ -288,6 +288,29 @@ is called, a call to the ``pickWinner`` function is scheduled for approximately
 24 hours later (5760 blocks).
 
 
+Upfront Payment
+---------------
+
+The service requires that you pay upfront for all costs associated with call
+scheduling.  This value is referred to as the **endowment**.  Without intimate
+knowledge of how all of these things are calculated it can be difficult to
+determine how much to send.
+
+One nice part about the service is that you can just send extra and anything
+unused will be returned to you.  This is generally a good strategy since you
+are at no risk of losing your ether and it prevents situations where you come
+in slightly under the required endowment and have your call rejected.
+
+The following functions are available to assist in computing this ether value.
+
+* ``getMinimumEndowment() constant returns (uint)``
+* ``getMinimumEndowment(uint basePayment) constant returns (uint)``
+* ``getMinimumEndowment(uint basePayment, uint baseDonation) constant returns (uint)``
+* ``getMinimumEndowment(uint basePayment, uint baseDonation, uint callValue) constant returns (uint)``
+* ``getMinimumEndowment(uint basePayment, uint baseDonation, uint callValue, uint requiredGas) constant returns (uint)``
+
+
+
 Call Data
 ---------
 
@@ -333,12 +356,11 @@ Once data has been registered, it cannot be modified.  Attempts to do so will
 result in an exception.
 
 
-ABI Encoding and address.call
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. note::
 
-The ``call()`` function on an address in solidity does not do any ABI encoding,
-so in cases where a scheduled call must pass something like a ``bytes``
-variable, you will need to handle the ABI encoding yourself.
+    The ``call()`` function on an address in solidity does not do any ABI encoding,
+    so in cases where a scheduled call must pass something like a ``bytes``
+    variable, you will need to handle the ABI encoding yourself.
 
 
 Cancelling a call
@@ -364,3 +386,58 @@ You can lookup whether a particular address is a known scheduled call with the
 * **Solidity Function Signature:** ``isKnownCall(address callAddress) returns (bool)``
 
 Returns a boolean as to whether this address represents a known scheduled call.
+
+
+Helper Functions
+----------------
+
+The following getters can be used to return the constant values that are used
+by the service programatically.
+
+* ``getMinimumGracePeriod() constant returns (uint)``
+
+The smallest value allowed for the ``gracePeriod`` of a scheduled call.
+
+* ``getDefaultDonation() constant returns (uint)``
+
+The default payment value for scheduled calls.
+
+* ``getMinimumCallGas() constant returns (uint)``
+
+The minimum allowed value for ``requiredGas``
+
+* ``getMaximumCallGas() constant returns (uint)``
+
+The maximum allowed value for ``requiredGas``.  This value is computed as
+``block.gaslimit - getMinimumCallGas()``
+
+* ``getDefaultRequiredGas() constant returns (uint)``
+
+The default value for ``requiredGas``
+
+* ``isKnownCall(address callAddress) constant returns (bool)``
+
+Returns whether this address was a call contract that was deployed by the alarm
+service.  This can be useful if you need to use the service to interact with
+priviledged functions as you can verify that the address that is calling you is
+in fact a legitimate call contract.
+
+* ``getFirstSchedulableBlock() constant returns (uint)``
+
+Returns the earliest block number in the future on which a call may be scheduled.
+
+* ``getMinimumStackCheck() constant returns (uint16)``
+
+The minimum allowed value for ``requiredStackDepth``.
+
+* ``getMaximumStackCheck() constant returns (uint16)``
+
+The maximum allowed value for ``requiredStackDepth``.
+
+* ``getDefaultStackCheck() constant returns (uint16)``
+
+The default value for the ``requiredStackDepth`` of a scheduled call.
+
+* ``getDefaultGracePeriod() constant returns (uint8)``
+
+The default value for the ``gracePeriod`` of a scheduled call.

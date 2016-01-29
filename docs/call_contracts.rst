@@ -250,3 +250,27 @@ during this time, anyone who subsequently executes the call will receive their
 deposit.
 
 * **Solidity Function Signature:** ``execute() public``
+
+
+Claim Helpers
+^^^^^^^^^^^^^
+
+
+* ``function firstClaimBlock() constant returns (uint)``
+
+The first block during which the call may be claimed.
+
+* ``function maxClaimBlock() constant returns (uint)``
+
+The block during the claim window when the call will be worth the full
+``basePayment`` value.
+
+* ``function lastClaimBlock() constant returns (uint)``
+
+The last block during which the call may be claimed.
+
+* ``function getClaimAmountForBlock() constant returns (uint)``
+* ``function getClaimAmountForBlock(uint block_number) constant returns (uint)``
+
+Returns the paymend value for a block in the claim window.  If called with no
+argument it uses the current block.

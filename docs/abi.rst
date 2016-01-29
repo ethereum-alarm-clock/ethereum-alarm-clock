@@ -31,16 +31,22 @@ scheduling contract from a solidity contract.
          *  Call Scheduling API
          */
         function getMinimumGracePeriod() constant returns (uint);
-        function getDefaultPayment() constant returns (uint);
-        function getDefaultFee() constant returns (uint);
-
+        function getDefaultDonation() constant returns (uint);
+        function getMinimumCallGas() constant returns (uint);
+        function getMaximumCallGas() constant returns (uint);
+        function getMinimumEndowment() constant returns (uint);
+        function getMinimumEndowment(uint basePayment) constant returns (uint);
+        function getMinimumEndowment(uint basePayment, uint baseDonation) constant returns (uint);
+        function getMinimumEndowment(uint basePayment, uint baseDonation, uint callValue) constant returns (uint);
+        function getMinimumEndowment(uint basePayment, uint baseDonation, uint callValue, uint requiredGas) constant returns (uint);
         function isKnownCall(address callAddress) constant returns (bool);
+        function getFirstSchedulableBlock() constant returns (uint);
+        function getMinimumStackCheck() constant returns (uint16);
+        function getMaximumStackCheck() constant returns (uint16);
+        function getDefaultStackCheck() constant returns (uint16);
+        function getDefaultRequiredGas() constant returns (uint);
+        function getDefaultGracePeriod() constant returns (uint8);
 
-        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address);
-        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address);
-        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address);
-        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address);
-        function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address);
 
         /*
          *  Next Call API
@@ -64,7 +70,7 @@ contract from a solidity contract.
         address public contractAddress;
         uint8 public gracePeriod;
         address public schedulerAddress;
-        uint public suggestedGas;
+        uint public requiredGas;
         bool public isCancelled;
         bool public wasCalled;
         bool public wasSuccessful;
@@ -73,6 +79,7 @@ contract from a solidity contract.
         bytes4 public abiSignature;
         uint public baseFee;
         uint public targetBlock;
+        uint16 public requiredStackDepth;
 
         function execute() public;
         function cancel() public;

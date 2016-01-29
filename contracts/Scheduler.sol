@@ -22,7 +22,7 @@ contract Scheduler {
     // callOrigin tracks the origin scheduler contract for each scheduled call.
     mapping (address => address) callOrigin;
 
-    uint constant CALL_API_VERSION = 1;
+    uint constant CALL_API_VERSION = 7;
 
     function callAPIVersion() constant returns (uint) {
         return CALL_API_VERSION;
@@ -45,11 +45,11 @@ contract Scheduler {
         if (call.wasCalled() && call.claimer() != 0x0 && basePayment > 0 && defaultPayment > 1) {
             var index = call.claimAmount() * 100 / basePayment;
 
-            if (index > 66) {
+            if (index > 66 && defaultPayment <= basePayment) {
                 // increase by 0.01%
                 defaultPayment = defaultPayment * 10001 / 10000;
             }
-            else if (index < 33) {
+            else if (index < 33 && defaultPayment >= basePayment) {
                 // decrease by 0.01%
                 defaultPayment = defaultPayment * 9999 / 10000;
             }
@@ -94,10 +94,6 @@ contract Scheduler {
 
     function getFirstSchedulableBlock() constant returns (uint) {
         return SchedulerLib.getFirstSchedulableBlock();
-    }
-
-    function getDefaultRequiredStackDepth() constant returns (uint16) {
-        return SchedulerLib.getMinimumStackCheck();
     }
 
     function getMinimumStackCheck() constant returns (uint16) {

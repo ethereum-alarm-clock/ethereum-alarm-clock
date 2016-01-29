@@ -24,7 +24,7 @@ Contents:
    execution
    reliability
    client
-   costs_and_fees
+   costs
    abi
    events
    terminology

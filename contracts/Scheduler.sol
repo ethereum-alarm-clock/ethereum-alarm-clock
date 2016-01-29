@@ -473,13 +473,13 @@ contract Scheduler {
                           bytes4 abiSignature,
                           bytes callData,
                           uint8 gracePeriod,
-                          uint[4] uints) public returns (address) {
+                          uint[4] args) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             msg.sender, contractAddress,
             abiSignature, callData, gracePeriod, getDefaultStackCheck(),
             // callValue, targetBlock, requiredGas, basePayment
-            uints[0], uints[1], uints[2], uints[3], getDefaultDonation(), msg.value
+            args[0], args[1], args[2], args[3], getDefaultDonation(), msg.value
         );
     }
 
@@ -520,13 +520,13 @@ contract Scheduler {
                           bytes callData,
                           uint16 requiredStackDepth,
                           uint8 gracePeriod,
-                          uint[5] uints) public returns (address) {
+                          uint[5] args) public returns (address) {
         return SchedulerLib.scheduleCall(
             callIndex,
             [msg.sender, contractAddress],
             abiSignature, callData, gracePeriod, requiredStackDepth,
             // callValue, targetBlock, requiredGas, basePayment, baseDonation
-            [uints[0], uints[1], uints[2], uints[3], uints[4], msg.value]
+            [args[0], args[1], args[2], args[3], args[4], msg.value]
         );
     }
 

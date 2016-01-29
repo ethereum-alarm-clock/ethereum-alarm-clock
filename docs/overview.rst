@@ -28,27 +28,17 @@ in the future.  Scheduling is done by calling the ``scheduleCall`` function on
 the scheduling contract.  This function has a wide variety of call signatures
 that allow the scheduler to specify any of the following information.
 
-        address contractAddress;
-        bytes4 abiSignature;
-        bytes callData;
-        uint8 gracePeriod;
-        uint16 requiredStackDepth;
-        uint targetBlock;
-        uint requiredGas;
-        uint basePayment;
-        uint baseDonation;
-        uint endowment;
-
-1. Contract address the call should be executed on.
-2. ABI signature of the function that should be called.
-3. Bytes of call data that should be passed along.
-4. Target block number that the call should be executed on.
-5. Number of blocks after the target block during which it still ok to execute
-   the call.  (between 64 - 255 blocks) **default: 255**
-6. Required gas that must be provided with the executing transaction.
-7. Stack depth check.
-8. Payment amount in wei that will be paid to the executor of the call.
-9. Donation amount in wei that will be paid to the creator of the Alarm
+#. Contract address the call should be executed on.
+#. ABI signature of the function that should be called.
+#. Bytes of call data that should be passed along.
+#. Value in Ether to be sent with the call.
+#. Target block number that the call should be executed on.
+#. Number of blocks after the target block during which it still ok to execute
+   the call.  (between 64 - 255 blocks)
+#. Required gas that must be provided with the executing transaction.
+#. Stack depth check.
+#. Payment amount in wei that will be paid to the executor of the call.
+#. Donation amount in wei that will be paid to the creator of the Alarm
    service.
 
 The scheduling transaction must also include enough ether to pay for the gas
@@ -74,9 +64,10 @@ your function.
 The scheduling function uses the following defaults if specific values are not
 provided.
 
-* TODO: these values need to be updated.
-* Payment to the executor: **1 ether**
-* Payment to the service creator: **100 finney**
+* Payment to the executor: **market value**
+* Payment to the service creator: **1/100th market value**
+
+The market value is determined by the market history of scheduled calls.
 
 
 Guarantees

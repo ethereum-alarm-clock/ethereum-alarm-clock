@@ -306,12 +306,12 @@ library CallLib {
         return false;
     }
 
-    function beforeExecuteForFutureBlockCall(Call storage self, address executor) returns (bool) {
+    function beforeExecuteForFutureBlockCall(Call storage self, address executor, uint startGas) returns (bool) {
         bytes32 reason;
 
         var call = FutureBlockCall(this);
 
-        if (msg.gas < self.requiredGas) {
+        if (startGas < self.requiredGas) {
             // The executor has not provided sufficient gas
             reason = "NOT_ENOUGH_GAS";
         }
@@ -400,7 +400,7 @@ contract FutureCall {
     /*
      *  API for FutureXXXXCalls to implement.
      */
-    function beforeExecute(address executor) public returns (bool);
+    function beforeExecute(address executor, uint startGas) public returns (bool);
     function afterExecute(address executor) internal;
     function getOverhead() constant returns (uint);
     function getExtraGas() constant returns (uint);
@@ -535,7 +535,7 @@ contract FutureCall {
         uint start_gas = msg.gas;
 
         // Check that the call should be executed now.
-        if (!beforeExecute(msg.sender)) return;
+        if (!beforeExecute(msg.sender, start_gas)) return;
 
         // Execute the call
         CallLib.execute(call, start_gas, msg.sender, getOverhead(), getExtraGas());
@@ -585,8 +585,8 @@ contract FutureBlockCall is FutureCall {
     }
 
 
-    function beforeExecute(address executor) public returns (bool) {
-        return CallLib.beforeExecuteForFutureBlockCall(call, executor);
+    function beforeExecute(address executor, uint startGas) public returns (bool) {
+        return CallLib.beforeExecuteForFutureBlockCall(call, executor, startGas);
     }
 
     function afterExecute(address executor) internal {

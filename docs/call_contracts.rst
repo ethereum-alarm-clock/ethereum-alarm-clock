@@ -16,8 +16,7 @@ values.
   which it is stll ok to execute the call.
 * **uint anchorGasPrice:** the gas price that was used when the call was
   scheduled.
-* **uint suggestedGas:** a suggestion to the call executor as to how much gas
-  the called function is expected to need.
+* **uint requiredGas:** the amount of gas that must be sent with the executing transaction.
 * **uint basePayment:** the amount in wei that will be paid to the address that
   executes the function call.
 * **uint baseFee:** the amount in wei that will be paid the creator of the
@@ -25,6 +24,9 @@ values.
 * **bytes4 abiSignature:** the 4 byte ABI function signature of the function on the
   ``contractAddress`` for this call.
 * **bytes callData:** the data that will be passed to the called function.
+* **bytes callValue:** the value in wei that will be sent with this call
+* **uint16 requiredStackDepth:** the depth by which the stack must be
+  increasable at the time of execution.
 
 * **bool wasCalled:** whether the call was called.
 * **bool wasSuccessful:** whether the call was successful during execution.
@@ -43,7 +45,6 @@ The address of the contract that the scheduled function call should be executed
 on.  Retrieved with the ``contractAddress`` function.
 
 * **Solidity Function Signature:** ``contractAddress() returns (address)``
-* **ABI Signature:** ``0xf6b4dfb4``
 
 
 Scheduler Address
@@ -55,7 +56,7 @@ The address that the scheduled function call.  Retrieved with the
 ``schedulerAddress`` function.
 
 * **Solidity Function Signature:** ``schedulerAddress() returns (address)``
-* **ABI Signature:** ``0xae45850b``
+
 
 Target Block
 ^^^^^^^^^^^^
@@ -66,7 +67,6 @@ The block number that this call should be executed on.  Retrieved with the
 ``targetBlock`` function.
 
 * **Solidity Function Signature:** ``targetBlock() returns (uint)``
-* **ABI Signature:** ``0xa16697a``
 
 
 Grace Period
@@ -78,7 +78,6 @@ The number of blocks after the **targetBlock** that it is still ok to execute
 this call.  Retrieved with the ``gracePeriod`` function.
 
 * **Solidity Function Signature:** ``gracePeriod() returns (uint8)``
-* **ABI Signature:** ``0xa06db7dc``
 
 
 Anchor Gas Price
@@ -90,19 +89,17 @@ The value of ``tx.gasprice`` that was used to schedule this function call.
 Retrieved with the ``anchorGasPrice`` function.
 
 * **Solidity Function Signature:** ``anchorGasPrice() returns (uint)``
-* **ABI Signature:** ``0x37f4c00e``
 
 
-Suggested Gas
-^^^^^^^^^^^^^
+Required Gas
+^^^^^^^^^^^^
 
-**uint suggestedGas**
+**uint requiredGas**
 
-A suggestion for the amount of gas that a caller should expect the called
-function to require.  Retrieved with the ``suggestedGas`` function.
+The amount of gas that must be sent with the executing transaction. Retrieved
+with the ``requiredGas`` function.
 
-* **Solidity Function Signature:** ``suggestedGas() returns (uint)``
-* **ABI Signature:** ``0x6560a307``
+* **Solidity Function Signature:** ``requiredGas() returns (uint)``
 
 
 Base Payment
@@ -114,7 +111,6 @@ The base amount, in wei that the call executor's payment will be calculated
 from. Retrieved with the ``basePayment`` function.
 
 * **Solidity Function Signature:** ``basePayment() returns (uint)``
-* **ABI Signature:** ``0xc6502da8``
 
 Base Fee
 ^^^^^^^^
@@ -125,7 +121,6 @@ The base amount, in wei that the fee to the creator of the alarm service will
 be calculate from. Retrieved with the ``baseFee`` function.
 
 * **Solidity Function Signature:** ``baseFee() returns (uint)``
-* **ABI Signature:** ``0x6ef25c3a``
 
 
 ABI Signature
@@ -137,7 +132,6 @@ The ABI function signature that should be used to execute this function call.
 Retrieved with the ``abiSignature`` function.
 
 * **Solidity Function Signature:** ``abiSignature() returns (uint)``
-* **ABI Signature:** ``0xca94692d``
 
 
 Call Data
@@ -149,7 +143,17 @@ The full call data that will be used for this function call.  Retrieved
 with the ``callData`` function.
 
 * **Solidity Function Signature:** ``callData() returns (bytes)``
-* **ABI Signature:** ``0x4e417a98``
+
+
+Call Value
+^^^^^^^^^^
+
+**uint callValue**
+
+The amount in wei that will be sent with the function call.  Retrieved with the
+``callValue`` function.
+
+* **Solidity Function Signature:** ``callValue() returns (bytes)``
 
 
 Was Called
@@ -161,7 +165,6 @@ Boolean as to whether this call has been executed.  Retrieved
 with the ``wasCalled`` function.
 
 * **Solidity Function Signature:** ``wasCalled() returns (bool)``
-* **ABI Signature:** ``0xc6803622``
 
 
 Was Successful
@@ -174,7 +177,6 @@ called contract returned without error.  Retrieved with the ``wasSuccessful``
 function.
 
 * **Solidity Function Signature:** ``wasSuccessful() returns (bool)``
-* **ABI Signature:** ``0x9241200``
 
 
 Is Cancelled
@@ -186,7 +188,6 @@ Boolean as to whether this call has been cancelled. Retrieved with the
 ``isCancelled`` function.
 
 * **Solidity Function Signature:** ``isCancelled() returns (bool)``
-* **ABI Signature:** ``0x95ee1221``
 
 
 Claimer
@@ -198,7 +199,6 @@ Address of the account that has claimed this call for execution.  Retrieved
 with the ``claimer`` function.
 
 * **Solidity Function Signature:** ``claimer() returns (address)``
-* **ABI Signature:** ``0xd379be23``
 
 
 Claim Amount
@@ -210,7 +210,6 @@ Ammount that the ``claimer`` has agreed to pay for the call. Retrieved with the
 with the ``claimAmount`` function.
 
 * **Solidity Function Signature:** ``claimAmount() returns (uint)``
-* **ABI Signature:** ``0x830953ab``
 
 
 Claim Deposit
@@ -222,7 +221,6 @@ Ammount that the ``claimer`` put down as a deposit. Retrieved with the
 with the ``claimerDeposit`` function.
 
 * **Solidity Function Signature:** ``claimerDeposit() returns (uint)``
-* **ABI Signature:** ``0x3233c686``
 
 
 Functions of a Call Contract
@@ -239,7 +237,6 @@ Before the call, only the scheduler may cancel the call.  Afterwards, anyone
 may cancel it.
 
 * **Solidity Function Signature:** ``cancel() public``
-* **ABI Signature:** ``0xea8a1af0``
 
 
 Execute
@@ -253,4 +250,3 @@ during this time, anyone who subsequently executes the call will receive their
 deposit.
 
 * **Solidity Function Signature:** ``execute() public``
-* **ABI Signature:** ``0x61461954``

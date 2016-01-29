@@ -1,6 +1,30 @@
 Changelog
 =========
 
+0.6.0
+-----
+
+- Scheduled calls can now specify a required gas amount.  This takes place of
+  the ``suggestedGas`` api from 0.6.0
+- Scheduled calls can now send value along with the transaction.
+- Calls now protect against stack depth attacks.  This is configurable via the
+  ``requiredStackDepth`` option.
+- Calls can now be scheduled as soon as 10 blocks in the future.
+- Experimental implementation of market-based value for the ``defaultPayment``
+- ``scheduleCall`` now has 31 different call signatures.
+
+
+0.6.0
+-----
+
+- Each scheduled call now exists as it's own contract, referred to as a call
+  contract.
+- Removal of the Caller Pool
+- Introduction of the claim api for call.
+- Call Portability.  Scheduled calls can now be trustlessly imported into
+  future versions of the service.
+
+
 0.5.0
 -----
 

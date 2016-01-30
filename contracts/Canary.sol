@@ -28,9 +28,12 @@ contract Canary {
         return address(callContract);
     }
 
-    function Canary(address _scheduler) {
+    uint16 public frequency;
+
+    function Canary(address _scheduler, uint16 _frequency) {
             owner = msg.sender;
             scheduler = SchedulerInterface(_scheduler);
+            frequency = _frequency;
     }
 
     function() {
@@ -65,7 +68,7 @@ contract Canary {
         // schedule the call (~2 hours from now)
         address call_address = scheduler.scheduleCall.value(2 ether)(
             0x3defb962,
-            block.number + 480,
+            block.number + frequency,
             2000000);
         if (call_address != 0x0) {
             callContract = CallContractAPI(call_address);
@@ -97,6 +100,12 @@ contract Canary {
 
 
 contract CanaryV7Testnet is Canary {
-    function CanaryV7Testnet() Canary(0x26416b12610d26fd31d227456e9009270574038f) {
+    function CanaryV7Testnet() Canary(0x26416b12610d26fd31d227456e9009270574038f, 480) {
+    }
+}
+
+
+contract CanaryV7FastTestnet is Canary {
+    function CanaryV7FastTestnet() Canary(0x26416b12610d26fd31d227456e9009270574038f, 100) {
     }
 }

@@ -15,6 +15,7 @@ def test_cancelling_a_call_during_bid_window(deploy_client, deployed_contracts,
     client_contract = deployed_contracts.TestCallExecution
 
     target_block = deploy_client.get_block_number() + 300
+
     call = deploy_future_block_call(
         client_contract.setBool,
         target_block=target_block,
@@ -24,5 +25,7 @@ def test_cancelling_a_call_during_bid_window(deploy_client, deployed_contracts,
 
     assert call.isCancelled() is False
 
-    with pytest.raises(TransactionFailed):
-        call.cancel()
+    cancel_txn = call.cancel()
+    cancel_txn_receipt = deploy_client.wait_for_transaction(cancel_txn)
+
+    assert call.isCancelled() is False

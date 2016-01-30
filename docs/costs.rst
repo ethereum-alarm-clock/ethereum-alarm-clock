@@ -1,28 +1,50 @@
-Call pricing and fees
-=====================
+Costs
+=====
 
 The Alarm service operates under a **scheduler pays** model, which means that
-the scheduler of a call is responsible for paying for the full gas cost and
-fees associated with executing the call.
-
-These funds must be presented upfront at the time of scheduling and are held by
-the call contract until execution.
+the scheduler of a call is responsible for paying up front for all costs
+associated with execution.  These funds are held within the call contract until
+execution or cancellation.
 
 
-Call Payment and Fees
----------------------
+Call Payment and Donation
+-------------------------
 
 When a call is scheduled, the scheduler can either provide values for the
-payment and fee, or leave them off in favor of using the default values.
+payment and donation, or leave them off in favor of using the default values.
 
 The account which executes the scheduled call is reimbursed 100% of the gas
 cost + payment for their service.
 
+The donation is sent to the creator of the Alarm service.
 
-The GasPriceScalar multiplier
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Both the payment and the fee are multiplied by the **GasPriceScalar**.
+Default Payment Value
+---------------------
+
+The default used for the payment value for each scheduled call is ultimately
+decided by the open market.  
+
+* If calls are being claimed early in the claim window the value will decrease.
+* If calls are being claimed late in the claim window the value will increase
+
+.. note::
+
+    This algorithm is a work in progress.  If you have ideas on ways to improve
+    this feel free to reach out to me.
+
+
+Gas Costs
+---------
+
+* Scheduling a function call takes approximately 1.1 million gas.
+* Execution adds approximately 100,000 gas of overhead.
+
+
+The Gas Price Scalar multiplier
+-------------------------------
+
+Both the payment and the donation are multiplied by the **GasPriceScalar**.
 
 **GasPriceScalar** is a multiplier that ranges from 0 - 2 which is based on
 the difference between the gas priced used for call execution and the gas
@@ -120,9 +142,3 @@ maximize payout) and the call is not picked up by miners in a reasonable amount
 of time, then the entity executing the call will not get paid at all.  This
 provides a strong incentive to provide a value high enough to ensure the
 transaction will be executed.
-
-Overhead
---------
-
-The gas overhead that you can expect to pay for your function is about 130,000
-gas.

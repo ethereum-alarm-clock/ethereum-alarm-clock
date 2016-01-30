@@ -5,17 +5,17 @@ deploy_contracts = [
 ]
 
 
-def test_execution_fee(deploy_client, deployed_contracts,
-                       deploy_future_block_call, denoms,
-                       FutureBlockCall, CallLib, SchedulerLib):
+def test_donation(deploy_client, deployed_contracts,
+                  deploy_future_block_call, denoms,
+                  FutureBlockCall, CallLib, SchedulerLib):
     scheduler = deployed_contracts.Scheduler
     client_contract = deployed_contracts.TestCallExecution
 
     call = deploy_future_block_call(
         client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
+        target_block=deploy_client.get_block_number() + 400,
         payment=12345,
-        fee=54321,
+        donation=54321,
     )
 
     deploy_client.wait_for_block(call.targetBlock())
@@ -35,5 +35,5 @@ def test_execution_fee(deploy_client, deployed_contracts,
     assert len(execute_logs) == 1
     execute_data = CallLib.CallExecuted.get_log_data(execute_logs[0])
 
-    assert execute_data['fee'] == 54321
+    assert execute_data['donation'] == 54321
     assert deploy_client.get_balance("0xd3cda913deb6f67967b99d67acdfa1712c293601") == 54321

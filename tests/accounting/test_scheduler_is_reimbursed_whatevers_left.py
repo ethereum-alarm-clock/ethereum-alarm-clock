@@ -28,7 +28,7 @@ def test_scheduler_gets_what_is_leftover(deploy_client, deployed_contracts,
         client_contract.setBool,
         target_block=target_block,
         payment=12345,
-        fee=54321,
+        donation=54321,
         endowment=denoms.ether * 10,
         scheduler_address=scheduler_address,
     )
@@ -54,9 +54,9 @@ def test_scheduler_gets_what_is_leftover(deploy_client, deployed_contracts,
 
     after_balance = deploy_client.get_balance(scheduler_address)
     payout = execute_data['payment']
-    fee = execute_data['fee']
+    donation = execute_data['donation']
 
     computed_reimbursement = after_balance - before_balance
-    expected_reimbursement = before_call_balance - payout - fee
+    expected_reimbursement = before_call_balance - payout - donation
 
     assert computed_reimbursement == expected_reimbursement

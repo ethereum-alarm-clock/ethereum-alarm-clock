@@ -56,16 +56,23 @@ Calls and Call Scheduling
         may be claimed for exclusive rights to execution during the first 16
         blocks of the call window.
 
+    First Claim Block
+        The first block in the 255 block claim window.
+
+    Max Claim Block
+        The 240th block of the claim window.  This is the block when the value
+        of the call if claimed is equal to the ``basePayment`` for thec all.
+
     Call Window
         Used to refer to either the full window of blocks during which a
         scheduled call can be executed, or a portion of this window that has
         been designated to a specific caller.
 
     Payment
-        The ethereum amount that is paid to the executor of the scheduled call.
+        The amount that is paid to the executor of the scheduled call.
 
-    Fee
-        The ethereum amount that is paid to the creator of the Alarm service.
+    Donation
+        The amount that is paid to the creator of the Alarm service.
 
     Anchor Gas Price
         The gas price that was used when scheduling the scheduled call.

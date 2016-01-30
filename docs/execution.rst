@@ -15,7 +15,6 @@ Use the ``execute`` function to execute a scheduled call.  This function is
 present on the call contract itself (as opposed to the scheduling service).
 
 * **Solidity Function Signature:** ``execute() public``
-* **ABI Signature:** ``0x61461954``
 
 When this function is called, the following things happen.
 
@@ -24,9 +23,13 @@ When this function is called, the following things happen.
    call:
 
    * the call has not already been called.
+   * the call has not been cancelled.
+   * the transaction has at least ``requiredGas`` in gas.
+   * the stack depth can be extended sufficiently deep for
+     ``requiredStackDepth``
    * the current block number is within the range this call is allowed to be
      executed.
-   * the caller is allowed to execute the function (see caller pool)
+   * the caller is allowed to execute the function (see claiming)
 2. The call is executed
 3. The gas cost and fees are computed and paid.
 4. The call contract sends any remaining funds to the scheduling
@@ -49,11 +52,10 @@ of the executing transaction, the higher the payment.
 Setting transaction gas and gas price
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Each call contract has a ``suggestedGas`` property that can be used as a
-suggestion for how much gas the function call needs.  In the case where this is
-set to zero it means the scheduler has not provided a suggestion.
+Each call contract has a ``requiredGas`` property.  Execution of a call
+requires at least this amount of gas be sent with the transaction.
 
-This suggested gas value should be used in conjuction with the ``basePayment``
+This gas value should be used in conjuction with the ``basePayment``
 and ``baseFee`` amounts with respect to the ether balance of the call contract.
 The provided gas for the transaction should not exceed ``(balance - 2 *
 (basePayment + baseFee)) / gasPrice`` if you want to guarantee that you will be
@@ -74,7 +76,6 @@ You can query the Alarm service for the call key of the next scheduled call on
 or after a specified block number using the ``getNextCall`` function
 
 * **Solidity Function Signature:** ``getNextCall(uint blockNumber) returns (address)``
-* **ABI Signature:** ``0x9f927be7``
 
 Since there may be multiple calls on the same block, it is best to also check
 if the call has any *siblings* using the ``getNextCallSibling`` function.  This
@@ -86,14 +87,11 @@ block of each subsequent call to be sure it is within a range that you care
 about.
 
 * **Solidity Function Signature:** ``getNextCallSibling(address callAddress) returns (address)``
-* **ABI Signature:** ``0x48107843``
 
 .. note::
 
-    40 blocks into the future is a good range to monitor since new calls must
-    always be scheduled at least 40 blocks in the future.  You should also
-    monitor these functions up to 10 blocks before their target block to be
-    sure they are not cancelled.
+    10 blocks into the future is a good range to monitor since new calls must
+    always be scheduled at least 10 blocks in the future. 
 
 
 The Freeze Window
@@ -110,6 +108,7 @@ guarantee the exclusive right to execute the call during the first 16 blocks of
 the call window for the scheduled call.  As part of the claim, you will need to
 put down a deposit, which is returned to you if you when you execute the call.
 Failing to execute the call will forfeit your deposit.
+
 
 Claim Amount
 ^^^^^^^^^^^^
@@ -148,26 +147,22 @@ Claim API
 To claim a contract
 
 * **Solidity Function Signature:** ``claim()``
-* **ABI Signature:** ``0x4e71d92d``
 
 To check what the ``claimAmount`` will be for a given block number use the
 ``getClaimAmountForBlock`` function.  This will return an amount in wei that
 represents the base payment value for the call if claimed on that block.
 
 * **Solidity Function Signature:** ``getClaimAmountForBlock(uint blockNumber)``
-* **ABI Signature:** ``0xf5562753``
 
 This function also has a shortcut that uses the current block number
 
 * **Solidity Function Signature:** ``getClaimAmountForBlock()``
-* **ABI Signature:** ``0x4f059a43``
 
 You can check if a call has already been claimed with the ``claimer`` function.
 This function will return either the empty address ``0x0`` if the call has not
 been claimed, or the address of the claimer if it has.
 
 * **Solidity Function Signature:** ``claimer() returns (address)``
-* **ABI Signature:** ``0xd379be23``
 
 
 Safeguards
@@ -186,11 +181,17 @@ Tips for executing scheduled calls
 
 The following tips may be useful if you wish to execute calls.
 
-Only look in the next 265 blocks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Look in the next 265 blocks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since calls cannot be scheduled less than 265 blocks in the future, you can
-count on the call ordering remaining static for the next 265 blocks.
+Calls within this window are likely claimable.
+
+
+Calls are frozen during the 10 blocks prior to the target block
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once a call enters the freeze window it is immutable until call execution.
+
 
 No cancellation in next 265 blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -199,11 +200,13 @@ Since calls cannot be cancelled less than 265 blocks in the future, you don't
 need to check cancellation status during the 265 blocks prior to its target
 block.
 
+
 Check that it was not already called
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you are executing a call after the target block but before the grace period
 has run out, it is good to check that it has not already been called.
+
 
 Compute how much gas to provide
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

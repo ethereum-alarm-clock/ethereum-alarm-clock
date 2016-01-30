@@ -1,8 +1,3 @@
-import pytest
-
-from ethereum.tester import TransactionFailed
-
-
 deploy_contracts = [
     "CallLib",
     "TestCallExecution",
@@ -30,5 +25,8 @@ def test_cannot_cancel_if_already_called(deploy_client, deployed_contracts,
     assert call.wasCalled() is True
     assert call.isCancelled() is False
 
-    with pytest.raises(TransactionFailed):
-        call.cancel()
+    cancel_txn = call.cancel()
+    cancel_txn_receipt = deploy_client.wait_for_transaction(cancel_txn)
+
+    assert call.wasCalled() is True
+    assert call.isCancelled() is False

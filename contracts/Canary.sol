@@ -1,5 +1,7 @@
 contract SchedulerInterface {
-    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address);
+    function scheduleCall(bytes4 abiSignature,
+                          uint targetBlock,
+                          uint requiredGas) public returns (address);
     function isKnownCall(address callAddress) constant returns (bool);
 }
 
@@ -61,7 +63,10 @@ contract Canary {
 
     function scheduleHeartbeat() public {
         // schedule the call (~2 hours from now)
-        address call_address = scheduler.scheduleCall.value(2 ether)(address(this), 0x3defb962, block.number + 480, 2000000, 255, 1 finney, 0);
+        address call_address = scheduler.scheduleCall.value(2 ether)(
+            0x3defb962,
+            block.number + 480,
+            2000000);
         if (call_address != 0x0) {
             callContract = CallContractAPI(call_address);
         }
@@ -91,13 +96,7 @@ contract Canary {
 }
 
 
-contract CanaryV6 is Canary {
-    function CanaryV6() Canary(0xe109ecb193841af9da3110c80fdd365d1c23be2a) {
-    }
-}
-
-
-contract CanaryTestnet is Canary {
-    function CanaryTestnet() Canary(0xb8da699d7fb01289d4ef718a55c3174971092bef) {
+contract CanaryV7Testnet is Canary {
+    function CanaryV7Testnet() Canary(0x26416b12610d26fd31d227456e9009270574038f) {
     }
 }

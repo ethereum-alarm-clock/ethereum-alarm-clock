@@ -40,18 +40,26 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
         get_contract_address_from_txn,
     )
 
-    def _deploy_future_block_call(contract_function, scheduler_address=None,
-                                  target_block=None, grace_period=64,
-                                  suggested_gas=100000, payment=1, fee=1,
-                                  endowment=None):
+    def _deploy_future_block_call(contract_function=None, scheduler_address=None,
+                                  target_block=None, grace_period=255,
+                                  required_gas=1000000, payment=1, donation=1,
+                                  endowment=None, call_data="",
+                                  require_depth=0, call_value=0):
         if endowment is None:
-            endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + fee
+            endowment = deploy_client.get_max_gas() * deploy_client.get_gas_price() + payment + donation + call_value
 
         if target_block is None:
-            target_block = deploy_client.get_block_number() + 40
+            target_block = deploy_client.get_block_number()
 
         if scheduler_address is None:
             scheduler_address = deploy_coinbase
+
+        if contract_function is None:
+            abi_signature = ""
+            contract_address = scheduler_address
+        else:
+            abi_signature = contract_function.encoded_abi_signature
+            contract_address = contract_function._contract._meta.address
 
         deploy_txn_hash = deploy_contract(
             deploy_client,
@@ -60,11 +68,14 @@ def deploy_future_block_call(deploy_client, FutureBlockCall, deploy_coinbase):
                 scheduler_address,
                 target_block,
                 grace_period,
-                contract_function._contract._meta.address,
-                contract_function.encoded_abi_signature,
-                suggested_gas,
+                contract_address,
+                abi_signature,
+                call_data,
+                call_value,
+                required_gas,
+                require_depth,
                 payment,
-                fee,
+                donation,
             ),
             gas=int(deploy_client.get_max_gas() * 0.95),
             value=endowment,
@@ -135,13 +146,29 @@ def denoms():
 def get_call(SchedulerLib, FutureBlockCall, deploy_client):
     def _get_call(txn_hash):
         call_scheduled_logs = SchedulerLib.CallScheduled.get_transaction_logs(txn_hash)
-        assert len(call_scheduled_logs) == 1
+        if not len(call_scheduled_logs):
+            call_rejected_logs = SchedulerLib.CallRejected.get_transaction_logs(txn_hash)
+            if len(call_rejected_logs):
+                reject_data = SchedulerLib.CallRejected.get_log_data(call_rejected_logs[0])
+                raise ValueError("CallRejected: {0}".format(reject_data))
+            raise ValueError("No scheduled call found")
         call_scheduled_data = SchedulerLib.CallScheduled.get_log_data(call_scheduled_logs[0])
 
         call_address = call_scheduled_data['call_address']
         call = FutureBlockCall(call_address, deploy_client)
         return call
     return _get_call
+
+
+@pytest.fixture(scope="module")
+def get_call_rejection_data(SchedulerLib):
+    def _get_rejection_data(txn_hash):
+        rejection_logs = SchedulerLib.CallRejected.get_transaction_logs(txn_hash)
+        assert len(rejection_logs) == 1
+        rejection_data = SchedulerLib.CallRejected.get_log_data(rejection_logs[0])
+
+        return rejection_data
+    return _get_rejection_data
 
 
 @pytest.fixture(scope="module")

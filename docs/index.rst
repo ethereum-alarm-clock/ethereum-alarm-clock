@@ -17,12 +17,15 @@ The service is completely trustless, open source, and verifiable.
 Contents:
 
 .. toctree::
+
+   what
    overview
    scheduling
    call_contracts
    execution
+   reliability
    client
-   costs_and_fees
+   costs
    abi
    events
    terminology

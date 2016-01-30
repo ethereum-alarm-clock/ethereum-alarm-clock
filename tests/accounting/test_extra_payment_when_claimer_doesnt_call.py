@@ -25,7 +25,7 @@ def test_claim_deposit_goes_to_caller(deploy_client, deployed_contracts,
         client_contract.setBool,
         target_block=target_block,
         payment=12345,
-        fee=54321,
+        donation=54321,
         endowment=denoms.ether * 100,
     )
 

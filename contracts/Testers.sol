@@ -1,4 +1,5 @@
 import "owned";
+import "libraries/CallLib.sol";
 
 
 contract SchedulerAPI {
@@ -59,7 +60,8 @@ contract TestDataRegistry is owned {
         }
 
         function registerBytes(address to, bytes v) public {
-            bool result = to.call(bytes4(sha3("registerData()")), v.length, v);
+            bool result = to.call(v);
+            //bool result = to.call(v);
             if (result) {
                 wasSuccessful = 1;
             }
@@ -103,6 +105,25 @@ contract TestDataRegistry is owned {
 
 contract TestCallExecution is TestDataRegistry {
         uint8 public wasSuccessful;
+
+        function reset() public {
+            v_bool = false;
+            v_uint = 0;
+            v_int = 0;
+            v_bytes32 = 0x0;
+            v_address = 0x0;
+            v_bytes.length = 0;
+
+            vm_a = 0;
+            vm_b = 0;
+            vm_c = 0;
+            vm_d = 0x0;
+            vm_e = 0x0;
+            vm_f.length = 0;
+        }
+
+        function noop() {
+        }
 
         function doExecution(address to) {
             bool result = to.call(bytes4(sha3("execute()")));
@@ -165,9 +186,12 @@ contract TestCallExecution is TestDataRegistry {
         bytes public v_bytes;
 
         function setBytes(bytes v) public {
-            Bytes(v);
-            Bytes(msg.data);
             v_bytes = v;
+            wasSuccessful = 1;
+        }
+
+        function setCallData() public {
+            v_bytes = msg.data;
         }
 
         uint public vm_a;
@@ -177,11 +201,7 @@ contract TestCallExecution is TestDataRegistry {
         address public vm_e;
         bytes public vm_f;
 
-        event Bytes(bytes f);
-
         function setMany(uint a, int b, uint c, bytes20 d, address e, bytes f) public {
-            Bytes(f);
-            Bytes(msg.data);
             vm_a = a;
             vm_b = b;
             vm_c = c;
@@ -193,17 +213,56 @@ contract TestCallExecution is TestDataRegistry {
 
 
 contract TestErrors is owned {
-        bool public value;
+    bool public value;
 
-        function doFail() public {
-                throw;
-                value = true;
-        }
+    function reset() public {
+        value = false;
+    }
 
-        function doInfinite() public {
-                while (true) {
-                        tx.origin.send(1);
-                }
-                value = true;
+    function doFail() public {
+        throw;
+        value = true;
+    }
+
+    function doInfinite() public {
+        while (true) {
+                tx.origin.send(1);
         }
+        value = true;
+    }
+
+    address public callAddress;
+
+    function setCallAddress(address _callAddress) {
+        callAddress = _callAddress;
+    }
+
+    uint public d;
+
+    function proxyCall(uint depth) public returns (bool) {
+        if (depth == 0) {
+            return callAddress.call(bytes4(sha3("execute()")));
+        }
+        else if (msg.sender == address(this)) {
+            return address(this).callcode(bytes4(sha3("proxyCall(uint256)")), depth - 1);
+        }
+        else {
+            return address(this).call(bytes4(sha3("proxyCall(uint256)")), depth - 1);
+        }
+    }
+
+    uint constant GAS_PER_DEPTH = 700;
+
+    function __dig(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        if (!address(this).callcode(bytes4(sha3("__dig(uint256)")), n - 1)) throw;
+    }
+
+    function doStackExtension(uint depth) public {
+        if (!CallLib.checkDepth(depth)) throw;
+        value = true;
+    }
+    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+        return 12345;
+    }
 }

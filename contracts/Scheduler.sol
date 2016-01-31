@@ -4,7 +4,7 @@ import "libraries/CallLib.sol";
 
 contract Scheduler {
     /*
-     *  Address: 0xe109ecb193841af9da3110c80fdd365d1c23be2a
+     *  Address: 0x6c8f2a135f6ed072de4503bd7c4999a1a17f824b
      */
 
     // The starting value (0.01 USD at 1eth:$2 exchange rate)
@@ -18,9 +18,6 @@ contract Scheduler {
 
     // callIndex tracks the ordering of scheduled calls based on their block numbers.
     GroveLib.Index callIndex;
-
-    // callOrigin tracks the origin scheduler contract for each scheduled call.
-    mapping (address => address) callOrigin;
 
     uint constant CALL_API_VERSION = 7;
 
@@ -116,7 +113,6 @@ contract Scheduler {
         return SchedulerLib.getDefaultGracePeriod();
     }
 
-    // Ten minutes into the future (duplicated from SchedulerLib)
     bytes constant EMPTY_CALL_DATA = "";
     uint constant DEFAULT_CALL_VALUE = 0;
     bytes4 constant DEFAULT_FN_SIGNATURE = 0x0000;

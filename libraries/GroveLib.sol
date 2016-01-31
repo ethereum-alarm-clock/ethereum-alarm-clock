@@ -7,7 +7,7 @@ library GroveLib {
         /*
          *  Indexes for ordered data
          *
-         *  Address: 0x873fd7d0657079da141d5705989d10ca555ba990
+         *  Address: 0x7c1eb207c07e7ab13cf245585bd03d0fa478d034
          */
         struct Index {
                 bytes32 root;

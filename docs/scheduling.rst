@@ -394,6 +394,10 @@ Helper Functions
 The following getters can be used to return the constant values that are used
 by the service programatically.
 
+* ``callAPIVersion() constant returns (uint)``
+
+Returns the version of the Alarm service.
+
 * ``getMinimumGracePeriod() constant returns (uint)``
 
 The smallest value allowed for the ``gracePeriod`` of a scheduled call.

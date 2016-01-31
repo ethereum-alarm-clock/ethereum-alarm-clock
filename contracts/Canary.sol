@@ -99,6 +99,12 @@ contract Canary {
 }
 
 
+contract CanaryV7 is Canary {
+    function CanaryV7() Canary(0x6c8f2a135f6ed072de4503bd7c4999a1a17f824b, 480) {
+    }
+}
+
+
 contract CanaryV7Testnet is Canary {
     function CanaryV7Testnet() Canary(0x26416b12610d26fd31d227456e9009270574038f, 480) {
     }

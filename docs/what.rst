@@ -18,7 +18,7 @@ A common requirement for software systems is execution of code at a specified
 time in the future.  An example of one such mechanism is the crontab on unix
 based systems.
 
-The Alarm service serves a similar purpose to Contracts on Ethereum.  Since
+The Alarm service serves a similar purpose for Contracts on Ethereum.  Since
 contracts are unable to initiate transactions themselves, the Alarm service
 sets up a marketplace that allows the operator of a private key based account
 to claim a reward in exchange for initiating the required transaction.

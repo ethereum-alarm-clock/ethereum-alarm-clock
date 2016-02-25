@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.0
+0.7.0
 -----
 
 - Scheduled calls can now specify a required gas amount.  This takes place of

@@ -166,8 +166,8 @@ Install the go-ethereum client.
 
 Install the Alarm client.
 
-* ``mkdir -p ~/alarm-0.6.0``
-* ``cd ~/alarm-0.6.0``
+* ``mkdir -p ~/alarm-0.7.0``
+* ``cd ~/alarm-0.7.0``
 * ``virtualenv env && source env/bin/activate``
 * ``pip install ethereum-alarm-clock-client``
 
@@ -181,23 +181,23 @@ Put the following in ``/etc/supervisord/conf.d/geth.conf``
 .. code-block:: shell
 
     [program:geth]
-    command=geth --datadir /data/ethereum --unlock 0 --password /home/ubuntu/geth_password --rpc --fast
+    command=nice geth --datadir /data/ethereum --unlock 0 --password /home/ubuntu/geth_password --rpc --fast --shh
     user=ubuntu
     stdout_logfile=/var/log/supervisor/geth-stdout.log
     stderr_logfile=/var/log/supervisor/geth-stderr.log
 
 
-Put the following in ``/etc/supervisord/conf.d/scheduler-v6.conf``
+Put the following in ``/etc/supervisord/conf.d/scheduler-v7.conf``
 
 .. code-block:: shell
 
-    [program:scheduler-v6]
+    [program:scheduler-v7]
     user=ubuntu
-    command=/home/ubuntu/alarm-0.6.0/env/bin/eth_alarm scheduler --client rpc --address 0xe109ecb193841af9da3110c80fdd365d1c23be2a
-    directory=/home/ubuntu/alarm-0.6.0/
-    environment=PATH="/home/ubuntu/alarm-0.6.0/env/bin"
-    stdout_logfile=/var/log/supervisor/scheduler-v6-stdout.log
-    stderr_logfile=/var/log/supervisor/scheduler-v6-stderr.log
+    command=/home/ubuntu/alarm-0.7.0/env/bin/eth_alarm scheduler --client rpc
+    directory=/home/ubuntu/alarm-0.7.0/
+    environment=PATH="/home/ubuntu/alarm-0.7.0/env/bin"
+    stdout_logfile=/var/log/supervisor/scheduler-v7-stdout.log
+    stderr_logfile=/var/log/supervisor/scheduler-v7-stderr.log
     autorestart=true
     autostart=false
 

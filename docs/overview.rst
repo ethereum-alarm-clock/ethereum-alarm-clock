@@ -49,14 +49,14 @@ Execution of scheduled calls
 ----------------------------
 
 Scheduled function calls can be executed by anyone who wishes to initiate the
-transaction who inturn is paid whatever amount was specified as the payment
+transaction who in turn is paid whatever amount was specified as the payment
 value for the call.
 
 
 Cost
 ^^^^
 
-In addition to the gas costs, schedulers are also encouraged include a payment
+In addition to the gas costs, schedulers are also encouraged to include a payment
 amount for the executor of the call.  This value can be specified by the
 scheduler, meaning that you may choose to offer any amount for the execution of
 your function.

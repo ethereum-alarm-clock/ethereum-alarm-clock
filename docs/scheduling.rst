@@ -2,7 +2,7 @@ Scheduling
 ==========
 
 Call scheduling is the core of the Ethereum Alarm Service.  Calls can be
-scheduled on any block at least 40 blocks *(~10 minutes)* in the future.
+scheduled on any block at least 10 blocks *(~2.5 minutes)* in the future.
 
 When a call is scheduled, the service deploys a new contract that represents
 the scheduled function call.  This contract is referred to as the **call

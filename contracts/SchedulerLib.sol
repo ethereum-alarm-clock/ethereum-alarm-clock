@@ -1,6 +1,6 @@
-import "libraries/GroveLib.sol";
-import "libraries/AccountingLib.sol";
-import "libraries/CallLib.sol";
+import "contracts/GroveLib.sol";
+import "contracts/AccountingLib.sol";
+import "contracts/CallLib.sol";
 
 
 library SchedulerLib {

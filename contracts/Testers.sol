@@ -1,5 +1,13 @@
-import "owned";
-import "libraries/CallLib.sol";
+import "contracts/CallLib.sol";
+
+
+contract owned {
+    address public owner;
+
+    function Owned() {
+        owner = msg.sender;
+    }
+}
 
 
 contract SchedulerAPI {

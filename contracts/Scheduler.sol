@@ -1,5 +1,5 @@
-import "libraries/SchedulerLib.sol";
-import "libraries/CallLib.sol";
+import "contracts/SchedulerLib.sol";
+import "contracts/CallLib.sol";
 
 
 contract Scheduler {

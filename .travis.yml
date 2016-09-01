@@ -1,0 +1,21 @@
+language: python
+python:
+  - "3.5"
+dist: trusty
+sudo: required
+before_install:
+  - sudo add-apt-repository -y ppa:ethereum/ethereum
+  - sudo apt-get update
+  - travis_retry sudo apt-get install -y solc
+  - travis_retry sudo apt-get install -y ethereum
+cache:
+  - pip: true
+  - directories:
+    - $HOME/.ethash
+    - .tox/py27/.hypothesis
+    - .tox/py34/.hypothesis
+    - .tox/py35/.hypothesis
+install:
+  - pip install -r requirements.txt
+script:
+  - py.test tests/ -v

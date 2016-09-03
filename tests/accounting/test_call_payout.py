@@ -1,41 +1,7 @@
-from eth_abi import (
-    decode_abi,
-    decode_single,
-)
-from web3.utils.abi import (
-    get_abi_input_types,
-    get_abi_input_names,
-    get_indexed_event_inputs,
-    exclude_indexed_event_inputs,
-)
 from populus.utils.transactions import (
     wait_for_transaction_receipt,
 )
 
-
-def get_event_data(event_abi, log_entry):
-    log_topics = log_entry['topics'][1:]
-    log_topics_abi = get_indexed_event_inputs(event_abi)
-    log_topic_types = get_abi_input_types({'inputs': log_topics_abi})
-    log_topic_names = get_abi_input_names({'inputs': log_topics_abi})
-
-    log_data = log_entry['data']
-    log_data_abi = exclude_indexed_event_inputs(event_abi)
-    log_data_types = get_abi_input_types({'inputs': log_data_abi})
-    log_data_names = get_abi_input_names({'inputs': log_data_abi})
-
-    decoded_log_data = decode_abi(log_data_types, log_data)
-    decoded_topic_data = [
-        decode_single(topic_type, topic_data)
-        for topic_type, topic_data
-        in zip(log_topic_types, log_topics)
-    ]
-
-    decoded_data = {
-        'topics': dict(zip(log_topic_names, decoded_topic_data)),
-        'data': dict(zip(log_data_names, decoded_log_data)),
-    }
-    return decoded_data
 
 
 #def test_execution_payment(deploy_client, deployed_contracts,
@@ -71,11 +37,14 @@ def test_execution_payment(unmigrated_chain, web3, FutureBlockCall, CallLib,
     log_entries = call_txn_receipt['logs']
     assert log_entries
 
-    event_abi = CallLib.find_matching_event_abi('CallExecuted')
+    filter = CallLib().pastEvents('CallExecuted')
+    events = filter.get()
 
-    event_data = get_event_data(event_abi, call_txn_receipt['logs'][0])
+    assert len(events) == 1
+    event = events[0]
 
-    expected_payout = 12345 + event_data['data']['gasCost']
+    assert 'gasCost' in event['args']
+    expected_payout = 12345 + event['args']['gasCost']
 
-    assert event_data['data']['payment'] == expected_payout
-    assert web3.eth.getBalance(client_contract.address) == event_data['data']['payment']
+    assert event['args']['payment'] == expected_payout
+    assert web3.eth.getBalance(client_contract.address) == event['args']['payment']

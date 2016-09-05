@@ -3,10 +3,6 @@ from populus.utils.transactions import (
 )
 
 
-
-#def test_execution_payment(deploy_client, deployed_contracts,
-#                           deploy_future_block_call, denoms,
-#                           FutureBlockCall, CallLib, SchedulerLib):
 def test_execution_payment(unmigrated_chain, web3, FutureBlockCall, CallLib,
                            deploy_fbc):
     chain = unmigrated_chain

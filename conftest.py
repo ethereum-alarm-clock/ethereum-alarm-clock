@@ -113,8 +113,8 @@ def deploy_fbc(chain, web3, FutureBlockCall):
         )
 
         contract_address = chain.wait.for_contract_address(deploy_txn_hash)
-        call = FutureBlockCall(address=contract_address)
-        return call
+        fbc = FutureBlockCall(address=contract_address)
+        return fbc
     return _deploy_fbc
 
 

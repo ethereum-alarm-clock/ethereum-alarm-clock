@@ -1,8 +1,3 @@
-from populus.utils.transactions import (
-    wait_for_transaction_receipt,
-)
-
-
 def test_execution_payment(unmigrated_chain, web3, FutureBlockCall, CallLib,
                            deploy_fbc):
     chain = unmigrated_chain
@@ -25,7 +20,7 @@ def test_execution_payment(unmigrated_chain, web3, FutureBlockCall, CallLib,
     assert client_contract.call().wasSuccessful() == 0
 
     call_txn_hash = client_contract.transact().doExecution(call.address)
-    call_txn_receipt = wait_for_transaction_receipt(web3, call_txn_hash)
+    call_txn_receipt = chain.wait.for_receipt(call_txn_hash)
 
     assert client_contract.call().wasSuccessful() == 1
     assert client_contract.call().v_bool() is True

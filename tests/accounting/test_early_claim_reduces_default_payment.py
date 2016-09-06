@@ -1,54 +1,59 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+from web3.utils.encoding import (
+    decode_hex,
+)
+from web3.utils.abi import (
+    function_abi_to_4byte_selector,
+)
 
 
-def test_early_claim_decreases_default_payment(deploy_client,
-                                               deployed_contracts,
-                                               deploy_future_block_call,
-                                               denoms,
-                                               FutureBlockCall,
-                                               CallLib, SchedulerLib,
-                                               get_call,
-                                               get_execution_data,
-                                               deploy_coinbase):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
+def test_early_claim_decreases_default_payment(chain, web3, denoms):
+    scheduler = chain.get_contract('Scheduler')
+    client_contract = chain.get_contract('TestCallExecution')
+    SchedulerLib = chain.get_contract_factory('SchedulerLib')
+    FutureBlockCall = chain.get_contract_factory('FutureBlockCall')
 
-    target_block = deploy_client.get_block_number() + 400
+    target_block = web3.eth.blockNumber + 300
 
-    scheduling_txn_hash = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.noop.encoded_abi_signature,
+    bytes4_selector = decode_hex(function_abi_to_4byte_selector(client_contract.find_matching_fn_abi(
+        'noop',
+    )))
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+        #'gas': 3000000,
+    }).scheduleCall(
+        client_contract.address,
+        bytes4_selector,
         target_block,
-        value=10 * denoms.ether,
-        gas=3000000,
     )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
 
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
+    scheduling_receipt = chain.wait.for_receipt(scheduling_txn_hash)
 
-    deploy_client.wait_for_block(call.firstClaimBlock())
+    event_filter = SchedulerLib.pastEvents('CallScheduled', {'address': scheduler.address})
+    events = event_filter.get()
+    assert len(events) == 1
+    event_data = events[0]
 
-    claim_txn_hash = call.claim(value=10 * denoms.ether)
-    claim_txn_receipt = deploy_client.wait_for_transaction(claim_txn_hash)
+    call_address = event_data['args']['call_address']
+    call = FutureBlockCall(address=call_address)
 
-    assert call.claimer() == deploy_coinbase
+    chain.wait.for_block(call.call().firstClaimBlock())
 
-    deploy_client.wait_for_block(target_block)
+    claim_txn_hash = call.transact({'value': 10 * denoms.ether}).claim()
+    claim_txn_receipt = chain.wait.for_receipt(claim_txn_hash)
 
-    default_payment_before = scheduler.defaultPayment()
+    assert call.call().claimer() == web3.eth.coinbase
 
-    execute_txn_hash = call.execute()
-    execute_txn_receipt = deploy_client.wait_for_transaction(execute_txn_hash)
+    chain.wait.for_block(target_block)
 
-    assert call.wasCalled()
+    default_payment_before = scheduler.call().defaultPayment()
+
+    execute_txn_hash = call.transact().execute()
+    execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
+
+    assert call.call().wasCalled()
 
     expected = default_payment_before * 9999 / 10000
-    actual = scheduler.defaultPayment()
+    actual = scheduler.call().defaultPayment()
 
     assert actual < default_payment_before
     assert actual == expected

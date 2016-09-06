@@ -13,10 +13,6 @@ from web3.utils.abi import (
 from web3.utils.encoding import (
     decode_hex,
 )
-from populus.utils.transactions import (
-    get_block_gas_limit,
-    get_contract_address_from_txn,
-)
 
 
 @pytest.fixture
@@ -37,6 +33,11 @@ def CallLib(chain):
 @pytest.fixture
 def SchedulerLib(chain):
     return chain.get_contract_factory('SchedulerLib')
+
+
+def get_block_gas_limit(web3):
+    latest_block = web3.eth.getBlock('latest')
+    return latest_block['gasLimit']
 
 
 @pytest.fixture
@@ -111,9 +112,7 @@ def deploy_fbc(chain, web3, FutureBlockCall):
             ],
         )
 
-        contract_address = get_contract_address_from_txn(
-            web3, deploy_txn_hash, 180,
-        )
+        contract_address = chain.wait.for_contract_address(deploy_txn_hash)
         call = FutureBlockCall(address=contract_address)
         return call
     return _deploy_fbc
@@ -194,3 +193,12 @@ def deploy_fbc(chain, web3, FutureBlockCall):
 #
 #        return execution_data
 #    return _get_execution_data
+
+@pytest.fixture()
+def denoms():
+    from web3.utils.currency import units
+    int_units = {
+        key: int(value)
+        for key, value in units.items()
+    }
+    return type('denoms', (object,), int_units)

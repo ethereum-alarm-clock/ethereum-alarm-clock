@@ -19,16 +19,18 @@ def test_early_claim_decreases_default_payment(chain, web3, denoms):
     )))
     scheduling_txn_hash = scheduler.transact({
         'value': 10 * denoms.ether,
-        #'gas': 3000000,
     }).scheduleCall(
         client_contract.address,
         bytes4_selector,
         target_block,
     )
 
-    scheduling_receipt = chain.wait.for_receipt(scheduling_txn_hash)
+    chain.wait.for_receipt(scheduling_txn_hash)
 
-    event_filter = SchedulerLib.pastEvents('CallScheduled', {'address': scheduler.address})
+    event_filter = SchedulerLib.pastEvents(
+        'CallScheduled',
+        {'address': scheduler.address},
+    )
     events = event_filter.get()
     assert len(events) == 1
     event_data = events[0]
@@ -39,7 +41,7 @@ def test_early_claim_decreases_default_payment(chain, web3, denoms):
     chain.wait.for_block(call.call().firstClaimBlock())
 
     claim_txn_hash = call.transact({'value': 10 * denoms.ether}).claim()
-    claim_txn_receipt = chain.wait.for_receipt(claim_txn_hash)
+    chain.wait.for_receipt(claim_txn_hash)
 
     assert call.call().claimer() == web3.eth.coinbase
 
@@ -48,7 +50,7 @@ def test_early_claim_decreases_default_payment(chain, web3, denoms):
     default_payment_before = scheduler.call().defaultPayment()
 
     execute_txn_hash = call.transact().execute()
-    execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
+    chain.wait.for_receipt(execute_txn_hash)
 
     assert call.call().wasCalled()
 

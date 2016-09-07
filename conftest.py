@@ -36,7 +36,7 @@ def SchedulerLib(chain):
 
 
 def get_block_gas_limit(web3):
-    latest_block = web3.eth.getBlock('latest')
+    latest_block = web3.eth.getBlock(web3.eth.blockNumber)
     return latest_block['gasLimit']
 
 
@@ -84,7 +84,7 @@ def deploy_fbc(chain, web3, FutureBlockCall):
         if method_name is None:
             abi_signature = ""
         else:
-            method_abi = contract.find_matching_fn_abi('setBool', arguments)
+            method_abi = contract.find_matching_fn_abi(method_name, arguments)
             hex_abi_signature = function_abi_to_4byte_selector(method_abi)
             abi_signature = decode_hex(hex_abi_signature)
 

@@ -20,7 +20,7 @@ def test_canary_initialization(deploy_canary_contract, deploy_client, denoms,
 
     while canary.get_balance() < prev_balance:
         # uncomment to see how much heartbeats cost.
-        print "Heartbeat Cost:", (canary.get_balance() - prev_balance) * 1.0 / denoms.ether
+        print("Heartbeat Cost:", (canary.get_balance() - prev_balance) * 1.0 / denoms.ether)
         prev_balance = canary.get_balance()
 
         call_contract_address = canary.callContractAddress()

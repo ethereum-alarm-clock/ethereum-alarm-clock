@@ -35,7 +35,7 @@ def test_scheduler_gets_what_is_leftover(unmigrated_chain, web3, denoms,
 
     execute_filter = CallLib.pastEvents(
         'CallExecuted',
-        {'address', fbc.address},
+        {'address': fbc.address},
     )
     execute_logs = execute_filter.get()
     assert len(execute_logs) == 1

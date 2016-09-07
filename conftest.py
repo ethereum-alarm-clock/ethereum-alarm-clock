@@ -21,8 +21,8 @@ def FutureBlockCall(chain):
 
 
 @pytest.fixture
-def Canary(chain):
-    return chain.get_contract_factory('Canary')
+def Canary(unmigrated_chain):
+    return unmigrated_chain.get_contract_factory('Canary')
 
 
 @pytest.fixture
@@ -41,7 +41,8 @@ def get_block_gas_limit(web3):
 
 
 @pytest.fixture
-def deploy_fbc(chain, web3, FutureBlockCall):
+def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
+    chain = unmigrated_chain
 
     def _deploy_fbc(contract=None,
                     method_name=None,

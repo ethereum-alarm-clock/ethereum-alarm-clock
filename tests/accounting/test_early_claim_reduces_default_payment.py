@@ -1,21 +1,22 @@
-
-
-def test_early_claim_decreases_default_payment(chain,
-                                               web3,
-                                               denoms,
-                                               deploy_fbc):
+def test_early_claim_decreases_default_payment(chain, web3, denoms,
+                                               get_scheduled_fbc,
+                                               get_4byte_selector):
     scheduler = chain.get_contract('Scheduler')
     client_contract = chain.get_contract('TestCallExecution')
 
     target_block = web3.eth.blockNumber + 300
 
-    fbc = deploy_fbc(
-        contract=client_contract,
-        method_name='noop',
-        target_block=web3.eth.blockNumber + 300,
-        payment=12345,
-        donation=54321,
+    noop_4byte_selector = get_4byte_selector(client_contract, 'noop')
+
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        contractAddress=client_contract.address,
+        abiSignature=noop_4byte_selector,
+        targetBlock=target_block,
     )
+
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
 
     chain.wait.for_block(fbc.call().firstClaimBlock())
 
@@ -33,7 +34,7 @@ def test_early_claim_decreases_default_payment(chain,
 
     assert fbc.call().wasCalled()
 
-    expected = default_payment_before * 9999 / 10000
+    expected = default_payment_before * 9999 // 10000
     actual = scheduler.call().defaultPayment()
 
     assert actual < default_payment_before

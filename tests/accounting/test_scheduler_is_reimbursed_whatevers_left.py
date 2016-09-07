@@ -1,60 +1,49 @@
-from ethereum import utils
-from ethereum.tester import (
-    accounts,
-    encode_hex,
-)
+def test_scheduler_gets_what_is_leftover(unmigrated_chain, web3, denoms,
+                                         deploy_fbc):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
+    CallLib = chain.get_contract_factory('CallLib')
 
+    scheduler_address = web3.eth.accounts[1]
+    web3.eth.sendTransaction({'to': scheduler_address, 'value': 20 * denoms.ether})
 
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
-
-
-def test_scheduler_gets_what_is_leftover(deploy_client, deployed_contracts,
-                                         deploy_future_block_call, denoms,
-                                         deploy_coinbase, FutureBlockCall,
-                                         CallLib, SchedulerLib):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
-
-    scheduler_address = "0x" + encode_hex(accounts[1])
-    deploy_client.send_transaction(to=scheduler_address, value=20 * denoms.ether)
-
-    target_block = deploy_client.get_block_number() + 1000
-
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=target_block,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 10,
         payment=12345,
         donation=54321,
-        endowment=denoms.ether * 10,
+        endowment=10 * denoms.ether,
         scheduler_address=scheduler_address,
     )
 
-    deploy_client.wait_for_block(target_block)
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    before_balance = deploy_client.get_balance(scheduler_address)
-    before_call_balance = call.get_balance()
+    before_balance = web3.eth.getBalance(scheduler_address)
+    before_call_balance = web3.eth.getBalance(fbc.address)
 
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False
     assert before_call_balance == 10 * denoms.ether
 
-    ffa_txn_h = call.execute(_from=deploy_coinbase)
-    ffa_txn_r = deploy_client.wait_for_transaction(ffa_txn_h)
-    ffa_txn = deploy_client.get_transaction_by_hash(ffa_txn_h)
+    execute_txn_h = fbc.transact({
+        'from': web3.eth.coinbase,
+    }).execute()
+    chain.wait.for_receipt(execute_txn_h)
 
-    assert call.wasCalled() is True
-    assert call.get_balance() == 0
+    assert fbc.call().wasCalled() is True
+    assert web3.eth.getBalance(fbc.address) == 0
 
-    execute_logs = CallLib.CallExecuted.get_transaction_logs(ffa_txn_h)
+    execute_filter = CallLib.pastEvents(
+        'CallExecuted',
+        {'address', fbc.address},
+    )
+    execute_logs = execute_filter.get()
     assert len(execute_logs) == 1
-    execute_data = CallLib.CallExecuted.get_log_data(execute_logs[0])
+    execute_log_data = execute_logs[0]
 
-    after_balance = deploy_client.get_balance(scheduler_address)
-    payout = execute_data['payment']
-    donation = execute_data['donation']
+    after_balance = web3.eth.getBalance(scheduler_address)
+    payout = execute_log_data['args']['payment']
+    donation = execute_log_data['args']['donation']
 
     computed_reimbursement = after_balance - before_balance
     expected_reimbursement = before_call_balance - payout - donation

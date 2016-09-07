@@ -1,4 +1,4 @@
-def test_gas_accounting_for_call_exception(unmigrated_chain, web3, deploy_fbc, denoms):
+def test_gas_accounting_for_call_exception(unmigrated_chain, web3, deploy_fbc):
     chain = unmigrated_chain
     client_contract = chain.get_contract('TestErrors')
     CallLib = chain.get_contract_factory('CallLib')

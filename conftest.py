@@ -202,3 +202,42 @@ def denoms():
         for key, value in units.items()
     }
     return type('denoms', (object,), int_units)
+
+
+@pytest.fixture()
+def get_scheduled_fbc(chain, web3):
+    scheduler = chain.get_contract('Scheduler')
+    SchedulerLib = chain.get_contract_factory('SchedulerLib')
+    FutureBlockCall = chain.get_contract_factory('FutureBlockCall')
+
+    def _get_scheduled_fbc(scheduling_txn_hash):
+        chain.wait.for_receipt(scheduling_txn_hash)
+
+        schedule_filter = SchedulerLib.pastEvents(
+            'CallScheduled',
+            {'address': scheduler.address},
+        )
+        schedule_events = schedule_filter.get()
+        assert len(schedule_events) == 1
+        schedule_event_data = schedule_events[0]
+        fbc_address = schedule_event_data['args']['call_address']
+
+        fbc = FutureBlockCall(address=fbc_address)
+        return fbc
+    return _get_scheduled_fbc
+
+
+@pytest.fixture()
+def get_4byte_selector():
+    from web3.utils.encoding import (
+        decode_hex,
+    )
+    from web3.utils.abi import (
+        function_abi_to_4byte_selector,
+    )
+
+    def _get_4byte_selector(contract, fn_name, args=None, kwargs=None):
+        fn_abi = contract.find_matching_fn_abi(fn_name, args=args, kwargs=kwargs)
+        fn_4byte_selector = decode_hex(function_abi_to_4byte_selector(fn_abi))
+        return fn_4byte_selector
+    return _get_4byte_selector

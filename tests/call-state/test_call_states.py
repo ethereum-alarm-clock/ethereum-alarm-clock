@@ -86,7 +86,7 @@ def test_states_when_unclaimed(unmigrated_chain, web3, denoms, deploy_fbc):
 
     assert fbc.call().state() == State.Callable
 
-    execute_txn_hash = fbc.call().execute()
+    execute_txn_hash = fbc.transact().execute()
     chain.wait.for_receipt(execute_txn_hash)
 
     assert fbc.call().state() == State.Executed
@@ -104,7 +104,7 @@ def test_missed_state_when_claimed(unmigrated_chain, web3, denoms, deploy_fbc):
 
     assert fbc.call().state() == State.Pending
 
-    chain.wait.for_block(fbc.targetBlock() - 10 - 100)
+    chain.wait.for_block(fbc.call().targetBlock() - 10 - 100)
 
     assert fbc.call().state() == State.Unclaimed
 

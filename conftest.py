@@ -209,11 +209,15 @@ def get_scheduled_fbc(chain, web3):
     FutureBlockCall = chain.get_contract_factory('FutureBlockCall')
 
     def _get_scheduled_fbc(scheduling_txn_hash):
-        chain.wait.for_receipt(scheduling_txn_hash)
+        schedule_receipt = chain.wait.for_receipt(scheduling_txn_hash)
 
-        schedule_filter = SchedulerLib.pastEvents(
+        schedule_filter = SchedulerLib.on(
             'CallScheduled',
-            {'address': scheduler.address},
+            {
+                'address': scheduler.address,
+                'fromBlock': schedule_receipt['blockNumber'],
+                'toBlock': schedule_receipt['blockNumber'],
+            },
         )
         schedule_events = schedule_filter.get()
         assert len(schedule_events) == 1

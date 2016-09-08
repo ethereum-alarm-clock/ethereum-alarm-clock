@@ -1,8 +1,3 @@
-deploy_contracts = [
-    "Scheduler",
-]
-
-
 def test_canary_initialization(deploy_canary_contract, deploy_client, denoms,
                                deployed_contracts, FutureBlockCall):
     scheduler = deployed_contracts.Scheduler

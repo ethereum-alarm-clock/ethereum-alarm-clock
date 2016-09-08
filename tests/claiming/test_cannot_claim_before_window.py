@@ -1,34 +1,21 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "AccountingLib",
-    "TestCallExecution",
-    "TestDataRegistry",
-]
-
-
-def test_claiming_too_early(deploy_client, deployed_contracts, deploy_future_block_call,
-                            denoms, FutureBlockCall, CallLib, SchedulerLib, get_call,
-                            get_execution_data):
-    client_contract = deployed_contracts.TestCallExecution
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
-        payment=denoms.ether,
+def test_cannot_claim_before_window(chain, web3, deploy_fbc, denoms):
+    target_block = web3.eth.blockNumber + 300,
+    fbc = deploy_fbc(
+        target_block=target_block,
+        payment=1 * denoms.ether,
     )
 
-    target_block = call.targetBlock()
-    base_payment = call.basePayment()
+    target_block = fbc.call().targetBlock()
+    base_payment = fbc.call().basePayment()
 
     first_claim_block = target_block - 255 - 10
+    chain.wait.for_block(first_claim_block - 2)
 
-    deploy_client.wait_for_block(first_claim_block - 2)
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
+    txn_h = fbc.transact({'value': 2 * base_payment}).claim()
+    txn_r = chain.wait.for_receipt(txn_h)
 
-    txn_h = call.claim(value=2 * base_payment)
-    txn_r = deploy_client.wait_for_transaction(txn_h)
+    assert txn_r['blockNumber'] == first_claim_block - 1
 
-    assert int(txn_r['blockNumber'], 16) == first_claim_block - 1
-
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"

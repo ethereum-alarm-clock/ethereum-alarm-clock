@@ -243,3 +243,17 @@ def get_4byte_selector():
         fn_4byte_selector = decode_hex(function_abi_to_4byte_selector(fn_abi))
         return fn_4byte_selector
     return _get_4byte_selector
+
+
+@pytest.fixture()
+def CallStates():
+    class States(object):
+        Pending = 0
+        Unclaimed = 1
+        Claimed = 2
+        Frozen = 3
+        Callable = 4
+        Executed = 5
+        Cancelled = 6
+        Missed = 7
+    return States

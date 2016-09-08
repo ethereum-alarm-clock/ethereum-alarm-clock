@@ -1,20 +1,3 @@
-import pytest
-
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import (
-    TransactionFailed,
-    accounts,
-    encode_hex,
-)
-
-
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
-
-
 def test_cannot_execute_if_claimed_by_other(deploy_client, deployed_contracts,
                                             deploy_coinbase,
                                             deploy_future_block_call):

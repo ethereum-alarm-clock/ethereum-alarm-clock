@@ -1,18 +1,3 @@
-import pytest
-
-from ethereum.tester import (
-    TransactionFailed,
-    accounts,
-    encode_hex,
-)
-
-
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
-
-
 def test_only_scheduler_can_cancel_prior_to_target_block(deploy_client,
                                                          deployed_contracts,
                                                          deploy_future_block_call,

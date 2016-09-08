@@ -1,16 +1,3 @@
-import pytest
-
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import TransactionFailed
-
-
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
-
-
 def test_execution_of_call_with_single_bool(deploy_client, deployed_contracts,
                                             deploy_future_block_call):
     client_contract = deployed_contracts.TestCallExecution

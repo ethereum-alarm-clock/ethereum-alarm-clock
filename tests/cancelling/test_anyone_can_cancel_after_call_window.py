@@ -1,22 +1,27 @@
-def test_anyone_can_cancel_after_call_window(deploy_client, deployed_contracts,
-                                             deploy_future_block_call, deploy_coinbase,
-                                             CallLib):
-    client_contract = deployed_contracts.TestCallExecution
+def test_anyone_can_cancel_after_call_window(chain, web3, deploy_fbc):
+    client_contract = chain.get_contract('TestCallExecution')
 
-    target_block = deploy_client.get_block_number() + 300
+    target_block = web3.eth.blockNumber + 300
 
-    call = deploy_future_block_call(
-        client_contract.setBool,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
         target_block=target_block,
     )
 
-    deploy_client.wait_for_block(call.targetBlock() + call.gracePeriod() + 1)
+    chain.wait.for_block(target_block + fbc.call().gracePeriod() + 1)
 
-    assert call.isCancelled() is False
+    assert fbc.call().isCancelled() is False
 
-    txn_h = call.cancel(_from=encode_hex(accounts[1]))
-    txn_r = deploy_client.wait_for_transaction(txn_h)
-    txn = deploy_client.get_transaction_by_hash(txn_h)
+    cancel_txn_h = fbc.transact({'from': web3.eth.accounts[1]}).cancel()
+    chain.wait.for_receipt(cancel_txn_h)
 
-    assert txn['from'] != deploy_coinbase
-    assert call.isCancelled() is True
+    cancel_txn = web3.eth.getTransaction(cancel_txn_h)
+
+    scheduler_address = fbc.call().schedulerAddress()
+
+    # sanity
+    assert cancel_txn['from'] != scheduler_address
+    assert cancel_txn['from'] == web3.eth.accounts[1]
+
+    assert fbc.call().isCancelled() is True

@@ -1,18 +1,3 @@
-
-import pytest
-
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import accounts
-
-
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
-
-
 class State(object):
     Pending = 0
     Unclaimed = 1

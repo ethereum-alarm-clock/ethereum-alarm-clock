@@ -21,11 +21,6 @@ def FutureBlockCall(chain):
 
 
 @pytest.fixture
-def Canary(unmigrated_chain):
-    return unmigrated_chain.get_contract_factory('Canary')
-
-
-@pytest.fixture
 def CallLib(chain):
     return chain.get_contract_factory('CallLib')
 
@@ -119,38 +114,40 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
     return _deploy_fbc
 
 
-#
-# TODO: rework this.
-#
-#@pytest.fixture()
-#def deploy_canary_contract(deployed_contracts, deploy_client, denoms, Canary):
-#    from populus.contracts import (
-#        deploy_contract,
-#    )
-#    from populus.utils import (
-#        get_contract_address_from_txn,
-#    )
-#    def _deploy_canary_contract(endowment=None, scheduler_address=None):
-#        if endowment is None:
-#            endowment = 5 * denoms.ether
-#
-#        if scheduler_address is None:
-#            scheduler_address = deployed_contracts.Scheduler._meta.address
-#
-#        deploy_txn_hash = deploy_contract(
-#            deploy_client,
-#            Canary,
-#            constructor_args=(scheduler_address,),
-#            gas=int(deploy_client.get_max_gas() * 0.95),
-#            value=endowment,
-#        )
-#
-#        canary_address = get_contract_address_from_txn(deploy_client, deploy_txn_hash, 180)
-#        canary = Canary(canary_address, deploy_client)
-#        return canary
-#    return _deploy_canary_contract
-#
-#
+@pytest.fixture
+def Canary(unmigrated_chain):
+    return unmigrated_chain.get_contract_factory('Canary')
+
+
+@pytest.fixture()
+def deploy_canary(chain, web3, denoms, Canary):
+    def _deploy_canary(endowment=None,
+                       scheduler_address=None,
+                       frequency=480,
+                       deploy_from=None):
+        if scheduler_address is None:
+            scheduler = chain.get_contract('Scheduler')
+            scheduler_address = scheduler.address
+
+        if endowment is None:
+            endowment = 5 * denoms.ether
+
+        transaction = {'value': endowment}
+
+        if deploy_from is not None:
+            transaction['from'] = deploy_from
+
+        deploy_txn_hash = Canary.deploy(
+            transaction=transaction,
+            arguments=(scheduler_address, frequency),
+        )
+        canary_address = chain.wait.for_contract_address(deploy_txn_hash)
+
+        canary = Canary(address=canary_address)
+        return canary
+    return _deploy_canary
+
+
 #@pytest.fixture()
 #def canary(deploy_canary_contract):
 #    return deploy_canary_contract()

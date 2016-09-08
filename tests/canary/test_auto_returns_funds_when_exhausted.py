@@ -1,32 +1,42 @@
-def test_canary_initialization(deploy_canary_contract, deploy_client, denoms,
-                               deployed_contracts, FutureBlockCall):
-    scheduler = deployed_contracts.Scheduler
+import gevent
 
-    canary = deploy_canary_contract(endowment=int(4.003 * denoms.ether))
 
-    prev_balance = canary.get_balance()
+def test_canary_returns_funds_when_exhausted(chain, web3, denoms,
+                                             deploy_canary, FutureBlockCall):
+    endowment = web3.toWei('4.003', 'ether')
 
-    assert canary.isAlive() is False
+    scheduler = chain.get_contract('Scheduler')
+    canary = deploy_canary(endowment=endowment, deploy_from=web3.eth.accounts[1])
 
-    init_txn_h = canary.initialize()
-    init_txn_r = deploy_client.wait_for_transaction(init_txn_h)
+    initial_balance = web3.eth.getBalance(canary.address)
+    assert initial_balance == endowment
 
-    assert canary.isAlive() is True
+    assert canary.call().isAlive() is False
 
-    while canary.get_balance() < prev_balance:
-        # uncomment to see how much heartbeats cost.
-        print("Heartbeat Cost:", (canary.get_balance() - prev_balance) * 1.0 / denoms.ether)
-        prev_balance = canary.get_balance()
+    init_txn_h = canary.transact().initialize()
+    chain.wait.for_receipt(init_txn_h)
 
-        call_contract_address = canary.callContractAddress()
-        assert scheduler.isKnownCall(call_contract_address) is True
+    assert canary.call().isAlive() is True
 
-        call_contract = FutureBlockCall(call_contract_address, deploy_client)
-        deploy_client.wait_for_block(call_contract.targetBlock())
+    initial_owner_balance = web3.eth.getBalance(web3.eth.accounts[1])
 
-        exec_txn_h = call_contract.execute()
-        exec_txn_r = deploy_client.wait_for_transaction(exec_txn_h)
+    with gevent.Timeout(180):
+        while web3.eth.getBalance(canary.address) > 0 or canary.call().isAlive():
+            fbc_address = canary.call().callContractAddress()
 
-        assert call_contract.wasCalled()
+            assert scheduler.call().isKnownCall(fbc_address) is True
 
-    assert canary.get_balance() == 0
+            fbc = FutureBlockCall(address=fbc_address)
+            chain.wait.for_block(fbc.call().targetBlock())
+
+            exec_txn_h = fbc.transact().execute()
+            chain.wait.for_receipt(exec_txn_h)
+
+            assert fbc.call().wasCalled()
+
+    assert canary.call().isAlive() is False
+    assert web3.eth.getBalance(canary.address) == 0
+
+    after_owner_balance = web3.eth.getBalance(web3.eth.accounts[1])
+
+    assert after_owner_balance > initial_owner_balance

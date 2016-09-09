@@ -80,7 +80,7 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
         if method_name is None:
             abi_signature = ""
         else:
-            method_abi = contract.find_matching_fn_abi(method_name, arguments)
+            method_abi = contract._find_matching_fn_abi(method_name, arguments)
             hex_abi_signature = function_abi_to_4byte_selector(method_abi)
             abi_signature = decode_hex(hex_abi_signature)
 
@@ -239,7 +239,7 @@ def get_4byte_selector():
     )
 
     def _get_4byte_selector(contract, fn_name, args=None, kwargs=None):
-        fn_abi = contract.find_matching_fn_abi(fn_name, args=args, kwargs=kwargs)
+        fn_abi = contract._find_matching_fn_abi(fn_name, args=args, kwargs=kwargs)
         fn_4byte_selector = decode_hex(function_abi_to_4byte_selector(fn_abi))
         return fn_4byte_selector
     return _get_4byte_selector

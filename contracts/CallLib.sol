@@ -63,9 +63,9 @@ library CallLib {
     function extractCallData(Call storage call, bytes data) public {
         call.callData.length = data.length - 4;
         if (data.length > 4) {
-                for (uint i = 0; i < call.callData.length; i++) {
-                        call.callData[i] = data[i + 4];
-                }
+            for (uint i = 0; i < call.callData.length; i++) {
+                call.callData[i] = data[i + 4];
+            }
         }
     }
 

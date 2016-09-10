@@ -1,15 +1,5 @@
 import pytest
 
-from eth_abi import (
-    encode_abi,
-)
-from web3.utils.string import (
-    force_obj_to_bytes,
-)
-from web3.utils.abi import (
-    get_abi_input_types,
-    function_abi_to_4byte_selector,
-)
 from web3.utils.encoding import (
     decode_hex,
 )
@@ -80,16 +70,12 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
         if method_name is None:
             abi_signature = ""
         else:
-            method_abi = contract._find_matching_fn_abi(method_name, arguments)
-            hex_abi_signature = function_abi_to_4byte_selector(method_abi)
-            abi_signature = decode_hex(hex_abi_signature)
+            fn_abi, fn_selector, _ = contract._get_function_info(method_name, arguments)
+            abi_signature = decode_hex(fn_selector)
 
             if not call_data and arguments:
-                arguent_types = get_abi_input_types(method_abi)
-                call_data = encode_abi(
-                    arguent_types,
-                    force_obj_to_bytes(arguments),
-                )
+                hex_call_data = contract.encodeABI(method_name, arguments)
+                call_data = decode_hex(hex_call_data)
 
         deploy_txn_hash = FutureBlockCall.deploy(
             {'value': endowment},

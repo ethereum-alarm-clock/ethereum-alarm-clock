@@ -10,7 +10,7 @@ def test_execution_of_call_that_throws_exception(chain, deploy_fbc, CallLib):
     execute_txn_hash = fbc.transact().execute()
     execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
-    assert client_contract.value() is False
+    assert client_contract.call().value() is False
 
     execute_filter = CallLib.pastEvents('CallExecuted', {
         'address': fbc.address,

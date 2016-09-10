@@ -73,7 +73,7 @@ def test_execution_of_call_with_many_values(chain, deploy_fbc):
         1234567890,
         -1234567890,
         987654321,
-        '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13',
+        force_text(decode_hex('000102030405060708090a0b0c0d0e0f10111213')),
         'd3cda913deb6f67967b99d67acdfa1712c293601',
         'abcdefg',
     )
@@ -88,7 +88,7 @@ def test_execution_of_call_with_many_values(chain, deploy_fbc):
     assert client_contract.call().vm_a() == 0
     assert client_contract.call().vm_b() == 0
     assert client_contract.call().vm_c() == 0
-    assert client_contract.call().vm_d() == decode_hex('00' * 32)
+    assert client_contract.call().vm_d() == force_text(decode_hex('00' * 20))
     assert client_contract.call().vm_e() == '0x0000000000000000000000000000000000000000'
     assert client_contract.call().vm_f() == ''
 

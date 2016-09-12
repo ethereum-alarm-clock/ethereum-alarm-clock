@@ -1,12 +1,10 @@
 def test_stack_depth_does_not_call_if_cannot_reach_depth(chain, web3, deploy_fbc, CallLib):
-    client_contract = chain.get_contract('TestCallExecution')
-
-    call_data = client_contract._encode_transaction_data('doStackExtension', [340])
+    client_contract = chain.get_contract('TestErrors')
 
     fbc = deploy_fbc(
         client_contract,
         method_name='doStackExtension',
-        call_data=call_data,
+        arguments=[340],
         require_depth=1000,
     )
     assert fbc.call().requiredStackDepth() == 1000

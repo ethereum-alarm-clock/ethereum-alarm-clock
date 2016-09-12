@@ -1,6 +1,3 @@
-import "contracts/CallLib.sol";
-
-
 contract owned {
     address public owner;
 
@@ -261,14 +258,20 @@ contract TestErrors is owned {
 
     uint constant GAS_PER_DEPTH = 700;
 
+    function checkDepth(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
+    }
+
     function __dig(uint n) constant returns (bool) {
         if (n == 0) return true;
         if (!address(this).callcode(bytes4(sha3("__dig(uint256)")), n - 1)) throw;
     }
 
     function doStackExtension(uint depth) public {
-        if (!CallLib.checkDepth(depth)) throw;
+        if (!checkDepth(depth)) throw;
         value = true;
+
     }
     function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
         return 12345;

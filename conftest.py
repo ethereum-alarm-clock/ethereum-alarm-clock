@@ -68,7 +68,7 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
         else:
             contract_address = contract.address
 
-        if method_name is not None:
+        if method_name is not None and arguments is not None:
             fn_abi, fn_selector, _ = contract._get_function_info(method_name, arguments)
 
             if abi_signature is None:

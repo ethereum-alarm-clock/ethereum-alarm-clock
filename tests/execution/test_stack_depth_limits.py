@@ -1,47 +1,48 @@
 MAX_DEPTH = 2048
 
-OUTER_MAX = 1020
-CHECK_MAX = 1022
-INNER_MAX = 1020
+OUTER_MAX = 1021
+CHECK_MAX = 1021
+INNER_MAX = 1021
 
 
-def test_stack_depth(deploy_client, deployed_contracts,
-                     deploy_future_block_call):
+def test_stack_depth_checking(chain, web3, deploy_fbc, CallLib):
     """
     This function is useful for finding out what the limits are for stack depth
     protection.
     """
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestErrors
+    client_contract = chain.get_contract('TestErrors')
 
     def deploy_call(depth_check, depth_inner):
-        call = deploy_future_block_call(
-            client_contract.doStackExtension,
-            call_data=client_contract.doStackExtension.abi_args_signature([depth_inner]),
+        _fbc = deploy_fbc(
+            client_contract,
+            method_name='doStackExtension',
+            arguments=[depth_inner],
             require_depth=depth_check,
         )
-        deploy_client.wait_for_transaction(client_contract.reset())
-        deploy_client.wait_for_transaction(client_contract.setCallAddress(call._meta.address))
-        deploy_client.wait_for_block(call.targetBlock())
-        return call
+        chain.wait.for_receipt(client_contract.transact().reset())
+        chain.wait.for_receipt(client_contract.transact().setCallAddress(_fbc.address))
+        chain.wait.for_block(_fbc.call().targetBlock())
+        return _fbc
 
-    def check(call, depth_outer):
-        assert client_contract.value() is False
+    def check(_fbc, depth_outer):
+        assert client_contract.call().value() is False
 
-        call_txn_hash = client_contract.proxyCall(depth_outer)
-        call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
+        call_txn_hash = client_contract.transact().proxyCall(depth_outer)
+        chain.wait.for_receipt(call_txn_hash)
 
-        return call.wasCalled() and client_contract.value()
+        is_successful = _fbc.call().wasCalled() and client_contract.call().value() is True
+        return is_successful
 
     def find_maxima(attr, **defaults):
         left = 0
         right = MAX_DEPTH
-        while left < right:
-            depth = (left + right) / 2
-            defaults[attr] = depth
-            call = deploy_call(defaults['depth_check'], defaults['depth_inner'])
 
-            if check(call, defaults['depth_outer']):
+        while left < right:
+            depth = (left + right) // 2
+            defaults[attr] = depth
+            fbc = deploy_call(defaults['depth_check'], defaults['depth_inner'])
+
+            if check(fbc, defaults['depth_outer']):
                 if left == depth:
                     break
                 left = depth

@@ -71,11 +71,6 @@ library CallLib {
 
     uint constant GAS_PER_DEPTH = 700;
 
-    function checkDepth(uint n) constant returns (bool) {
-        if (n == 0) return true;
-        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
-    }
-
     function sendSafe(address to_address, uint value) public returns (uint) {
         if (value > address(this).balance) {
             value = address(this).balance;
@@ -328,7 +323,7 @@ library CallLib {
             // rights to execute it.
             reason = "NOT_AUTHORIZED";
         }
-        else if (self.requiredStackDepth > 0 && executor != tx.origin && !checkDepth(self.requiredStackDepth)) {
+        else if (self.requiredStackDepth > 0 && executor != tx.origin && !call.checkDepth(self.requiredStackDepth)) {
             reason = "STACK_TOO_DEEP";
         }
 
@@ -578,6 +573,11 @@ contract FutureBlockCall is FutureCall {
     }
 
     uint constant GAS_PER_DEPTH = 700;
+
+    function checkDepth(uint n) constant returns (bool) {
+        if (n == 0) return true;
+        return address(this).call.gas(GAS_PER_DEPTH * n)(bytes4(sha3("__dig(uint256)")), n - 1);
+    }
 
     function __dig(uint n) constant returns (bool) {
         if (n == 0) return true;

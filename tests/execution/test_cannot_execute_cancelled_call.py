@@ -1,8 +1,10 @@
 def test_cannot_execute_cancelled_call(chain, web3, deploy_fbc, CallLib):
     client_contract = chain.get_contract('TestCallExecution')
 
-    target_block = web3.eth.blockNumber + 20
+    target_block = web3.eth.blockNumber + 300
     fbc = deploy_fbc(client_contract, target_block=target_block)
+
+    assert fbc.call().isCancellable() is True
 
     # cancel it
     cancel_txn_h = fbc.transact().cancel()

@@ -14,11 +14,16 @@ def test_claim_block_values(chain, web3, deploy_fbc, denoms):
     assert fbc.call().getClaimAmountForBlock(first_claim_block) == 0
 
     for i in range(240):
-        assert fbc.call().getClaimAmountForBlock(first_claim_block + i) == base_payment * i / 240
+        actual_claim_amount = fbc.call().getClaimAmountForBlock(first_claim_block + i)
+        expected_claim_amount = base_payment * i // 240
+        assert actual_claim_amount == expected_claim_amount
 
-    assert fbc.call().getClaimAmountForBlock(peak_claim_block) == base_payment
+    peak_amount = fbc.call().getClaimAmountForBlock(peak_claim_block)
+    assert peak_amount == base_payment
 
     for i in range(15):
-        assert fbc.call().getClaimAmountForBlock(peak_claim_block + i) == base_payment
+        actual_claim_amount = fbc.call().getClaimAmountForBlock(peak_claim_block + i)
+        assert actual_claim_amount == base_payment
 
-    assert fbc.call().getClaimAmountForBlock(last_claim_block) == base_payment
+    last_amount = fbc.call().getClaimAmountForBlock(last_claim_block)
+    assert last_amount == base_payment

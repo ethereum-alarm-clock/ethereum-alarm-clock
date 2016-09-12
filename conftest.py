@@ -40,7 +40,7 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
                     payment=1,
                     donation=1,
                     endowment=None,
-                    call_data="",
+                    call_data=None,
                     require_depth=0,
                     call_value=0):
         if arguments is not None and call_data:
@@ -68,18 +68,20 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
         else:
             contract_address = contract.address
 
-        if method_name is not None and arguments is not None:
-            fn_abi, fn_selector, _ = contract._get_function_info(method_name, arguments)
-
-            if abi_signature is None:
+        if method_name is not None:
+            if call_data is None and abi_signature is None:
+                fn_abi, fn_selector, _ = contract._get_function_info(method_name, arguments)
                 abi_signature = decode_hex(fn_selector)
 
-            if not call_data and arguments:
+            if call_data is None and arguments:
                 hex_call_data = contract.encodeABI(method_name, arguments)
                 call_data = decode_hex(hex_call_data)
 
         if abi_signature is None:
             abi_signature = ""
+
+        if call_data is None:
+            call_data = ""
 
         deploy_txn_hash = FutureBlockCall.deploy(
             {'value': endowment},
@@ -129,7 +131,7 @@ def deploy_canary(chain, web3, denoms, Canary):
 
         deploy_txn_hash = Canary.deploy(
             transaction=transaction,
-            arguments=(scheduler_address, frequency),
+            args=(scheduler_address, frequency),
         )
         canary_address = chain.wait.for_contract_address(deploy_txn_hash)
 

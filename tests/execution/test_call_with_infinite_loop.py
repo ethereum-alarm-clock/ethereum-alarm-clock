@@ -1,5 +1,5 @@
 def test_execution_of_call_that_contains_infinite_loop(chain, deploy_fbc, CallLib):
-    client_contract = chain.get_contract_factory('TestErrors')
+    client_contract = chain.get_contract('TestErrors')
 
     fbc = deploy_fbc(client_contract, method_name='doInfinite')
 

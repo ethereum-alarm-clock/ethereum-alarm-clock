@@ -32,6 +32,7 @@ def test_data_registry_via_fallback(chain, web3, deploy_fbc, fn_name, fn_args):
     fbc = deploy_fbc(
         client_contract,
         method_name=fn_name,
+        call_data="",
         target_block=web3.eth.blockNumber + 300,
     )
 

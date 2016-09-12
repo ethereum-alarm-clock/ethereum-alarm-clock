@@ -1,5 +1,5 @@
 def test_cannot_claim_after_window(chain, web3, deploy_fbc, denoms):
-    target_block = web3.eth.blockNumber + 300,
+    target_block = web3.eth.blockNumber + 300
     fbc = deploy_fbc(
         target_block=target_block,
         payment=1 * denoms.ether,
@@ -10,7 +10,7 @@ def test_cannot_claim_after_window(chain, web3, deploy_fbc, denoms):
 
     last_claim_block = target_block - 10
 
-    chain.wait.for_block(last_claim_block)
+    chain.wait.for_block(last_claim_block + 1)
 
     assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 

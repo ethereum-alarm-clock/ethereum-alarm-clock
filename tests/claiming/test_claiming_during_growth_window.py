@@ -11,7 +11,7 @@ def test_claiming_during_growth_window(chain, web3, deploy_fbc, denoms):
 
     claim_at_block = first_claim_block + 42
 
-    chain.wait.for_block(claim_at_block - 1)
+    chain.wait.for_block(claim_at_block)
 
     assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 

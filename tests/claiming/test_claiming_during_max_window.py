@@ -12,14 +12,14 @@ def test_claiming_during_max_window(chain, web3, deploy_fbc, denoms):
 
     claim_at_block = peak_claim_block + 7
 
-    chain.wait.for_block(claim_at_block - 1)
+    chain.wait.for_block(claim_at_block)
 
     assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 
     txn_h = fbc.transact({'value': 2 * base_payment}).claim()
     txn_r = chain.wait.for_receipt(txn_h)
 
-    assert int(txn_r['blockNumber'], 16) == claim_at_block
+    assert txn_r['blockNumber'] == claim_at_block
 
     assert fbc.call().claimer() == web3.eth.coinbase
     assert fbc.call().claimerDeposit() == 2 * base_payment

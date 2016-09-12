@@ -1,7 +1,7 @@
 from web3.utils.encoding import decode_hex
 
 
-MEASURED_VALUE = 80000
+MEASURED_VALUE = 95000
 
 
 def test_minimum_call_gas(chain, web3, denoms, get_scheduled_fbc):

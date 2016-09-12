@@ -24,7 +24,7 @@ library SchedulerLib {
     // does almost nothing.  This is an approximation and assumes the worst
     // case scenario for gas consumption.
     // 
-    // Measured Minimum is closer to 80,000
+    // Measured Minimum is closer to 95,000
     uint constant MINIMUM_CALL_GAS = 200000;
 
     // The minimum depth required to execute a call.

@@ -1,16 +1,3 @@
-import pytest
-
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import TransactionFailed
-
-
-deploy_contracts = [
-    "Scheduler",
-    "TestErrors",
-]
-
-
 MAX_DEPTH = 2048
 
 OUTER_MAX = 1020

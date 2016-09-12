@@ -1,14 +1,13 @@
-def test_cannot_execute_after_call_window(deploy_client, deployed_contracts,
-                                          deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
+def test_cannot_execute_after_call_window(chain, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(client_contract.setBool)
+    fbc = deploy_fbc(client_contract, method_name='setBool')
 
-    deploy_client.wait_for_block(call.targetBlock() + call.gracePeriod() + 1)
+    chain.wait.for_block(fbc.call().targetBlock() + fbc.call().gracePeriod() + 1)
 
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False
 
-    txn_h = call.execute()
-    txn_r = deploy_client.wait_for_transaction(txn_h)
+    txn_h = fbc.transact({'gas': 2000000}).execute()
+    chain.wait.for_receipt(txn_h)
 
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False

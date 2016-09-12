@@ -31,6 +31,7 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
 
     def _deploy_fbc(contract=None,
                     method_name=None,
+                    abi_signature=None,
                     arguments=None,
                     scheduler_address=None,
                     target_block=None,
@@ -67,15 +68,18 @@ def deploy_fbc(unmigrated_chain, web3, FutureBlockCall):
         else:
             contract_address = contract.address
 
-        if method_name is None:
-            abi_signature = ""
-        else:
+        if method_name is not None:
             fn_abi, fn_selector, _ = contract._get_function_info(method_name, arguments)
-            abi_signature = decode_hex(fn_selector)
+
+            if abi_signature is None:
+                abi_signature = decode_hex(fn_selector)
 
             if not call_data and arguments:
                 hex_call_data = contract.encodeABI(method_name, arguments)
                 call_data = decode_hex(hex_call_data)
+
+        if abi_signature is None:
+            abi_signature = ""
 
         deploy_txn_hash = FutureBlockCall.deploy(
             {'value': endowment},

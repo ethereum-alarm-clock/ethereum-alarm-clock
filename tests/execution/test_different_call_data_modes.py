@@ -1,48 +1,41 @@
-import pytest
-
-from ethereum import abi
-from ethereum import utils
+from web3.utils.encoding import decode_hex
 
 
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+def test_no_signature_or_calldata(chain, web3, deploy_fbc):
+    client_contract = chain.get_contract('TestCallExecution')
+
+    fbc = deploy_fbc(client_contract)
+    chain.wait.for_block(fbc.call().targetBlock())
+
+    assert client_contract.v_bool() == ""
+
+    execute_txn_hash = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
+
+    assert client_contract.call().v_bytes() == ""
+    assert fbc.call().wasCalled() is True
+    assert fbc.call().wasSuccessful() is True
 
 
-def test_no_signature_or_calldata(deploy_client, deployed_contracts,
-                                  deploy_future_block_call, get_call):
-    client_contract = deployed_contracts.TestCallExecution
-    client_contract.reset()
+def test_only_signature(chain, web3, deploy_fbc):
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(scheduler_address=client_contract._meta.address)
-    deploy_client.wait_for_block(call.targetBlock())
+    _, sig, _ = client_contract._get_function_info('setBool')
 
-    assert client_contract.v_bytes() == ""
+    fbc = deploy_fbc(
+        client_contract,
+        abi_signature=decode_hex(sig),
+    )
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    call_txn_hash = call.execute()
-    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
+    assert client_contract.call().v_bool() is False
 
-    assert client_contract.v_bytes() == ""
-    assert call.wasCalled() is True
-    assert call.wasSuccessful() is True
+    execute_txn_hash = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
 
-
-def test_only_signature(deploy_client, deployed_contracts,
-                        deploy_future_block_call, get_call):
-    client_contract = deployed_contracts.TestCallExecution
-    client_contract.reset()
-
-    call = deploy_future_block_call(client_contract.setCallData)
-    deploy_client.wait_for_block(call.targetBlock())
-
-    assert client_contract.v_bytes() == ""
-
-    call_txn_hash = call.execute()
-    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
-
-    assert client_contract.v_bytes() == client_contract.setCallData.encoded_abi_signature
+    assert client_contract.call().v_bool() is True
+    assert fbc.call().wasCalled() is True
+    assert fbc.call().wasSuccessful() is True
 
 
 def test_only_call_data(deploy_client, deployed_contracts,

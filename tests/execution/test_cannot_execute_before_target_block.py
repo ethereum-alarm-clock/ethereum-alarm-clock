@@ -1,34 +1,14 @@
-import pytest
+def test_cannot_execute_before_target_block(chain, web3, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestCallExecution')
 
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import TransactionFailed
+    target_block = web3.eth.blockNumber + 20
+    fbc = deploy_fbc(client_contract, target_block=target_block)
 
+    chain.wait.for_block(target_block - 4)
 
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
+    assert fbc.call().wasCalled() is False
 
+    txn_h = fbc.transact().execute()
+    chain.wait.for_receipt(txn_h)
 
-def test_cannot_execute_before_target_block(deploy_client, deployed_contracts,
-                                            deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
-
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 20,
-    )
-
-    assert deploy_client.get_block_number() < call.targetBlock()
-    deploy_client.wait_for_block(call.targetBlock() - 4)
-
-    assert deploy_client.get_block_number() == call.targetBlock() - 4
-    assert call.wasCalled() is False
-    assert deploy_client.get_block_number() == call.targetBlock() - 2
-
-    # at target - 1
-    txn_h = call.execute()
-    txn_r = deploy_client.wait_for_transaction(txn_h)
-
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False

@@ -214,6 +214,9 @@ def get_scheduled_fbc(chain, web3):
         schedule_event_data = schedule_events[0]
         fbc_address = schedule_event_data['args']['call_address']
 
+        chain_bytecode = web3.eth.getCode(fbc_address)
+        assert chain_bytecode == FutureBlockCall.code_runtime
+
         fbc = FutureBlockCall(address=fbc_address)
         return fbc
     return _get_scheduled_fbc

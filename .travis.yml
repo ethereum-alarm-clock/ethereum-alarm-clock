@@ -6,6 +6,15 @@ sudo: required
 env:
   global:
     - SOLC_BINARY="$TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/solc"
+  matrix:
+    - TEST_DIR=accounting
+    - TEST_DIR=call-state
+    - TEST_DIR=canary
+    - TEST_DIR=cancelling
+    - TEST_DIR=claiming
+    - TEST_DIR=data-registry
+    - TEST_DIR=execution
+    - TEST_DIR=scheduling
 cache:
   - pip: true
   - directories:
@@ -26,4 +35,4 @@ before_script:
   - mkdir -p $HOME/.ethash
   - geth makedag 0 $HOME/.ethash
 script:
-  - py.test tests/ -v
+  - py.test tests/$TEST_DIR -v

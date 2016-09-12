@@ -1,51 +1,45 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+from web3.utils.encoding import decode_hex
 
 
 MEASURED_VALUE = 80000
 
 
-def test_minimum_call_gas(deploy_client, deployed_contracts,
-                          deploy_future_block_call, get_call, denoms,
-                          deploy_coinbase):
-    client_contract = deployed_contracts.TestCallExecution
-    scheduler = deployed_contracts.Scheduler
+def test_minimum_call_gas(chain, web3, denoms, get_scheduled_fbc):
+    client_contract = chain.get_contract('TestCallExecution')
+    scheduler = chain.get_contract('Scheduler')
 
-    target_block = deploy_client.get_block_number() + 400
+    target_block = web3.eth.blockNumber + 300
 
-    scheduling_txn_hash = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.setBool.encoded_abi_signature,
-        target_block,
-        value=10 * denoms.ether,
-        gas=3000000,
+    _, sig, _ = client_contract._get_function_info('setBool')
+
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        contractAddress=client_contract.address,
+        abiSignature=decode_hex(sig),
+        targetBlock=target_block,
     )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
+    chain.wait.for_receipt(scheduling_txn_hash)
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
 
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
+    chain.wait.for_block(fbc.call().firstClaimBlock() + 250)
 
-    deploy_client.wait_for_block(call.firstClaimBlock() + 250)
+    claim_txn_hash = fbc.transact({'value': 10 * denoms.ether}).claim()
+    chain.wait.for_receipt(claim_txn_hash)
 
-    claim_txn_hash = call.claim(value=10 * denoms.ether)
-    claim_txn_receipt = deploy_client.wait_for_transaction(claim_txn_hash)
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    deploy_client.wait_for_block(call.targetBlock())
+    assert fbc.call().claimer() == web3.eth.coinbase
+    assert client_contract.call().v_bool() is False
 
-    assert call.claimer() == deploy_coinbase
-    assert client_contract.v_bool() is False
+    execute_txn_hash = fbc.transact().execute()
+    execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
-    call_txn_hash = call.execute()
-    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
+    assert fbc.call().wasCalled() is True
+    assert fbc.call().wasSuccessful() is True
 
-    assert call.wasCalled() is True
-    assert call.wasSuccessful() is True
-
-    actual = int(call_txn_receipt['gasUsed'], 16)
+    actual = execute_txn_receipt['gasUsed']
 
     assert actual < MEASURED_VALUE
     assert MEASURED_VALUE - actual < 10000
-    assert actual * 2 < scheduler.getMinimumCallGas()
+    assert actual * 2 < scheduler.call().getMinimumCallGas()

@@ -1,0 +1,38 @@
+language: python
+python:
+  - "3.5"
+dist: trusty
+sudo: required
+env:
+  global:
+    - SOLC_BINARY="$TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/solc"
+  matrix:
+    - TEST_DIR=accounting
+    - TEST_DIR=call-state
+    - TEST_DIR=canary
+    - TEST_DIR=cancelling
+    - TEST_DIR=claiming
+    - TEST_DIR=data-registry
+    - TEST_DIR=execution
+    - TEST_DIR=scheduling
+cache:
+  - pip: true
+  - directories:
+    - $HOME/.ethash
+    - $TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/
+    - $TRAVIS_BUILD_DIR/solc-versions/solidity-0.3.6/build/
+before_install:
+  - sudo add-apt-repository -y ppa:ethereum/ethereum
+  - sudo apt-get update
+install:
+  - ./bin/install_solc.sh
+  - travis_retry sudo apt-get install -y ethereum
+  - travis_retry pip install setuptools --upgrade
+  - pip install -r requirements.txt
+before_script:
+  - ls -lah $TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/
+  - ./solc-versions/solc-0.3.6/solc --version
+  - mkdir -p $HOME/.ethash
+  - geth makedag 0 $HOME/.ethash
+script:
+  - py.test tests/$TEST_DIR -v

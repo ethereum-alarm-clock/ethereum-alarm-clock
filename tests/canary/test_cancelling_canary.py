@@ -1,32 +1,28 @@
-deploy_contracts = [
-    "Scheduler",
-]
+def test_canary_cancellation(chain, web3, deploy_canary, FutureBlockCall, denoms):
+    scheduler = chain.get_contract('Scheduler')
+    canary = deploy_canary()
 
+    init_txn_h = canary.transact().initialize()
+    chain.wait.for_receipt(init_txn_h)
 
-def test_canary_cancellation(canary, deploy_client, denoms, deployed_contracts,
-                             FutureBlockCall):
-    scheduler = deployed_contracts.Scheduler
-
-    init_txn_h = canary.initialize()
-    init_txn_r = deploy_client.wait_for_transaction(init_txn_h)
-
-    call_contract_address = canary.callContractAddress()
+    fbc_address = canary.call().callContractAddress()
 
     # check that the call was scheduled
-    assert call_contract_address != "0x0000000000000000000000000000000000000000"
-    assert scheduler.isKnownCall(call_contract_address) is True
+    assert fbc_address != "0x0000000000000000000000000000000000000000"
+    assert scheduler.call().isKnownCall(fbc_address) is True
 
     # check that the heartbeat went up
-    assert canary.heartbeatCount() == 0
+    assert canary.call().heartbeatCount() == 0
 
-    call_contract = FutureBlockCall(call_contract_address, deploy_client)
+    fbc = FutureBlockCall(address=fbc_address)
 
     # check that it has enough funds to successfully heartbeat
-    assert canary.get_balance() > 0
-    assert call_contract.isCancelled() is False
+    assert web3.eth.getBalance(canary.address) >= 2 * denoms.ether
+    assert fbc.call().isCancelled() is False
 
-    cancel_txn_h = canary.cancel()
-    cancel_txn_r = deploy_client.wait_for_transaction(cancel_txn_h)
+    cancel_txn_h = canary.transact().cancel()
+    chain.wait.for_receipt(cancel_txn_h)
 
-    assert canary.get_balance() == 0
-    assert call_contract.isCancelled() is True
+    assert web3.eth.getBalance(canary.address) == 0
+    # ensure it also cancells the pending call contract
+    assert fbc.call().isCancelled() is True

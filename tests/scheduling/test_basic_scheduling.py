@@ -1,46 +1,51 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+from web3.utils.string import (
+    force_text,
+)
+from web3.utils.encoding import (
+    decode_hex,
+)
 
 
-def test_basic_call_scheduling(deploy_client, deployed_contracts,
-                               deploy_future_block_call, denoms,
-                               FutureBlockCall, CallLib, SchedulerLib,
-                               get_call, get_execution_data, deploy_coinbase):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
+def test_basic_call_scheduling(chain, web3, get_scheduled_fbc, denoms):
+    scheduler = chain.get_contract('Scheduler')
+    client_contract = chain.get_contract('TestCallExecution')
 
-    targetBlock = deploy_client.get_block_number() + 255 + 10 + 40
+    target_block = web3.eth.blockNumber + 255 + 10 + 40
 
-    scheduling_txn_hash = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.setBool.encoded_abi_signature,
-        targetBlock,
-        1000000,
-        value=10 * denoms.ether,
-        gas=3000000,
+    _, sig, _ = client_contract._get_function_info('setBytes', ['some-byte-string'])
+    call_data = client_contract.encodeABI('setBytes', ['some-byte-string'])
+
+    base_payment = scheduler.call().defaultPayment()
+    default_payment = scheduler.call().defaultPayment() // 100
+
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        contractAddress=client_contract.address,
+        abiSignature=decode_hex(sig),
+        callData=decode_hex(call_data),
+        targetBlock=target_block,
     )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
+    scheduling_txn = web3.eth.getTransaction(scheduling_txn_hash)
+    chain.wait.for_receipt(scheduling_txn_hash)
 
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
 
     # Sanity check for all of the queriable call values.
-    assert call.targetBlock() == targetBlock
-    assert call.gracePeriod() == 255
-    assert call.requiredGas() == 1000000
-    assert call.callValue() == 0
-    assert call.basePayment() == scheduler.defaultPayment()
-    assert call.baseDonation() == scheduler.defaultPayment() / 100
-    assert call.schedulerAddress() == deploy_coinbase
-    assert call.contractAddress() == client_contract._meta.address
-    assert call.abiSignature() == client_contract.setBool.encoded_abi_signature
-    assert call.anchorGasPrice() == int(scheduling_txn['gasPrice'], 16)
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
-    assert call.claimAmount() == 0
-    assert call.claimerDeposit() == 0
-    assert call.wasSuccessful() is False
-    assert call.wasCalled() is False
-    assert call.isCancelled() is False
+    assert fbc.call().targetBlock() == target_block
+    assert fbc.call().gracePeriod() == 255
+    assert fbc.call().requiredGas() == 200000
+    assert fbc.call().callValue() == 0
+    assert fbc.call().basePayment() == base_payment
+    assert fbc.call().baseDonation() == default_payment
+    assert fbc.call().schedulerAddress() == web3.eth.coinbase
+    assert fbc.call().contractAddress() == client_contract.address
+    assert fbc.call().abiSignature() == force_text(decode_hex(sig))
+    assert fbc.call().callData() == force_text(decode_hex(call_data))
+    assert fbc.call().anchorGasPrice() == scheduling_txn['gasPrice']
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
+    assert fbc.call().claimAmount() == 0
+    assert fbc.call().claimerDeposit() == 0
+    assert fbc.call().wasSuccessful() is False
+    assert fbc.call().wasCalled() is False
+    assert fbc.call().isCancelled() is False

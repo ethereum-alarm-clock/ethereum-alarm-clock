@@ -1,39 +1,37 @@
-deploy_contracts = [
-    "Scheduler",
-]
+def test_canary_initialization(chain, web3, deploy_canary, denoms,
+                               FutureBlockCall):
+    scheduler = chain.get_contract('Scheduler')
+    canary = deploy_canary()
 
+    init_txn_h = canary.transact().initialize()
+    chain.wait.for_receipt(init_txn_h)
 
-def test_canary_initialization(canary, deploy_client, denoms,
-                               deployed_contracts, FutureBlockCall):
-    scheduler = deployed_contracts.Scheduler
-
-    init_txn_h = canary.initialize()
-    init_txn_r = deploy_client.wait_for_transaction(init_txn_h)
-
-    call_contract_address = canary.callContractAddress()
+    fbc_address = canary.call().callContractAddress()
 
     # check that the call was scheduled
-    assert call_contract_address != "0x0000000000000000000000000000000000000000"
-    assert scheduler.isKnownCall(call_contract_address) is True
+    assert fbc_address != "0x0000000000000000000000000000000000000000"
+    assert scheduler.call().isKnownCall(fbc_address) is True
 
     # check that the heartbeat went up
-    assert canary.heartbeatCount() == 0
+    assert canary.call().heartbeatCount() == 0
 
     # check that it has enough funds to successfully heartbeat
-    assert canary.get_balance() >= 2 * denoms.ether
+    assert web3.eth.getBalance(canary.address) >= 2 * denoms.ether
 
-    call_contract = FutureBlockCall(call_contract_address, deploy_client)
+    fbc = FutureBlockCall(address=fbc_address)
 
-    deploy_client.wait_for_block(call_contract.targetBlock())
+    assert canary.call().isAlive() is True
 
-    exec_txn_h = call_contract.execute()
-    exec_txn_r = deploy_client.wait_for_transaction(exec_txn_h)
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert call_contract.wasCalled()
-    assert call_contract.wasSuccessful()
+    exec_txn_h = fbc.transact().execute()
+    chain.wait.for_receipt(exec_txn_h)
 
-    next_call_contract_address = canary.callContractAddress()
-    assert next_call_contract_address != call_contract_address
-    assert scheduler.isKnownCall(next_call_contract_address)
+    assert fbc.call().wasCalled()
+    assert fbc.call().wasSuccessful()
 
-    assert canary.heartbeatCount() == 1
+    next_fbc_address = canary.call().callContractAddress()
+    assert next_fbc_address != fbc_address
+    assert scheduler.call().isKnownCall(fbc_address)
+
+    assert canary.call().heartbeatCount() == 1

@@ -1,23 +1,19 @@
-deploy_contracts = [
-    "Scheduler",
-]
+def test_canary_cannot_be_double_initialized(chain, deploy_canary):
+    canary = deploy_canary()
 
+    assert canary.call().isAlive() is False
 
-def test_cannot_double_initialize(canary, deploy_client, denoms,
-                                  deployed_contracts, FutureBlockCall):
-    scheduler = deployed_contracts.Scheduler
+    first_init_txn_hash = canary.transact().initialize()
+    chain.wait.for_receipt(first_init_txn_hash)
 
-    init_txn_h = canary.initialize()
-    init_txn_r = deploy_client.wait_for_transaction(init_txn_h)
+    assert canary.call().isAlive() is True
 
-    call_contract_address = canary.callContractAddress()
+    fbc_address = canary.call().callContractAddress()
+    assert fbc_address != "0x0000000000000000000000000000000000000000"
 
-    # sanity check
-    assert call_contract_address != "0x0000000000000000000000000000000000000000"
-    assert scheduler.isKnownCall(call_contract_address) is True
+    second_init_txn_hash = canary.transact().initialize()
+    chain.wait.for_receipt(second_init_txn_hash)
 
-    bad_txn_h = canary.initialize()
-    bad_txn_r = deploy_client.wait_for_transaction(init_txn_h)
-
-    # check nothing changed
-    assert canary.callContractAddress() == call_contract_address
+    assert canary.call().isAlive() is True
+    # assert that the address hasn't changed
+    assert fbc_address == canary.call().callContractAddress()

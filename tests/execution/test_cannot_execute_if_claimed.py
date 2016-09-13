@@ -1,50 +1,27 @@
-import pytest
+def test_cannot_execute_if_claimed_by_other(chain, web3, deploy_fbc):
+    client_contract = chain.get_contract('TestCallExecution')
 
-from ethereum import abi
-from ethereum import utils
-from ethereum.tester import (
-    TransactionFailed,
-    accounts,
-    encode_hex,
-)
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(client_contract, target_block=target_block)
 
-
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
-
-
-def test_cannot_execute_if_claimed_by_other(deploy_client, deployed_contracts,
-                                            deploy_coinbase,
-                                            deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
-
-    target_block = deploy_client.get_block_number() + 300
-
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=target_block,
-    )
-
-    deploy_client.wait_for_block(target_block - 10 - 255)
+    chain.wait.for_block(target_block - 10 - 255)
 
     # claim it
-    claim_txn_h = call.claim(value=2 * call.basePayment())
-    claim_txn_r = deploy_client.wait_for_transaction(claim_txn_h)
+    claim_txn_h = fbc.transact({'value': 2 * fbc.call().basePayment()}).claim()
+    chain.wait.for_receipt(claim_txn_h)
 
-    assert call.claimer() == deploy_coinbase
+    assert fbc.call().claimer() == web3.eth.coinbase
 
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(target_block)
 
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False
 
-    not_allowed_txn_h = call.execute(_from=encode_hex(accounts[1]))
-    not_allowed_txn_r = deploy_client.wait_for_transaction(not_allowed_txn_h)
+    not_allowed_txn_h = fbc.transact({'from': web3.eth.accounts[1]}).execute()
+    chain.wait.for_receipt(not_allowed_txn_h)
 
-    assert call.wasCalled() is False
+    assert fbc.call().wasCalled() is False
 
-    execute_txn_h = call.execute()
-    execute_txn_r = deploy_client.wait_for_transaction(execute_txn_h)
+    execute_txn_h = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_h)
 
-    assert call.wasCalled() is True
+    assert fbc.call().wasCalled() is True

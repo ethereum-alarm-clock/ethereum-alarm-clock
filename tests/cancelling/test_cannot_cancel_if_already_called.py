@@ -1,32 +1,30 @@
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
+def test_cannot_cancel_if_already_called(chain, web3, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestCallExecution')
 
-
-def test_cannot_cancel_if_already_called(deploy_client, deployed_contracts,
-                                         deploy_future_block_call, CallLib):
-    client_contract = deployed_contracts.TestCallExecution
-
-    target_block = deploy_client.get_block_number() + 300
-    call = deploy_future_block_call(
-        client_contract.setBool,
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
         target_block=target_block,
     )
 
-    deploy_client.wait_for_block(target_block)
+    chain.wait.for_block(target_block)
 
-    assert call.isCancelled() is False
-    assert call.wasCalled() is False
+    assert fbc.call().isCancelled() is False
+    assert fbc.call().wasCalled() is False
 
-    execute_txn_h = call.execute()
-    execute_txn_r = deploy_client.wait_for_transaction(execute_txn_h)
+    execute_txn_h = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_h)
 
-    assert call.wasCalled() is True
-    assert call.isCancelled() is False
+    assert fbc.call().wasCalled() is True
+    assert fbc.call().isCancelled() is False
 
-    cancel_txn = call.cancel()
-    cancel_txn_receipt = deploy_client.wait_for_transaction(cancel_txn)
+    cancel_txn = fbc.transact().cancel()
+    chain.wait.for_receipt(cancel_txn)
 
-    assert call.wasCalled() is True
-    assert call.isCancelled() is False
+    assert fbc.call().wasCalled() is True
+    assert fbc.call().isCancelled() is False
+
+    cancel_filter = CallLib.pastEvents('Cancelled', {'address': fbc.address})
+    cancel_logs = cancel_filter.get()
+    assert not cancel_logs

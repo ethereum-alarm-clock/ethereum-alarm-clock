@@ -1,42 +1,25 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "AccountingLib",
-    "TestCallExecution",
-    "TestDataRegistry",
-]
-
-
-def test_claiming_during_growth_window(deploy_client, deployed_contracts,
-                                       deploy_future_block_call, denoms,
-                                       FutureBlockCall, CallLib, SchedulerLib,
-                                       get_call, get_execution_data,
-                                       deploy_coinbase):
-    client_contract = deployed_contracts.TestCallExecution
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
-        payment=denoms.ether,
+def test_claiming_during_growth_window(chain, web3, deploy_fbc, denoms):
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(
+        target_block=target_block,
+        payment=1 * denoms.ether,
     )
 
-    target_block = call.targetBlock()
-    base_payment = call.basePayment()
+    base_payment = fbc.call().basePayment()
 
     first_claim_block = target_block - 255 - 10
-    peak_claim_block = target_block - 10 - 15
-    last_claim_block = target_block - 10
 
     claim_at_block = first_claim_block + 42
 
-    deploy_client.wait_for_block(claim_at_block - 1)
+    chain.wait.for_block(claim_at_block)
 
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 
-    txn_h = call.claim(value=2 * base_payment)
-    txn_r = deploy_client.wait_for_transaction(txn_h)
+    txn_h = fbc.transact({'value': 2 * base_payment}).claim()
+    txn_r = chain.wait.for_receipt(txn_h)
 
-    assert int(txn_r['blockNumber'], 16) == claim_at_block
+    assert txn_r['blockNumber'] == claim_at_block
 
-    assert call.claimer() == deploy_coinbase
-    assert call.claimerDeposit() == 2 * base_payment
-    assert call.claimAmount() == 42 * base_payment / 240
+    assert fbc.call().claimer() == web3.eth.coinbase
+    assert fbc.call().claimerDeposit() == 2 * base_payment
+    assert fbc.call().claimAmount() == 42 * base_payment / 240

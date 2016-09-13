@@ -1,25 +1,23 @@
-deploy_contracts = [
-    "CallLib",
-    "TestErrors",
-]
+def test_execution_of_call_that_contains_infinite_loop(chain, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestErrors')
 
+    fbc = deploy_fbc(client_contract, method_name='doInfinite')
 
-def test_execution_of_call_that_contains_infinite_loop(deploy_client,
-                                                       deployed_contracts,
-                                                       deploy_future_block_call):
-    client_contract = deployed_contracts.TestErrors
-    call = deploy_future_block_call(client_contract.doInfinite)
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert client_contract.value() is False
+    assert client_contract.call().value() is False
 
-    call_txn_hash = call.execute()
-    call_txn_receipt = deploy_client.wait_for_transaction(call_txn_hash)
-    call_txn = deploy_client.get_transaction_by_hash(call_txn_hash)
+    execute_txn_hash = fbc.transact().execute()
+    execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
-    assert client_contract.value() is False
+    assert client_contract.call().value() is False
 
-    call_logs = deployed_contracts.CallLib.CallExecuted.get_transaction_logs(call_txn_hash)
-    assert len(call_logs) == 1
-    log_data = deployed_contracts.CallLib.CallExecuted.get_log_data(call_logs[0])
-    assert log_data['success'] is False
+    execute_filter = CallLib.pastEvents('CallExecuted', {
+        'address': fbc.address,
+        'fromBlock': execute_txn_receipt['blockNumber'],
+        'toBlock': execute_txn_receipt['blockNumber'],
+    })
+    execute_logs = execute_filter.get()
+    assert len(execute_logs) == 1
+    execute_log_data = execute_logs[0]
+    assert execute_log_data['args']['success'] is False

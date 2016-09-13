@@ -1,54 +1,56 @@
-deploy_contracts = [
-    "CallLib",
-    "TestCallExecution",
-]
+def test_cancelling_a_call_before_bid_window(chain, web3, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestCallExecution')
 
-
-def test_cancelling_a_call_before_bid_window(deploy_client, deployed_contracts,
-                                             deploy_future_block_call,
-                                             CallLib):
-    client_contract = deployed_contracts.TestCallExecution
-
-    target_block = deploy_client.get_block_number() + 300
-    call = deploy_future_block_call(
-        client_contract.setBool,
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
         target_block=target_block,
     )
+
     first_bid_block = target_block - 240 - 15 - 10
-    deploy_client.wait_for_block(first_bid_block - 2)
 
-    assert call.isCancelled() is False
+    chain.wait.for_block(first_bid_block - 1)
 
-    cancel_txn_h = call.cancel()
-    cancel_txn_r = deploy_client.wait_for_transaction(cancel_txn_h)
+    assert fbc.call().isCancelled() is False
 
-    assert int(cancel_txn_r['blockNumber'], 16) == first_bid_block - 1
+    cancel_txn_h = fbc.transact().cancel()
+    cancel_txn_r = chain.wait.for_receipt(cancel_txn_h)
 
-    assert call.isCancelled() is True
+    assert cancel_txn_r['blockNumber'] == first_bid_block - 1
 
-    cancel_logs = CallLib.Cancelled.get_transaction_logs(cancel_txn_h)
+    assert fbc.call().isCancelled() is True
+
+    cancel_filter = CallLib.pastEvents('Cancelled', {'address': fbc.address})
+    cancel_logs = cancel_filter.get()
     assert len(cancel_logs) == 1
 
+    cancel_log_data = cancel_logs[0]
+    assert cancel_log_data['args']['cancelled_by'] == web3.eth.coinbase
 
-def test_cancelling_a_call_after_call_window(deploy_client,
-                                             deployed_contracts,
-                                             deploy_future_block_call,
-                                             CallLib):
-    client_contract = deployed_contracts.TestCallExecution
 
-    target_block = deploy_client.get_block_number() + 20
-    call = deploy_future_block_call(
-        client_contract.setBool,
+def test_cancelling_a_call_after_call_window(chain, web3, deploy_fbc, CallLib):
+    client_contract = chain.get_contract('TestCallExecution')
+
+    target_block = web3.eth.blockNumber + 20
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
         target_block=target_block,
     )
-    deploy_client.wait_for_block(target_block + 256)
 
-    assert call.isCancelled() is False
+    chain.wait.for_block(target_block + 256)
 
-    cancel_txn_hash = call.cancel()
-    deploy_client.wait_for_transaction(cancel_txn_hash)
+    assert fbc.call().isCancelled() is False
 
-    cancel_logs = CallLib.Cancelled.get_transaction_logs(cancel_txn_hash)
+    cancel_txn_hash = fbc.transact().cancel()
+    chain.wait.for_receipt(cancel_txn_hash)
+
+    cancel_filter = CallLib.pastEvents('Cancelled', {'address': fbc.address})
+    cancel_logs = cancel_filter.get()
     assert len(cancel_logs) == 1
 
-    assert call.isCancelled() is True
+    cancel_log_data = cancel_logs[0]
+    assert cancel_log_data['args']['cancelled_by'] == web3.eth.coinbase
+
+    assert fbc.call().isCancelled() is True

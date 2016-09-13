@@ -1,32 +1,44 @@
-deploy_contracts = [
-    "Scheduler",
-    "TestCallExecution",
-    "TestDataRegistry",
-]
+def test_cannot_schedule_with_too_small_grace_perioud(chain, web3, denoms, SchedulerLib):
+    scheduler = chain.get_contract('Scheduler')
 
+    minimum_grace_period = scheduler.call().getMinimumGracePeriod()
 
-def test_cannot_schedule_with_too_small_grace_perioud(deploy_client, deployed_contracts,
-                                                      deploy_future_block_call, denoms,
-                                                      SchedulerLib):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
-
-    minimum_grace_period = scheduler.getMinimumGracePeriod()
-    now_block = deploy_client.get_block_number()
-
-    scheduling_txn = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.setBool.encoded_abi_signature,
-        now_block + 40 + 10 + 255,
-        1000000,
-        minimum_grace_period - 1,
-        value=10 * denoms.ether,
-        gas=3000000,
+    failed_scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        abiSignature='1234',
+        targetBlock=web3.eth.blockNumber + 300,
+        requiredGas=1000000,
+        gracePeriod=minimum_grace_period - 1,
     )
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn)
+    failed_scheduling_txn_receipt = chain.wait.for_receipt(failed_scheduling_txn_hash)
 
-    call_rejected_logs = SchedulerLib.CallRejected.get_transaction_logs(scheduling_txn)
-    assert len(call_rejected_logs) == 1
-    call_rejected_data = SchedulerLib.CallRejected.get_log_data(call_rejected_logs[0])
+    schedule_filter = SchedulerLib.pastEvents('CallRejected', {
+        'address': scheduler.address,
+        'fromBlock': failed_scheduling_txn_receipt['blockNumber'],
+        'toBlock': failed_scheduling_txn_receipt['blockNumber'],
+    })
+    schedule_logs = schedule_filter.get()
+    assert len(schedule_logs) == 1
+    schedule_log_data = schedule_logs[0]
+    reason = schedule_log_data['args']['reason'].replace('\x00', '')
+    assert reason == 'GRACE_TOO_SHORT'
 
-    assert call_rejected_data['reason'] == 'GRACE_TOO_SHORT'
+
+def test_schedule_accepted_with_minimum_grace_period(chain, web3, denoms, get_scheduled_fbc):
+    scheduler = chain.get_contract('Scheduler')
+
+    minimum_grace_period = scheduler.call().getMinimumGracePeriod()
+
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        abiSignature='1234',
+        targetBlock=web3.eth.blockNumber + 300,
+        requiredGas=1000000,
+        gracePeriod=minimum_grace_period,
+    )
+    chain.wait.for_receipt(scheduling_txn_hash)
+
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
+    assert fbc.call().gracePeriod() == minimum_grace_period

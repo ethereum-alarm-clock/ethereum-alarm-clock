@@ -1,38 +1,29 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "AccountingLib",
-    "TestCallExecution",
-    "TestDataRegistry",
-]
-
-
-def test_claim_block_values(deploy_client, deployed_contracts,
-                            deploy_future_block_call, denoms, FutureBlockCall,
-                            CallLib, SchedulerLib, get_call,
-                            get_execution_data):
-    client_contract = deployed_contracts.TestCallExecution
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
-        payment=denoms.ether,
+def test_claim_block_values(chain, web3, deploy_fbc, denoms):
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(
+        target_block=target_block,
+        payment=1 * denoms.ether,
     )
 
-    target_block = call.targetBlock()
-    base_payment = call.basePayment()
+    base_payment = fbc.call().basePayment()
 
     first_claim_block = target_block - 255 - 10
     peak_claim_block = target_block - 10 - 15
     last_claim_block = target_block - 10
 
-    assert call.getClaimAmountForBlock(first_claim_block) == 0
+    assert fbc.call().getClaimAmountForBlock(first_claim_block) == 0
 
     for i in range(240):
-        assert call.getClaimAmountForBlock(first_claim_block + i) == base_payment * i / 240
+        actual_claim_amount = fbc.call().getClaimAmountForBlock(first_claim_block + i)
+        expected_claim_amount = base_payment * i // 240
+        assert actual_claim_amount == expected_claim_amount
 
-    assert call.getClaimAmountForBlock(peak_claim_block) == call.basePayment()
+    peak_amount = fbc.call().getClaimAmountForBlock(peak_claim_block)
+    assert peak_amount == base_payment
 
     for i in range(15):
-        assert call.getClaimAmountForBlock(peak_claim_block + i) == call.basePayment()
+        actual_claim_amount = fbc.call().getClaimAmountForBlock(peak_claim_block + i)
+        assert actual_claim_amount == base_payment
 
-    assert call.getClaimAmountForBlock(last_claim_block) == call.basePayment()
+    last_amount = fbc.call().getClaimAmountForBlock(last_claim_block)
+    assert last_amount == base_payment

@@ -1,153 +1,140 @@
+def test_call_cancellation_states_before_call_window(unmigrated_chain, web3,
+                                                     deploy_fbc, CallStates):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
 
-import pytest
-
-from ethereum import abi
-from ethereum import utils
-
-
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
-
-
-class State(object):
-    Pending = 0
-    Unclaimed = 1
-    Claimed = 2
-    Frozen = 3
-    Callable = 4
-    Executed = 5
-    Cancelled = 6
-    Missed = 7
-
-
-
-def test_call_cancellation_states_before_call_window(deploy_client, deployed_contracts,
-                                                     deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
-
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 400,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 300
     )
 
-    assert call.state() == State.Pending
+    assert fbc.call().state() == CallStates.Pending
 
-    cancel_txn_hash = call.cancel()
-    cancel_txn_receipt = deploy_client.wait_for_transaction(cancel_txn_hash)
+    cancel_txn_hash = fbc.transact().cancel()
+    chain.wait.for_receipt(cancel_txn_hash)
 
-    assert call.state() == State.Cancelled
+    assert fbc.call().state() == CallStates.Cancelled
 
 
-def test_states_when_claimed(deploy_client, deployed_contracts,
-                             deploy_future_block_call, denoms):
-    client_contract = deployed_contracts.TestCallExecution
+def test_states_when_claimed(unmigrated_chain, web3, denoms, deploy_fbc,
+                             CallStates):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 400,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 300
     )
 
-    assert call.state() == State.Pending
+    assert fbc.call().state() == CallStates.Pending
 
-    deploy_client.wait_for_block(call.targetBlock() - 10 - 100)
+    # wait until middle of claim window
+    chain.wait.for_block(fbc.call().targetBlock() - 10 - 100)
 
-    assert call.state() == State.Unclaimed
+    assert fbc.call().state() == CallStates.Unclaimed
 
-    claim_txn_hash = call.claim(value=2 * denoms.ether)
-    claim_txn_receipt = deploy_client.wait_for_transaction(claim_txn_hash)
+    claim_txn_hash = fbc.transact({
+        'value': 2 * denoms.ether,
+    }).claim()
+    chain.wait.for_receipt(claim_txn_hash)
 
-    assert call.state() == State.Claimed
+    assert fbc.call().state() == CallStates.Claimed
 
-    deploy_client.wait_for_block(call.targetBlock() - 9)
+    chain.wait.for_block(fbc.call().targetBlock() - 9)
 
-    assert call.state() == State.Frozen
+    assert fbc.call().state() == CallStates.Frozen
 
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert call.state() == State.Callable
+    assert fbc.call().state() == CallStates.Callable
 
-    execute_txn_hash = call.execute()
-    execute_txn_receipt = deploy_client.wait_for_transaction(execute_txn_hash)
+    execute_txn_hash = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
 
-    assert call.state() == State.Executed
+    assert fbc.call().state() == CallStates.Executed
 
 
-def test_states_when_unclaimed(deploy_client, deployed_contracts,
-                               deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
+def test_states_when_unclaimed(unmigrated_chain, web3, denoms, deploy_fbc,
+                               CallStates):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 400,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 300
     )
 
-    assert call.state() == State.Pending
+    assert fbc.call().state() == CallStates.Pending
 
-    deploy_client.wait_for_block(call.targetBlock() - 9)
+    chain.wait.for_block(fbc.call().targetBlock() - 9)
 
-    assert call.state() == State.Frozen
+    assert fbc.call().state() == CallStates.Frozen
 
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert call.state() == State.Callable
+    assert fbc.call().state() == CallStates.Callable
 
-    execute_txn_hash = call.execute()
-    execute_txn_receipt = deploy_client.wait_for_transaction(execute_txn_hash)
+    execute_txn_hash = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
 
-    assert call.state() == State.Executed
+    assert fbc.call().state() == CallStates.Executed
 
 
-def test_missed_state_when_claimed(deploy_client, deployed_contracts,
-                                   deploy_future_block_call, denoms):
-    client_contract = deployed_contracts.TestCallExecution
+def test_missed_state_when_claimed(unmigrated_chain, web3, denoms, deploy_fbc,
+                                   CallStates):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 400,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 300
     )
 
-    assert call.state() == State.Pending
+    assert fbc.call().state() == CallStates.Pending
 
-    deploy_client.wait_for_block(call.targetBlock() - 10 - 100)
+    chain.wait.for_block(fbc.call().targetBlock() - 10 - 100)
 
-    assert call.state() == State.Unclaimed
+    assert fbc.call().state() == CallStates.Unclaimed
 
-    claim_txn_hash = call.claim(value=2 * denoms.ether)
-    claim_txn_receipt = deploy_client.wait_for_transaction(claim_txn_hash)
+    claim_txn_hash = fbc.transact({'value': 2 * denoms.ether}).claim()
+    chain.wait.for_receipt(claim_txn_hash)
 
-    assert call.state() == State.Claimed
+    assert fbc.call().state() == CallStates.Claimed
 
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert call.state() == State.Callable
+    assert fbc.call().state() == CallStates.Callable
 
-    deploy_client.wait_for_block(call.targetBlock() + call.gracePeriod())
+    chain.wait.for_block(fbc.call().targetBlock() + fbc.call().gracePeriod())
 
-    assert call.state() == State.Missed
+    assert fbc.call().state() == CallStates.Missed
 
 
-def test_missed_state_when_not_claimed(deploy_client, deployed_contracts,
-                                       deploy_future_block_call):
-    client_contract = deployed_contracts.TestCallExecution
+def test_missed_state_when_not_claimed(unmigrated_chain, web3, denoms,
+                                       deploy_fbc, CallStates):
+    chain = unmigrated_chain
+    client_contract = chain.get_contract('TestCallExecution')
 
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 400,
+    fbc = deploy_fbc(
+        contract=client_contract,
+        method_name='setBool',
+        target_block=web3.eth.blockNumber + 300
     )
 
-    assert call.state() == State.Pending
+    assert fbc.call().state() == CallStates.Pending
 
-    deploy_client.wait_for_block(call.targetBlock() - 10 - 100)
+    chain.wait.for_block(fbc.call().targetBlock() - 10 - 100)
 
-    assert call.state() == State.Unclaimed
+    assert fbc.call().state() == CallStates.Unclaimed
 
-    deploy_client.wait_for_block(call.targetBlock())
+    chain.wait.for_block(fbc.call().targetBlock())
 
-    assert call.state() == State.Callable
+    assert fbc.call().state() == CallStates.Callable
 
-    deploy_client.wait_for_block(call.targetBlock() + call.gracePeriod())
+    chain.wait.for_block(fbc.call().targetBlock() + fbc.call().gracePeriod())
 
-    assert call.state() == State.Missed
+    assert fbc.call().state() == CallStates.Missed

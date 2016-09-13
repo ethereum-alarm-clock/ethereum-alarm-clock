@@ -1,59 +1,43 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+SCHEDULING_COSTS_MIN = 1160000
+SCHEDULING_COSTS_MAX = 1160000
+
+DELTA = 10000
 
 
-SCHEDULING_COSTS_MIN = 1100000
-SCHEDULING_COSTS_MAX = 1120000
+def test_cost_of_scheduling_no_args(chain, denoms, get_scheduled_fbc):
+    scheduler = chain.get_contract('Scheduler')
+
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall()
+    scheduling_txn_receipt = chain.wait.for_receipt(scheduling_txn_hash)
+
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
+    assert fbc.address
+
+    gas_actual = scheduling_txn_receipt['gasUsed']
+    assert abs(gas_actual - SCHEDULING_COSTS_MIN) < DELTA
 
 
-def test_cost_of_scheduling_no_args(deploy_client, deployed_contracts, denoms,
-                                    get_call):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
+def test_cost_of_scheduling_all_args(chain, web3, denoms, get_scheduled_fbc):
+    scheduler = chain.get_contract('Scheduler')
 
-    targetBlock = deploy_client.get_block_number() + 255 + 10 + 40
+    target_block = web3.eth.blockNumber + 300
 
-    scheduling_txn_hash = scheduler.scheduleCall(
-        value=10 * denoms.ether,
-        gas=3000000,
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        contractAddress=web3.eth.coinbase,
+        abiSignature='1234',
+        callData="",
+        requiredStackDepth=1000,
+        gracePeriod=255,
+        args=[0, target_block, 300000, 12345, 54321],
     )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
+    scheduling_txn_receipt = chain.wait.for_receipt(scheduling_txn_hash)
 
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
+    assert fbc.address
 
-    delta = 10000
-
-    gas_actual = int(scheduling_receipt['gasUsed'], 16)
-    assert abs(gas_actual - SCHEDULING_COSTS_MIN) < delta
-
-
-def test_cost_of_scheduling_all_args(deploy_client, deployed_contracts, denoms,
-                                     get_call):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
-
-    targetBlock = deploy_client.get_block_number() + 255 + 10 + 40
-
-    scheduling_txn_hash = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.noop.encoded_abi_signature,
-        "",
-        1000,
-        255,
-        [0, targetBlock, 300000, 12345, 54321],
-        value=10 * denoms.ether,
-        gas=3000000,
-    )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
-
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
-
-    delta = 10000
-
-    gas_actual = int(scheduling_receipt['gasUsed'], 16)
-    assert abs(gas_actual - SCHEDULING_COSTS_MAX) < delta
+    gas_actual = scheduling_txn_receipt['gasUsed']
+    assert abs(gas_actual - SCHEDULING_COSTS_MAX) < DELTA

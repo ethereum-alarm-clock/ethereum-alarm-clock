@@ -1,40 +1,38 @@
-deploy_contracts = [
-    "Scheduler",
-]
+def test_cannary_cannot_be_revived(chain, web3, deploy_canary, denoms,
+                                   FutureBlockCall):
+    scheduler = chain.get_contract('Scheduler')
+    canary = deploy_canary()
 
+    init_txn_h = canary.transact().initialize()
+    chain.wait.for_receipt(init_txn_h)
 
-def test_cannary_cannot_be_revived(canary, deploy_client, denoms,
-                                   deployed_contracts, FutureBlockCall):
-    scheduler = deployed_contracts.Scheduler
-
-    init_txn_h = canary.initialize()
-    init_txn_r = deploy_client.wait_for_transaction(init_txn_h)
-
-    call_contract_address = canary.callContractAddress()
+    fbc_address = canary.call().callContractAddress()
 
     # check that the call was scheduled
-    assert call_contract_address != "0x0000000000000000000000000000000000000000"
-    assert scheduler.isKnownCall(call_contract_address) is True
+    assert fbc_address != "0x0000000000000000000000000000000000000000"
+    assert scheduler.call().isKnownCall(fbc_address) is True
 
     # check that the heartbeat went up
-    assert canary.heartbeatCount() == 0
+    assert canary.call().heartbeatCount() == 0
 
     # check that it has enough funds to successfully heartbeat
-    assert canary.get_balance() >= 2 * denoms.ether
+    assert web3.eth.getBalance(canary.address) >= 2 * denoms.ether
 
-    call_contract = FutureBlockCall(call_contract_address, deploy_client)
+    fbc = FutureBlockCall(address=fbc_address)
+
+    assert canary.call().isAlive() is True
 
     # Wait till after the call
-    deploy_client.wait_for_block(
-        call_contract.targetBlock() + call_contract.gracePeriod() + 1
+    chain.wait.for_block(
+        fbc.call().targetBlock() + fbc.call().gracePeriod() + 1
     )
 
-    assert not canary.isAlive()
+    assert canary.call().isAlive() is False
 
-    revive_txn_h = canary.heartbeat()
-    revive_txn_r = deploy_client.wait_for_transaction(revive_txn_h)
+    revive_txn_h = canary.transact().heartbeat()
+    chain.wait.for_receipt(revive_txn_h)
 
     # shouldn't be alive.  stats shouldn't have changed
-    assert not canary.isAlive()
-    assert canary.heartbeatCount() == 0
-    assert canary.callContractAddress() == call_contract_address
+    assert canary.call().isAlive() is False
+    assert canary.call().heartbeatCount() == 0
+    assert canary.call().callContractAddress() == fbc_address

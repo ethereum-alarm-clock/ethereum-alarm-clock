@@ -1,32 +1,21 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "AccountingLib",
-    "TestCallExecution",
-    "TestDataRegistry",
-]
-
-
-def test_cannot_claim_during_call_window(deploy_client, deployed_contracts,
-                                         deploy_future_block_call, denoms,
-                                         FutureBlockCall, CallLib, SchedulerLib,
-                                         get_call, get_execution_data,
-                                         deploy_coinbase):
-    client_contract = deployed_contracts.TestCallExecution
-    call = deploy_future_block_call(
-        client_contract.setBool,
-        target_block=deploy_client.get_block_number() + 1000,
-        payment=denoms.ether,
+def test_cannot_claim_during_freeze_window(chain, web3, deploy_fbc, denoms,
+                                           CallStates):
+    target_block = web3.eth.blockNumber + 300
+    fbc = deploy_fbc(
+        target_block=target_block,
+        payment=1 * denoms.ether,
     )
 
-    target_block = call.targetBlock()
-    base_payment = call.basePayment()
+    target_block = fbc.call().targetBlock()
+    base_payment = fbc.call().basePayment()
 
-    deploy_client.wait_for_block(target_block + 1)
+    chain.wait.for_block(target_block - 10)
+    assert fbc.call().state() == CallStates.Frozen
 
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"
 
-    txn_h = call.claim(value=2 * base_payment)
-    txn_r = deploy_client.wait_for_transaction(txn_h)
+    txn_h = fbc.transact({'value': 2 * base_payment}).claim()
+    txn_r = chain.wait.for_receipt(txn_h)
 
-    assert call.claimer() == "0x0000000000000000000000000000000000000000"
+    assert txn_r['blockNumber'] == target_block - 10
+    assert fbc.call().claimer() == "0x0000000000000000000000000000000000000000"

@@ -1,54 +1,41 @@
-deploy_contracts = [
-    "CallLib",
-    "Scheduler",
-    "TestCallExecution",
-]
+def test_early_claim_decreases_default_payment(chain, web3, denoms,
+                                               get_scheduled_fbc,
+                                               get_4byte_selector):
+    scheduler = chain.get_contract('Scheduler')
+    client_contract = chain.get_contract('TestCallExecution')
 
+    target_block = web3.eth.blockNumber + 300
 
-def test_early_claim_decreases_default_payment(deploy_client,
-                                               deployed_contracts,
-                                               deploy_future_block_call,
-                                               denoms,
-                                               FutureBlockCall,
-                                               CallLib, SchedulerLib,
-                                               get_call,
-                                               get_execution_data,
-                                               deploy_coinbase):
-    scheduler = deployed_contracts.Scheduler
-    client_contract = deployed_contracts.TestCallExecution
+    noop_4byte_selector = get_4byte_selector(client_contract, 'noop')
 
-    target_block = deploy_client.get_block_number() + 400
-
-    scheduling_txn_hash = scheduler.scheduleCall(
-        client_contract._meta.address,
-        client_contract.noop.encoded_abi_signature,
-        target_block,
-        value=10 * denoms.ether,
-        gas=3000000,
+    scheduling_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleCall(
+        contractAddress=client_contract.address,
+        abiSignature=noop_4byte_selector,
+        targetBlock=target_block,
     )
-    scheduling_txn = deploy_client.get_transaction_by_hash(scheduling_txn_hash)
 
-    scheduling_receipt = deploy_client.wait_for_transaction(scheduling_txn_hash)
-    call = get_call(scheduling_txn_hash)
+    fbc = get_scheduled_fbc(scheduling_txn_hash)
 
-    deploy_client.wait_for_block(call.firstClaimBlock())
+    chain.wait.for_block(fbc.call().firstClaimBlock())
 
-    claim_txn_hash = call.claim(value=10 * denoms.ether)
-    claim_txn_receipt = deploy_client.wait_for_transaction(claim_txn_hash)
+    claim_txn_hash = fbc.transact({'value': 10 * denoms.ether}).claim()
+    chain.wait.for_receipt(claim_txn_hash)
 
-    assert call.claimer() == deploy_coinbase
+    assert fbc.call().claimer() == web3.eth.coinbase
 
-    deploy_client.wait_for_block(target_block)
+    chain.wait.for_block(target_block)
 
-    default_payment_before = scheduler.defaultPayment()
+    default_payment_before = scheduler.call().defaultPayment()
 
-    execute_txn_hash = call.execute()
-    execute_txn_receipt = deploy_client.wait_for_transaction(execute_txn_hash)
+    execute_txn_hash = fbc.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
 
-    assert call.wasCalled()
+    assert fbc.call().wasCalled()
 
-    expected = default_payment_before * 9999 / 10000
-    actual = scheduler.defaultPayment()
+    expected = default_payment_before * 9999 // 10000
+    actual = scheduler.call().defaultPayment()
 
     assert actual < default_payment_before
     assert actual == expected

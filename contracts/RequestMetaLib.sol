@@ -10,14 +10,14 @@ library RequestMetaLib {
         address owner;
 
         // The address of the request factory that created this request.
-        address factoryAddress;
+        address createdBy;
 
         // Was the request cancelled.
         bool isCancelled;
     }
 
     function reportExecution(RequestMeta storage self) returns (bool) {
-        var factory = RequestFactoryInterface(self.factoryAddress);
+        var factory = RequestFactoryInterface(self.createdBy);
         return factory.receiveExecutionNotification();
     }
 }

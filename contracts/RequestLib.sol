@@ -57,7 +57,7 @@ library RequestLib {
                                                       uint8[1] uint8Values) {
         // Address values
         addressValues[0] = self.claimData.claimedBy;
-        addressValues[1] = self.meta.factoryAddress;
+        addressValues[1] = self.meta.createdBy;
         addressValues[2] = self.meta.owner;
         addressValues[3] = self.paymentData.donationBenefactor;
         addressValues[4] = self.txnData.toAddress;
@@ -96,6 +96,11 @@ library RequestLib {
         );
     }
 
+    /*
+     *  Populates a Request object from the full output of `serialize`.
+     *
+     *  Parameter order is alphabetical by type, then namespace, then name.
+     */
     function deserialize(Request storage self,
                          address[5] addressValues,
                          bool[3] boolValues,
@@ -107,7 +112,7 @@ library RequestLib {
 
         // Address values
         self.claimData.claimedBy = addressValues[0];
-        self.meta.factoryAddress = addressValues[1];
+        self.meta.createdBy = addressValues[1];
         self.meta.owner = addressValues[2];
         self.paymentData.donationBenefactor = addressValues[3];
         self.txnData.toAddress = addressValues[4];
@@ -137,6 +142,15 @@ library RequestLib {
 
         // Uint8 values
         self.claimData.paymentModifier = uint8Values[0];
+    }
+
+    function initialize(Request storage self,
+                        address[5] addressValues,
+                        uint[16] uintValues,
+                        uint8[1] uint8Values,
+                        bytes callData) returns (bool) {
+        // TODO:
+        throw;
     }
 
     function execute(Request storage self) returns (bool) {

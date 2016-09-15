@@ -145,12 +145,107 @@ library RequestLib {
     }
 
     function initialize(Request storage self,
-                        address[5] addressValues,
-                        uint[16] uintValues,
-                        uint8[1] uint8Values,
+                        address[4] addressArgs,
+                        uint[11] uintArgs,
                         bytes callData) returns (bool) {
-        // TODO:
-        throw;
+        address[5] memory addressValues = [
+            0x0,             // self.claimData.claimedBy
+            addressArgs[0],  // self.meta.createdBy
+            addressArgs[1],  // self.meta.owner
+            addressArgs[2],  // self.paymentData.donationBenefactor
+            addressArgs[3]   // self.txnData.toAddress
+        ];
+
+        bool[3] memory boolValues = [false, false, false];
+
+        uint[16] memory uintValues = [
+            0,               // self.claimData.claimDeposit
+            uintArgs[0],     // self.claimData.claimWindowSize
+            tx.gasprice,     // self.paymentData.anchorGasPrice
+            uintArgs[1],     // self.paymentData.donation
+            uintArgs[2],     // self.paymentData.payment
+            0,               // self.result.donationOwed
+            0,               // self.result.gasConsumption
+            0,               // self.result.paymentOwed
+            uintArgs[3],     // self.schedule.freezePeriod
+            uintArgs[4],     // self.schedule.reservedWindowSize
+            uintArgs[5],     // self.schedule.temporalUnit
+            uintArgs[6],     // self.schedule.windowStart
+            uintArgs[7],     // self.schedule.windowSize
+            uintArgs[8],     // self.txnData.callGas
+            uintArgs[9],     // self.txnData.callValue
+            uintArgs[10]     // self.txnData.requiredStackDepth
+        ];
+
+        uint8[1] memory uint8Values = [
+            0
+        ];
+
+        deserialize(self, addressValues, boolValues, uintValues, uint8Values, callData);
+
+        return true;
+    }
+
+    function validate(address[4] addressValues,
+                      uint[11] uintValues,
+                      bytes callData,
+                      uint endowment) returns (bool[7] errors) {
+        Request memory request;
+
+        // callData is special.
+        request.txnData.callData = callData;
+
+        // Address values
+        request.claimData.claimedBy = 0x0;
+        request.meta.createdBy = addressValues[0];
+        request.meta.owner = addressValues[1];
+        request.paymentData.donationBenefactor = addressValues[2];
+        request.txnData.toAddress = addressValues[3];
+
+        // Boolean values
+        request.meta.isCancelled = false;
+        request.result.wasCalled = false;
+        request.result.wasSuccessful = false;
+
+        // UInt values
+        request.claimData.claimDeposit = 0;
+        request.claimData.claimWindowSize = uintValues[0];
+        request.paymentData.anchorGasPrice = tx.gasprice;
+        request.paymentData.donation = uintValues[1];
+        request.paymentData.payment = uintValues[2];
+        request.result.donationOwed = 0;
+        request.result.gasConsumption = 0;
+        request.result.paymentOwed = 0;
+        request.schedule.freezePeriod = uintValues[3];
+        request.schedule.reservedWindowSize = uintValues[4];
+        request.schedule.temporalUnit = ScheduleLib.TemporalUnit(uintValues[5]);
+        request.schedule.windowStart = uintValues[6];
+        request.schedule.windowSize = uintValues[7];
+        request.txnData.callGas = uintValues[8];
+        request.txnData.callValue = uintValues[9];
+        request.txnData.requiredStackDepth = uintValues[10];
+
+        // Uint8 values
+        request.claimData.paymentModifier = 0;
+
+        // These errors must be in the same order as the RequestFactory.Errors
+        // enum.
+        errors[0] = PaymentLib.validateEndowment(endowment,
+                                                 request.paymentData.payment,
+                                                 request.paymentData.donation,
+                                                 request.txnData.callGas,
+                                                 request.txnData.callValue);
+        errors[1] = ScheduleLib.validateReservedWindowSize(request.schedule.reservedWindowSize,
+                                                           request.schedule.windowSize);
+        errors[2] = ScheduleLib.validateTemporalUnit(uintValues[5]);
+        errors[3] = ScheduleLib.validateWindowStart(request.schedule.temporalUnit,
+                                                    request.schedule.freezePeriod,
+                                                    request.schedule.windowStart);
+        errors[4] = ExecutionLib.validateRequiredStackDepth(request.txnData.requiredStackDepth);
+        errors[5] = ExecutionLib.validateCallGas(request.txnData.callGas, _EXTRA_GAS);
+        errors[6] = ExecutionLib.validateToAddress(request.txnData.toAddress);
+
+        return errors;
     }
 
     function execute(Request storage self) returns (bool) {

@@ -33,9 +33,13 @@ library ScheduleLib {
      *  times.
      */
     function getNow(Schedule storage self) returns (uint) {
-        if (self.temporalUnit == TemporalUnit.Seconds) {
+        return getNow(self.temporalUnit);
+    }
+
+    function getNow(TemporalUnit temporalUnit) internal returns (uint) {
+        if (temporalUnit == TemporalUnit.Seconds) {
             return now;
-        } else if (self.temporalUnit == TemporalUnit.Blocks) {
+        } else if (temporalUnit == TemporalUnit.Blocks) {
             return block.number;
         } else {
             // Unsupported unit.
@@ -85,5 +89,29 @@ library ScheduleLib {
      */
     function inReservedWindow(Schedule storage self) returns (bool) {
         return self.windowStart <= getNow(self) && getNow(self) <= reservedWindowEnd(self);
+    }
+
+    /*
+     *  Validation: ensure that the reservedWindowSize <= windowSize
+     */
+    function validateReservedWindowSize(uint reservedWindowSize,
+                                        uint windowSize) returns (bool) {
+        return reservedWindowSize < windowSize;
+    }
+
+    /*
+     *  Validation: ensure that the startWindow is at least freezePeriod in the future
+     */
+    function validateWindowStart(TemporalUnit temporalUnit,
+                                 uint freezePeriod,
+                                 uint windowStart) returns (bool) {
+        return getNow(temporalUnit) + freezePeriod <= windowStart;
+    }
+
+    /*
+     *  Validation: ensure that the temporal unit passed in is constrained to 0 or 1
+     */
+    function validateTemporalUnit(uint temporalUnitAsUInt) returns (bool) {
+        return temporalUnitAsUInt <= uint(TemporalUnit.Blocks);
     }
 }

@@ -104,4 +104,19 @@ library PaymentLib {
 
         return 0;
     }
+
+    /*
+     * Validation: ensure that the request endowment is sufficient to cover.
+     * - payment * maxMultiplier
+     * - donation * maxMultiplier
+     * - gasReimbursment
+     * - callValue
+     */
+    function validateEndowment(uint endowment,
+                               uint payment,
+                               uint donation,
+                               uint callGas,
+                               uint callValue) returns (bool) {
+        return endowment >= 2 * (payment + donation) + callGas * tx.gasprice + callValue;
+    }
 }

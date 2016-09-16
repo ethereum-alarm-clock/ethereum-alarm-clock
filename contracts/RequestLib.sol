@@ -70,12 +70,12 @@ library RequestLib {
         // UInt256 values
         uintValues[0] = self.claimData.claimDeposit;
         uintValues[1] = self.claimData.claimWindowSize;
-        uintValues[3] = self.paymentData.anchorGasPrice;
-        uintValues[4] = self.paymentData.donation;
-        uintValues[5] = self.paymentData.payment;
-        uintValues[6] = self.result.donationOwed;
-        uintValues[7] = self.result.gasConsumption;
-        uintValues[8] = self.result.paymentOwed;
+        uintValues[2] = self.paymentData.anchorGasPrice;
+        uintValues[3] = self.paymentData.donation;
+        uintValues[4] = self.paymentData.payment;
+        uintValues[5] = self.result.donationOwed;
+        uintValues[6] = self.result.gasConsumption;
+        uintValues[7] = self.result.paymentOwed;
         uintValues[8] = self.schedule.freezePeriod;
         uintValues[9] = self.schedule.reservedWindowSize;
         uintValues[10] = uint(self.schedule.temporalUnit);
@@ -125,12 +125,12 @@ library RequestLib {
         // UInt values
         self.claimData.claimDeposit = uintValues[0];
         self.claimData.claimWindowSize = uintValues[1];
-        self.paymentData.anchorGasPrice = uintValues[3];
-        self.paymentData.donation = uintValues[4];
-        self.paymentData.payment = uintValues[5];
-        self.result.donationOwed = uintValues[6];
-        self.result.gasConsumption = uintValues[7];
-        self.result.paymentOwed = uintValues[8];
+        self.paymentData.anchorGasPrice = uintValues[2];
+        self.paymentData.donation = uintValues[3];
+        self.paymentData.payment = uintValues[4];
+        self.result.donationOwed = uintValues[5];
+        self.result.gasConsumption = uintValues[6];
+        self.result.paymentOwed = uintValues[7];
         self.schedule.freezePeriod = uintValues[8];
         self.schedule.reservedWindowSize = uintValues[9];
         self.schedule.temporalUnit = ScheduleLib.TemporalUnit(uintValues[10]);
@@ -271,13 +271,15 @@ library RequestLib {
          *  7. msg.gas >= callGas
          */
         var startGas = msg.gas;
-        var nowValue = self.schedule.getNow();
 
-        if (self.meta.isCancelled) {
-            Aborted(Reason.WasCancelled);
+        if (msg.gas < requiredExecutionGas(self)) {
+            Aborted(Reason.InsufficientGas);
             return false;
         } else if (self.result.wasCalled) {
             Aborted(Reason.AlreadyCalled);
+            return false;
+        } else if (self.meta.isCancelled) {
+            Aborted(Reason.WasCancelled);
             return false;
         } else if (self.schedule.isBeforeWindow()) {
             Aborted(Reason.BeforeCallWindow);
@@ -293,9 +295,6 @@ library RequestLib {
         } else if (msg.sender != tx.origin && !self.txnData.stackCanBeExtended()) {
             Aborted(Reason.StackTooDeep);
             return false;
-        } else if (msg.gas < self.txnData.callGas) {
-            Aborted(Reason.InsufficientGas);
-            return false;
         }
 
         // Ensure the request is marked as having been called before sending
@@ -306,48 +305,84 @@ library RequestLib {
         self.result.wasSuccessful = self.txnData.sendTransaction();
 
         // Report execution back to the origin address.
-        self.meta.reportExecution();
+        self.meta.reportExecution(_GAS_TO_COMPLETE_EXECUTION);
+
+        uint paymentOwed;
+        uint donationOwed;
 
         // Compute the donation amount
         if (self.paymentData.hasBenefactor()) {
-            self.result.donationOwed += self.paymentData.getDonation();
+            donationOwed += self.paymentData.getDonation();
         }
 
         // Compute the payment amount
         if (self.claimData.isClaimed()) {
-            self.result.paymentOwed += self.claimData.claimDeposit;
-            self.result.paymentOwed += self.paymentData.getPaymentWithModifier(self.claimData.paymentModifier);
+            paymentOwed += self.claimData.claimDeposit;
+            paymentOwed += self.paymentData.getPaymentWithModifier(self.claimData.paymentModifier);
         } else {
-            self.result.paymentOwed += self.paymentData.getPayment();
+            paymentOwed += self.paymentData.getPayment();
         }
 
         // Record the amount of gas used by execution.
-        self.result.gasConsumption = startGas - msg.gas + EXTRA_GAS();
+        self.result.gasConsumption = (startGas - msg.gas) + EXTRA_GAS();
 
         // NOTE: All code after this must be accounted for by EXTRA_GAS
 
         // Add the gas reimbursment amount to the payment.
-        self.result.paymentOwed += self.result.gasConsumption * tx.gasprice;
+        paymentOwed += self.result.gasConsumption * tx.gasprice;
 
         // Log the two payment amounts.  Otherwise it is non-trivial to figure
         // out how much was payed.
-        Executed(self.result.paymentOwed, self.result.donationOwed);
+        Executed(paymentOwed, donationOwed);
 
         // Send the donation.  This will be a noop if there is no benefactor or
         // if the donation amount is 0.
-        self.result.donationOwed -= PaymentLib.safeSend(self.paymentData.donationBenefactor, self.result.donationOwed);
+        donationOwed -= PaymentLib.safeSend(self.paymentData.donationBenefactor, donationOwed);
 
         // Send the payment.
-        self.result.paymentOwed -= PaymentLib.safeSend(msg.sender, self.result.paymentOwed);
+        paymentOwed -= PaymentLib.safeSend(msg.sender, paymentOwed);
+
+        // These need to be set after the send so that there is not opportunity
+        // for re-entrance.
+        self.result.donationOwed = donationOwed;
+        self.result.paymentOwed = paymentOwed;
 
         return true;
+    }
+
+    function requiredExecutionGas(Request storage self) returns (uint) {
+        return self.txnData.callGas +
+               _GAS_TO_COMPLETE_EXECUTION +
+               _GAS_TO_AUTHORIZE_EXECUTION +
+               2 * PaymentLib.DEFAULT_SEND_GAS();
+    }
+
+    // TODO: compute this
+    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 200000;
+
+    /*
+     * The amount of gas needed to do all of the pre execution checks.
+     */
+    function GAS_TO_AUTHORIZE_EXECUTION() returns (uint) {
+        return _GAS_TO_AUTHORIZE_EXECUTION;
+    }
+
+    // TODO: compute this
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 200000;
+
+    /*
+     * The amount of gas needed to complete the execute method after
+     * the transaction has been sent.
+     */
+    function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
+        return _GAS_TO_COMPLETE_EXECUTION;
     }
 
     // TODO: compute this
     uint constant _EXTRA_GAS = 0;
 
     /*
-     *  Returns the amount of gas used by the portion of the `execute` function
+     *  The amount of gas used by the portion of the `execute` function
      *  that cannot be accounted for via gas tracking.
      */
     function EXTRA_GAS() returns (uint) {

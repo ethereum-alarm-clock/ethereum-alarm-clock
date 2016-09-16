@@ -1,6 +1,6 @@
 //pragma solidity 0.4.1;
 
-import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
+import {GasLib} from "contracts/GasLib.sol";
 
 
 
@@ -16,8 +16,9 @@ library RequestMetaLib {
         bool isCancelled;
     }
 
-    function reportExecution(RequestMeta storage self) returns (bool) {
-        var factory = RequestFactoryInterface(self.createdBy);
-        return factory.receiveExecutionNotification();
+    function reportExecution(RequestMeta storage self, uint gasReserve) returns (bool) {
+        return self.createdBy.call.
+                              gas(GasLib.getGas(gasReserve))
+                              (bytes4(sha3("receiveExecutionNotification()")));
     }
 }

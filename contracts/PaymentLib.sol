@@ -73,7 +73,11 @@ library PaymentLib {
 
     event SendFailed(address to, uint value);
 
-    uint constant DEFAULT_SEND_GAS = 90000;
+    uint constant _DEFAULT_SEND_GAS = 90000;
+
+    function DEFAULT_SEND_GAS() returns (uint) {
+        return _DEFAULT_SEND_GAS;
+    }
 
     /*
      * Send ether to an address.
@@ -81,7 +85,7 @@ library PaymentLib {
      * Returns the amount of wei that was sent (which will be 0 on failure).
      */
     function safeSend(address to, uint value) internal returns (uint) {
-        return safeSend(to, value, DEFAULT_SEND_GAS);
+        return safeSend(to, value, _DEFAULT_SEND_GAS);
     }
 
     /*
@@ -102,7 +106,7 @@ library PaymentLib {
             return 0;
         }
 
-        return 0;
+        return value;
     }
 
     /*

@@ -11,10 +11,10 @@ contract TransactionRequest is Digger {
                                 uint[11] uintArgs,
                                 bytes callData) {
         address[4] memory addressValues = [
-            msg.sender,
-            addressArgs[0],
-            addressArgs[1],
-            addressArgs[2]
+            msg.sender,      // meta.createdBy
+            addressArgs[0],  // meta.owner
+            addressArgs[1],  // paymentData.donationBenefactor
+            addressArgs[2]   // txnData.toAddress
         ];
         txnRequest.initialize(addressValues, uintArgs, callData);
     }
@@ -23,5 +23,16 @@ contract TransactionRequest is Digger {
 
     function execute() public returns (bool) {
         return txnRequest.execute();
+    }
+
+    function requestData() constant returns (address[5],
+                                             bool[3],
+                                             uint[16],
+                                             uint8[1]) {
+        return txnRequest.serialize();
+    }
+
+    function callData() constant returns (bytes) {
+        return txnRequest.txnData.callData;
     }
 }

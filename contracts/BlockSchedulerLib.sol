@@ -14,6 +14,7 @@ library FutureBlockTransactionLib {
 
         uint8 gracePeriod;
 
+        uint targetBlock;
         uint callGas;
         uint callValue;
         bytes callData;
@@ -24,14 +25,14 @@ library FutureBlockTransactionLib {
     /*
      * Set default values.
      */
-    function initialize(FutureBlockTransaction memory self) {
+    function initialize(FutureBlockTransaction storage self) {
         self.donation = 12345;
         self.payment = 54321;
         self.gracePeriod = 255;
         self.targetBlock = block.number + 10;
+        self.toAddress = msg.sender;
         self.callGas = 100000;
         self.callData = "";
-        self.toAddress = msg.sender;
         self.requiredStackDepth = 0;
     }
 
@@ -59,12 +60,12 @@ library FutureBlockTransactionLib {
     function schedule(FutureBlockTransaction storage self,
                       address factoryAddress,
                       address trackerAddress) public returns (address) {
-        factory = RequestFactoryInterface(factoryAddress);
-        newRequestAddress = factory.createRequest.value(PaymentLib.computeEndowment(
+        var factory = RequestFactoryInterface(factoryAddress);
+        address newRequestAddress = factory.createRequest.value(PaymentLib.computeEndowment(
             self.payment,
             self.donation,
             self.callGas,
-            self.callValue,
+            self.callValue
         ))(
             [
                 msg.sender,           // meta.owner
@@ -83,7 +84,8 @@ library FutureBlockTransactionLib {
                 self.callGas,            // txnData.callGas
                 self.callValue,          // txnData.callValue
                 self.requiredStackDepth  // txnData.requiredStackDepth
-            ]
+            ],
+            self.callData
         );
 
         if (newRequestAddress == 0x0) {
@@ -91,8 +93,8 @@ library FutureBlockTransactionLib {
             return 0x0;
         }
 
-        tracker = RequestTrackerInterface(trackerAddress);
-        tracker.addRequest(newRequestAddress, targetBlock);
+        var tracker = RequestTrackerInterface(trackerAddress);
+        tracker.addRequest(newRequestAddress, self.targetBlock);
 
         return newRequestAddress;
     }

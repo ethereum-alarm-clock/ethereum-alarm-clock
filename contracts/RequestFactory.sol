@@ -45,7 +45,7 @@ contract RequestFactory is RequestFactoryInterface {
     function createRequest(address[3] addressArgs,
                            uint[11] uintArgs,
                            bytes callData) returns (address) {
-        var errors = RequestLib.validate(
+        var is_valid = RequestLib.validate(
             [
                 msg.sender,      // meta.createdBy
                 addressArgs[0],  // meta.owner
@@ -57,14 +57,14 @@ contract RequestFactory is RequestFactoryInterface {
             msg.value
         );
 
-        if (errors.any()) {
-            if (errors[0]) ValidationError(Errors.InsufficientEndowment);
-            if (errors[1]) ValidationError(Errors.ReservedWindowBiggerThanExecutionWindow);
-            if (errors[2]) ValidationError(Errors.InvalidTemporalUnit);
-            if (errors[3]) ValidationError(Errors.ExecutionWindowTooSoon);
-            if (errors[4]) ValidationError(Errors.InvalidRequiredStackDepth);
-            if (errors[5]) ValidationError(Errors.CallGasTooHigh);
-            if (errors[6]) ValidationError(Errors.EmptyToAddress);
+        if (!is_valid.all()) {
+            if (!is_valid[0]) ValidationError(Errors.InsufficientEndowment);
+            if (!is_valid[1]) ValidationError(Errors.ReservedWindowBiggerThanExecutionWindow);
+            if (!is_valid[2]) ValidationError(Errors.InvalidTemporalUnit);
+            if (!is_valid[3]) ValidationError(Errors.ExecutionWindowTooSoon);
+            if (!is_valid[4]) ValidationError(Errors.InvalidRequiredStackDepth);
+            if (!is_valid[5]) ValidationError(Errors.CallGasTooHigh);
+            if (!is_valid[6]) ValidationError(Errors.EmptyToAddress);
             return 0x0;
         }
 

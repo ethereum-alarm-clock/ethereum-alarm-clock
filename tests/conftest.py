@@ -58,6 +58,7 @@ def RequestData(chain,
                 request_factory,
                 get_txn_request,
                 denoms,
+                txn_recorder,
                 TransactionRequest):
     class _RequestData(object):
         def __init__(self,
@@ -81,7 +82,7 @@ def RequestData(chain,
                      paymentOwed=0,
                      # txnData
                      callData="",
-                     toAddress=NULL_ADDRESS,
+                     toAddress=txn_recorder.address,
                      callGas=1000000,
                      callValue=0,
                      requiredStackDepth=0,
@@ -265,16 +266,51 @@ def RequestData(chain,
 
 
 @pytest.fixture()
-def get_txn_request(chain, web3, request_factory, RequestFactory, TransactionRequest):
+def ValidationErrors():
+    return (
+        'InsufficientEndowment',
+        'ReservedWindowBiggerThanExecutionWindow',
+        'InvalidTemporalUnit',
+        'ExecutionWindowTooSoon',
+        'InvalidRequiredStackDepth',
+        'CallGasTooHigh',
+        'EmptyToAddress',
+    )
+
+
+@pytest.fixture()
+def get_txn_request(chain,
+                    web3,
+                    request_factory,
+                    RequestFactory,
+                    TransactionRequest,
+                    ValidationErrors,
+                    logs_to_event_data,
+                    TopicMap):
     def _get_txn_request(txn_hash):
         txn_receipt = chain.wait.for_receipt(txn_hash)
         request_created_filter = RequestFactory.pastEvents('RequestCreated', {
             'fromBlock': txn_receipt['blockNumber'],
             'toBlock': txn_receipt['blockNumber'],
-            'address': request_factory.address,
         })
         request_created_logs = request_created_filter.get()
-        assert len(request_created_logs) == 1
+        if len(request_created_logs) == 0:
+            error_filter = RequestFactory.pastEvents('ValidationError', {
+                'fromBlock': txn_receipt['blockNumber'],
+                'toBlock': txn_receipt['blockNumber'],
+            })
+            error_logs = error_filter.get()
+            if error_logs:
+                errors = [ValidationErrors[entry['args']['reason']] for entry in error_logs]
+                raise AssertionError("ValidationError: {0}".format(', '.join(errors)))
+            decoded_events = logs_to_event_data(txn_receipt['logs'])
+            if decoded_events:
+                raise AssertionError(
+                    "Something went wrong.  The following events were found in"
+                    "the logs for the given transaction hash:\n"
+                    "{0}".format('\n'.join(decoded_events))
+                )
+            raise AssertionError("Something went wrong.  No 'RequestCreated' log entries found")
 
         log_data = request_created_logs[0]
 
@@ -298,7 +334,7 @@ def AbortReasons():
 
 
 @pytest.fixture()
-def get_execute_data(chain, web3, RequestLib, AbortReasons):
+def get_execute_data(chain, web3, RequestLib, AbortReasons, logs_to_event_data):
     def _get_execute_data(execute_txn_hash):
         execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
         execute_filter = RequestLib.pastEvents('Executed', {
@@ -315,10 +351,49 @@ def get_execute_data(chain, web3, RequestLib, AbortReasons):
             if abort_logs:
                 errors = [AbortReasons[entry['args']['reason']] for entry in abort_logs]
                 raise AssertionError("Execution Failed: {0}".format(', '.join(errors)))
-        assert len(execute_logs) == 1
+            decoded_events = logs_to_event_data(execute_txn_receipt['logs'])
+            if decoded_events:
+                raise AssertionError(
+                    "Something went wrong.  The following events were found in"
+                    "the logs for the given transaction hash:\n"
+                    "{0}".format('\n'.join(decoded_events))
+                )
+            raise AssertionError("Something went wrong.  No 'Executed' log entries found")
         execute_data = execute_logs[0]
         return execute_data
     return _get_execute_data
+
+
+@pytest.fixture()
+def logs_to_event_data(TopicMap):
+    from web3.utils.events import (
+        get_event_data,
+    )
+
+    def _logs_to_event_data(log_entries):
+        return [
+            get_event_data(TopicMap[log_entry['topics'][0]], log_entry)
+            for log_entry in log_entries
+            if log_entry['topics'] and log_entry['topics'][0] in TopicMap
+        ]
+    return _logs_to_event_data
+
+
+@pytest.fixture()
+def TopicMap(project):
+    import itertools
+    from web3.utils.abi import (
+        filter_by_type,
+        event_abi_to_log_topic,
+    )
+    all_events_abi = filter_by_type('event', itertools.chain.from_iterable(
+        contract['abi'] for contract in project.compiled_contracts.values()
+    ))
+    topic_to_abi = {
+        event_abi_to_log_topic(abi): abi
+        for abi in all_events_abi
+    }
+    return topic_to_abi
 
 
 @pytest.fixture()
@@ -347,3 +422,14 @@ def ErrorGenerator(test_contract_factories):
 def error_generator(chain, ErrorGenerator):
     chain.contract_factories['ErrorGenerator'] = ErrorGenerator
     return chain.get_contract('ErrorGenerator')
+
+
+@pytest.fixture()
+def TransactionRecorder(test_contract_factories):
+    return test_contract_factories.TransactionRecorder
+
+
+@pytest.fixture()
+def txn_recorder(chain, TransactionRecorder):
+    chain.contract_factories['TransactionRecorder'] = TransactionRecorder
+    return chain.get_contract('TransactionRecorder')

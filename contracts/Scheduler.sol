@@ -1,7 +1,7 @@
 //pragma solidity 0.4.1;
 
 
-import {FutureBlockTransactionLib} from "contracts/FutureBlockTransactionLib.sol";
+import {FutureBlockTransactionLib} from "contracts/BlockSchedulerLib.sol";
 
 
 contract BaseScheduler {
@@ -21,11 +21,11 @@ contract BlockScheduler is BaseScheduler {
     /*
      * Local storage variable used to hold 
      */
-    FutureBlockTransactionLib.FutureBlockTransaction __futureBlockTransaction;
+    FutureBlockTransactionLib.FutureBlockTransaction futureBlockTransaction;
 
-    function scheduleTransaction() public returns (address) {
+    function scheduleAtBlock(uint targetBlock) public returns (address) {
+        futureBlockTransaction.initialize();
+        futureBlockTransaction.targetBlock = targetBlock;
+        return futureBlockTransaction.schedule(factoryAddress, trackerAddress);
     }
 }
-
-
-

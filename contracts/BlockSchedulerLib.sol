@@ -25,37 +25,19 @@ library FutureBlockTransactionLib {
     /*
      * Set default values.
      */
-    function initialize(FutureBlockTransaction storage self) {
+    function reset(FutureBlockTransaction storage self) {
         self.donation = 12345;
         self.payment = 54321;
         self.gracePeriod = 255;
         self.targetBlock = block.number + 10;
         self.toAddress = msg.sender;
-        self.callGas = 100000;
+        self.callGas = 90000;
         self.callData = "";
         self.requiredStackDepth = 0;
     }
 
     /*
-     * Schedule t
-     */
-    /*
-     *  The lowest level interface for creating a transaction request.
-     *
-     *  addressArgs[1] -  meta.owner
-     *  addressArgs[1] -  paymentData.donationBenefactor
-     *  addressArgs[2] -  txnData.toAddress
-     *  uintArgs[0]    -  paymentData.donation
-     *  uintArgs[1]    -  paymentData.payment
-     *  uintArgs[2]    -  schedule.claimWindowSize
-     *  uintArgs[3]    -  schedule.freezePeriod
-     *  uintArgs[4]    -  schedule.reservedWindowSize
-     *  uintArgs[5]    -  schedule.temporalUnit
-     *  uintArgs[6]    -  schedule.windowStart
-     *  uintArgs[7]    -  schedule.windowSize
-     *  uintArgs[8]    -  txnData.callGas
-     *  uintArgs[9]    -  txnData.callValue
-     *  uintArgs[10]   -  txnData.requiredStackDepth
+     *  The low level interface for creating a transaction request.
      */
     function schedule(FutureBlockTransaction storage self,
                       address factoryAddress,

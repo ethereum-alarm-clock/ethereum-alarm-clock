@@ -4,17 +4,10 @@ import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
 import {TransactionRequest} from "contracts/TransactionRequest.sol";
 import {RequestLib} from "contracts/RequestLib.sol";
 import {IterTools} from "contracts/IterTools.sol";
-import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 
 
 contract RequestFactory is RequestFactoryInterface {
     using IterTools for bool[7];
-
-    RequestTrackerInterface tracker;
-
-    function RequestFactory(address trackerAddress) {
-        tracker = RequestTrackerInterface(trackerAddress);
-    }
 
     /*
      *  ValidationError
@@ -34,8 +27,9 @@ contract RequestFactory is RequestFactoryInterface {
     /*
      *  The lowest level interface for creating a transaction request.
      *
-     *  addressArgs[0] -  paymentData.donationBenefactor
-     *  addressArgs[1] -  txnData.toAddress
+     *  addressArgs[1] -  meta.owner
+     *  addressArgs[1] -  paymentData.donationBenefactor
+     *  addressArgs[2] -  txnData.toAddress
      *  uintArgs[0]    -  paymentData.donation
      *  uintArgs[1]    -  paymentData.payment
      *  uintArgs[2]    -  schedule.claimWindowSize
@@ -71,6 +65,7 @@ contract RequestFactory is RequestFactoryInterface {
             if (errors[4]) ValidationError(Errors.InvalidRequiredStackDepth);
             if (errors[5]) ValidationError(Errors.CallGasTooHigh);
             if (errors[6]) ValidationError(Errors.EmptyToAddress);
+            return 0x0;
         }
 
         var request = (new TransactionRequest).value(msg.value)(
@@ -86,9 +81,6 @@ contract RequestFactory is RequestFactoryInterface {
 
         // Log the creation.
         RequestCreated(address(request));
-
-        // Register with tracker
-        tracker.addRequest(address(request), uintArgs[6]);
 
         return request;
     }

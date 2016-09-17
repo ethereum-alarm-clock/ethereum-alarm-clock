@@ -14,15 +14,11 @@ def request_tracker(unmigrated_chain, web3):
 
 
 @pytest.fixture()
-def request_factory(chain, web3, request_tracker):
-    import time
-    start_at = time.time()
-    print("Start:", start_at)
-    factory = chain.get_contract('RequestFactory', deploy_args=[request_tracker.address])
+def request_factory(chain, web3):
+    factory = chain.get_contract('RequestFactory')
 
     chain_code = web3.eth.getCode(factory.address)
     assert len(chain_code) > 10
-    print("End:", time.time(), "Elapsed:", time.time() - start_at)
 
     return factory
 

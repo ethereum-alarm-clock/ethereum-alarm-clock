@@ -1,8 +1,5 @@
 //pragma solidity 0.4.1;
 
-import {GasLib} from "contracts/GasLib.sol";
-
-
 
 library RequestMetaLib {
     struct RequestMeta {
@@ -20,11 +17,5 @@ library RequestMetaLib {
 
         // Was the return value from the call successful.
         bool wasSuccessful;
-    }
-
-    function reportExecution(RequestMeta storage self, uint gasReserve) returns (bool) {
-        return self.createdBy.call.
-                              gas(GasLib.getGas(gasReserve))
-                              (bytes4(sha3("receiveExecutionNotification()")));
     }
 }

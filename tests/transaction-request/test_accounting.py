@@ -4,8 +4,10 @@ def test_txn_request_payments(chain,
                               RequestData):
     txn_request = RequestData(donation=12345).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
+    assert request_data.paymentData.donation == 12345
 
     before_donation_balance = web3.eth.getBalance(request_data.paymentData.donationBenefactor)
+    before_payment_balance = web3.eth.getBalance(web3.eth.accounts[1])
 
     chain.wait.for_block(request_data.schedule.windowStart)
 
@@ -16,6 +18,7 @@ def test_txn_request_payments(chain,
     execute_data = get_execute_data(execute_txn_hash)
 
     after_donation_balance = web3.eth.getBalance(request_data.paymentData.donationBenefactor)
+    after_payment_balance = web3.eth.getBalance(web3.eth.accounts[1])
 
     donation = execute_data['args']['donation']
     assert donation == 12345
@@ -30,3 +33,6 @@ def test_txn_request_payments(chain,
     expected_payment = gas_cost + request_data.paymentData.payment
 
     assert payment >= expected_payment
+    assert payment - expected_payment < 120000 * gas_price
+
+    assert after_payment_balance - before_payment_balance == payment - gas_cost

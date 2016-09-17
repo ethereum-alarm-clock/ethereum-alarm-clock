@@ -326,18 +326,12 @@ library RequestLib {
                                                            .safeAdd(self.paymentData.paymentOwed);
         }
 
-        // Report execution back to the origin address.  This is located as far
-        // down in the function as possible as to minimize the amount of code
-        // that must be accounted for with the _GAS_TO_COMPLETE_EXECUTION
-        // value.
-        self.meta.reportExecution(_GAS_TO_COMPLETE_EXECUTION);
-
         // Record the amount of gas used by execution.
-        uint measuredGasConsumption = startGas.safeAdd(_EXTRA_GAS).flooredSub(msg.gas);
+        uint measuredGasConsumption = startGas.flooredSub(msg.gas).safeAdd(_EXTRA_GAS);
 
-        //
-        // NOTE: All code after this must be accounted for by EXTRA_GAS
-        //
+        // +--------------------------------------------------------------+
+        // | NOTE: All code after this must be accounted for by EXTRA_GAS |
+        // +--------------------------------------------------------------+
 
         // Add the gas reimbursment amount to the payment.
         self.paymentData.paymentOwed = measuredGasConsumption.safeMultiply(tx.gasprice)
@@ -349,8 +343,7 @@ library RequestLib {
                  self.paymentData.donationOwed,
                  measuredGasConsumption);
 
-        // Send the donation.  This will be a noop if there is no benefactor or
-        // if the donation amount is 0.
+        // Send the donation.
         self.paymentData.sendDonation();
 
         // Send the payment.

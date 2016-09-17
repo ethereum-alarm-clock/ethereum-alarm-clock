@@ -55,13 +55,6 @@ library PaymentLib {
     *  caller.
     */
     function getMultiplier(PaymentData storage self) returns (uint) {
-        //if (gas_price > base_gas_price) {
-        //    return 100 * base_gas_price / gas_price;
-        //}
-        //else {
-        //    return 200 - 100 * base_gas_price / (2 * base_gas_price - gas_price);
-        //}
-
         if (tx.gasprice > self.anchorGasPrice) {
             return self.anchorGasPrice.safeMultiply(100) / tx.gasprice;
         }
@@ -126,6 +119,21 @@ library PaymentLib {
         self.paymentOwed = paymentAmount.flooredSub(self.paymentBenefactor.safeSend(paymentAmount,
                                                                                     sendGas));
         return true;
+    }
+
+
+    /*
+     * Compute the required endowment value for the given TransactionRequest
+     * parameters.
+     */
+    function computeEndowment(uint payment,
+                              uint donation,
+                              uint callGas,
+                              uint callValue) returns (uint) {
+        return payment.safeAdd(donation)
+                      .safeMultiply(2)
+                      .safeAdd(callGas.safeMultiply(tx.gasprice))
+                      .safeAdd(callValue);
     }
 
     /*

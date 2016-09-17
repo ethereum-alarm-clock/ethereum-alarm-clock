@@ -4,9 +4,6 @@ def test_request_factory_creates_request_with_provided_properties(chain,
                                                                   request_factory,
                                                                   RequestData,
                                                                   get_txn_request):
-    import time
-    start_at = time.time()
-    print("In Test")
     window_start = web3.eth.blockNumber + 20
 
     expected_request_data = RequestData(
@@ -54,5 +51,3 @@ def test_request_factory_creates_request_with_provided_properties(chain,
     assert actual_request_data.txnData.callValue == 123456789
     assert actual_request_data.txnData.callGas == 1000000
     assert actual_request_data.txnData.requiredStackDepth == 0
-
-    print("End test:", time.time() - start_at)

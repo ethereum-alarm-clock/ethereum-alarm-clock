@@ -26,19 +26,6 @@ library RequestLib {
         RequestScheduleLib.ExecutionWindow schedule;
     }
 
-    enum Reason {
-        WasCancelled,
-        AlreadyCalled,
-        BeforeCallWindow,
-        AfterCallWindow,
-        ReservedForClaimer,
-        StackTooDeep,
-        InsufficientGas
-    }
-
-    event Aborted(Reason reason);
-    event Executed(uint payment, uint donation, uint measuredGasConsumption);
-
     /*
      *  Initialize a new Request.
      */
@@ -169,8 +156,8 @@ library RequestLib {
         self.claimData.claimDeposit = uintValues[0];
         self.paymentData.anchorGasPrice = uintValues[1];
         self.paymentData.donation = uintValues[2];
-        self.paymentData.payment = uintValues[3];
-        self.paymentData.donationOwed = uintValues[4];
+        self.paymentData.donationOwed = uintValues[3];
+        self.paymentData.payment = uintValues[4];
         self.paymentData.paymentOwed = uintValues[5];
         self.schedule.claimWindowSize = uintValues[6];
         self.schedule.freezePeriod = uintValues[7];
@@ -248,6 +235,19 @@ library RequestLib {
         return errors;
     }
 
+    enum Reason {
+        WasCancelled,
+        AlreadyCalled,
+        BeforeCallWindow,
+        AfterCallWindow,
+        ReservedForClaimer,
+        StackTooDeep,
+        InsufficientGas
+    }
+
+    event Aborted(Reason reason);
+    event Executed(uint payment, uint donation, uint measuredGasConsumption);
+
     function execute(Request storage self) returns (bool) {
         /*
          *  Send the requested transaction.
@@ -304,8 +304,7 @@ library RequestLib {
         // Send the transaction
         self.meta.wasSuccessful = self.txnData.sendTransaction();
 
-        // Report execution back to the origin address.
-        self.meta.reportExecution(_GAS_TO_COMPLETE_EXECUTION);
+        if (self.paymentData.getDonation() == 0) throw;
 
         // Compute the donation amount
         if (self.paymentData.hasBenefactor()) {
@@ -320,13 +319,21 @@ library RequestLib {
             // need to zero out the claim deposit since it is now accounted for
             // in the paymentOwed value.
             self.claimData.claimDeposit = 0;
-            self.paymentData.paymentOwed = self.paymentData.getPaymentWithModifier(self.claimData.paymentModifier).safeAdd(self.paymentData.paymentOwed);
+            self.paymentData.paymentOwed = self.paymentData.getPaymentWithModifier(self.claimData.paymentModifier)
+                                                           .safeAdd(self.paymentData.paymentOwed);
         } else {
-            self.paymentData.paymentOwed = self.paymentData.getPayment().safeAdd(self.paymentData.paymentOwed);
+            self.paymentData.paymentOwed = self.paymentData.getPayment()
+                                                           .safeAdd(self.paymentData.paymentOwed);
         }
 
+        // Report execution back to the origin address.  This is located as far
+        // down in the function as possible as to minimize the amount of code
+        // that must be accounted for with the _GAS_TO_COMPLETE_EXECUTION
+        // value.
+        self.meta.reportExecution(_GAS_TO_COMPLETE_EXECUTION);
+
         // Record the amount of gas used by execution.
-        uint measuredGasConsumption = startGas.flooredSub(msg.gas).safeAdd(EXTRA_GAS());
+        uint measuredGasConsumption = startGas.safeAdd(_EXTRA_GAS).flooredSub(msg.gas);
 
         //
         // NOTE: All code after this must be accounted for by EXTRA_GAS
@@ -347,7 +354,7 @@ library RequestLib {
         self.paymentData.sendDonation();
 
         // Send the payment.
-        self.paymentData.sendDonation();
+        self.paymentData.sendPayment();
 
         // Send all extra ether back to the owner.
         sendOwnerEther(self);
@@ -357,12 +364,11 @@ library RequestLib {
 
     function requiredExecutionGas(Request storage self) returns (uint) {
         return self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
-                                   .safeAdd(_GAS_TO_COMPLETE_EXECUTION)
-                                   .safeAdd(SafeSendLib.DEFAULT_SEND_GAS().safeMultiply(3));
+                                   .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
     }
 
     // TODO: compute this
-    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 200000;
+    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 0;
 
     /*
      * The amount of gas needed to do all of the pre execution checks.
@@ -372,7 +378,7 @@ library RequestLib {
     }
 
     // TODO: compute this
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 200000;
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 190000;
 
     /*
      * The amount of gas needed to complete the execute method after
@@ -383,7 +389,7 @@ library RequestLib {
     }
 
     // TODO: compute this
-    uint constant _EXTRA_GAS = 0;
+    uint constant _EXTRA_GAS = 185000;
 
     /*
      *  The amount of gas used by the portion of the `execute` function

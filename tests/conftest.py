@@ -1,70 +1,20 @@
-import pytest
 import os
-import json
 
-from web3.utils.string import (
-    force_obj_to_text,
-    force_obj_to_bytes,
-)
+import pytest
 
 
 NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 
-@pytest.fixture(scope="session")
-def saved_state(project):
-    filename = 'tmp/saved-state-{hash}.json'.format(hash=project.get_source_file_hash())
-    if os.path.exists(filename):
-        print("Loading state from:", filename)
-        with open(filename) as f:
-            state = {key: force_obj_to_bytes(value) for key, value in json.load(f).items()}
-            state['loaded_from'] = filename
-            return state
-    else:
-        return {
-            'saved_blocks': [],
-            'registrar_address': None,
-        }
-
-
 @pytest.fixture()
-def load_chain_state(saved_state, chain):
-    import rlp
-    from ethereum.blocks import Block
-    from testrpc import testrpc
-
-    saved_blocks = saved_state['saved_blocks']
-
-    if saved_blocks:
-        evm = testrpc.tester_client.evm
-        evm.blocks = []
-
-        for block_idx, block_data in enumerate(saved_blocks[:-1]):
-            print("Loading: ", block_idx, "/", len(saved_blocks))
-            block = rlp.decode(block_data, Block, env=evm.env)
-            evm.blocks.append(block)
-            evm.db.put(block.hash, block_data)
-
-        evm.revert(saved_blocks[-2])
-        print("Done loading")
-        evm.mine()
-        print("Done mining")
-
-    registrar_address = saved_state['registrar_address']
-
-    if registrar_address:
-        chain.registrar = chain.RegistrarFactory(address=registrar_address)
-
-
-@pytest.fixture()
-def request_tracker(unmigrated_chain, web3, load_chain_state):
+def request_tracker(unmigrated_chain, web3):
     chain = unmigrated_chain
     tracker = chain.get_contract('RequestTracker')
     return tracker
 
 
 @pytest.fixture()
-def request_factory(chain, web3, request_tracker, load_chain_state):
+def request_factory(chain, web3, request_tracker):
     import time
     start_at = time.time()
     print("Start:", start_at)
@@ -78,12 +28,12 @@ def request_factory(chain, web3, request_tracker, load_chain_state):
 
 
 @pytest.fixture()
-def RequestLib(chain, load_chain_state):
+def RequestLib(chain):
     return type(chain.get_contract('RequestLib'))
 
 
 @pytest.fixture()
-def TransactionRequest(chain, load_chain_state):
+def TransactionRequest(chain):
     # force lazy deployment of the dependencies for the TransactionRequest
     # contract.
     chain.get_contract('RequestLib')
@@ -92,40 +42,8 @@ def TransactionRequest(chain, load_chain_state):
 
 
 @pytest.fixture()
-def RequestFactory(chain, request_factory, load_chain_state):
+def RequestFactory(chain, request_factory):
     return type(request_factory)
-
-
-@pytest.fixture()
-def save_chain_snapshot(project,
-                        chain,
-                        saved_state,
-                        RequestFactory,
-                        TransactionRequest,
-                        RequestLib,
-                        request_factory,
-                        request_tracker):
-    import rlp
-    from testrpc import testrpc
-
-    saved_blocks = saved_state['saved_blocks']
-
-    if not saved_blocks:
-        evm = testrpc.tester_client.evm
-        evm.mine()
-        saved_state['saved_blocks'] = [rlp.encode(block) for block in evm.blocks[:-1]]
-
-    registrar_address = saved_state['registrar_address']
-
-    if not registrar_address:
-        saved_state['registrar_address'] = chain.registrar.address
-
-    filename = 'tmp/saved-state-{hash}.json'.format(hash=project.get_source_file_hash())
-
-    if saved_state.get('loaded_from') != filename:
-        print("Saving state to:", filename)
-        with open(filename, 'w') as f:
-            return json.dump(force_obj_to_text(saved_state), f)
 
 
 @pytest.fixture()
@@ -144,8 +62,7 @@ def RequestData(chain,
                 request_factory,
                 get_txn_request,
                 denoms,
-                TransactionRequest,
-                save_chain_snapshot):
+                TransactionRequest):
     class _RequestData(object):
         def __init__(self,
                      # claim
@@ -333,8 +250,8 @@ def RequestData(chain,
                 'claimDeposit': uint_args[0],
                 'anchorGasPrice': uint_args[1],
                 'donation': uint_args[2],
-                'payment': uint_args[3],
-                'donationOwed': uint_args[4],
+                'donationOwed': uint_args[3],
+                'payment': uint_args[4],
                 'paymentOwed': uint_args[5],
                 'claimWindowSize': uint_args[6],
                 'freezePeriod': uint_args[7],
@@ -372,17 +289,65 @@ def get_txn_request(chain, web3, request_factory, RequestFactory, TransactionReq
 
 
 @pytest.fixture()
-def get_execute_data(chain, web3, RequestLib):
+def AbortReasons():
+    return (
+        'WasCancelled',
+        'AlreadyCalled',
+        'BeforeCallWindow',
+        'AfterCallWindow',
+        'ReservedForClaimer',
+        'StackTooDeep',
+        'InsufficientGas',
+    )
+
+
+@pytest.fixture()
+def get_execute_data(chain, web3, RequestLib, AbortReasons):
     def _get_execute_data(execute_txn_hash):
-        execute_txn = web3.eth.getTransaction(execute_txn_hash)
         execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
         execute_filter = RequestLib.pastEvents('Executed', {
             'fromBlock': execute_txn_receipt['blockNumber'],
             'toBlock': execute_txn_receipt['blockNumber'],
-            'address': execute_txn['to'],
         })
         execute_logs = execute_filter.get()
+        if len(execute_logs) == 0:
+            abort_filter = RequestLib.pastEvents('Aborted', {
+                'fromBlock': execute_txn_receipt['blockNumber'],
+                'toBlock': execute_txn_receipt['blockNumber'],
+            })
+            abort_logs = abort_filter.get()
+            if abort_logs:
+                errors = [AbortReasons[entry['args']['reason']] for entry in abort_logs]
+                raise AssertionError("Execution Failed: {0}".format(', '.join(errors)))
         assert len(execute_logs) == 1
         execute_data = execute_logs[0]
         return execute_data
     return _get_execute_data
+
+
+@pytest.fixture()
+def test_contract_factories(web3):
+    from solc import compile_files
+    from populus.utils.filesystem import recursive_find_files
+    from populus.utils.contracts import (
+        package_contracts,
+        construct_contract_factories,
+    )
+
+    base_tests_dir = os.path.dirname(__file__)
+
+    solidity_source_files = recursive_find_files(base_tests_dir, '*.sol')
+    compiled_contracts = compile_files(solidity_source_files)
+    test_contract_factories = construct_contract_factories(web3, compiled_contracts)
+    return package_contracts(test_contract_factories)
+
+
+@pytest.fixture()
+def ErrorGenerator(test_contract_factories):
+    return test_contract_factories.ErrorGenerator
+
+
+@pytest.fixture()
+def error_generator(chain, ErrorGenerator):
+    chain.contract_factories['ErrorGenerator'] = ErrorGenerator
+    return chain.get_contract('ErrorGenerator')

@@ -52,6 +52,17 @@ library MathLib {
     }
 
     /*
+     * Return the larger of a or b.  Returns a if a == b.
+     */
+    function min(uint a, uint b) returns (uint) {
+        if (a <= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+
+    /*
      * Returns a represented as a signed integer in a manner that throw an
      * exception if casting to signed integer would result in a negative
      * number.

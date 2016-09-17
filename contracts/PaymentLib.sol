@@ -55,14 +55,20 @@ library PaymentLib {
     *  caller.
     */
     function getMultiplier(PaymentData storage self) returns (uint) {
+        //if (gas_price > base_gas_price) {
+        //    return 100 * base_gas_price / gas_price;
+        //}
+        //else {
+        //    return 200 - 100 * base_gas_price / (2 * base_gas_price - gas_price);
+        //}
+
         if (tx.gasprice > self.anchorGasPrice) {
             return self.anchorGasPrice.safeMultiply(100) / tx.gasprice;
         }
         else {
-            return 200 - (
-                self.anchorGasPrice.safeMultiply(100) /
+            return 200 - (self.anchorGasPrice.safeMultiply(100) /
                 self.anchorGasPrice.safeMultiply(2).flooredSub(tx.gasprice)
-            ).max(200);
+            ).min(200);
         }
     }
 
@@ -70,14 +76,15 @@ library PaymentLib {
      *  Computes the amount to send to the donationBenefactor
      */
     function getDonation(PaymentData storage self) returns (uint) {
-        return self.donation * getMultiplier(self) / 100;
+        if (getMultiplier(self) == 0) throw;
+        return self.donation.safeMultiply(getMultiplier(self)) / 100;
     }
 
     /*
      *  Computes the amount to send to the address that fulfilled the request
      */
     function getPayment(PaymentData storage self) returns (uint) {
-        return self.payment * getMultiplier(self) / 100;
+        return self.payment.safeMultiply(getMultiplier(self)) / 100;
     }
 
     /*

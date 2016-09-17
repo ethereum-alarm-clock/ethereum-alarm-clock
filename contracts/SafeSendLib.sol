@@ -4,7 +4,7 @@
 library SafeSendLib {
     event SendFailed(address to, uint value);
 
-    uint constant _DEFAULT_SEND_GAS = 90000;
+    uint constant _DEFAULT_SEND_GAS = 30000;
 
     function DEFAULT_SEND_GAS() returns (uint) {
         return _DEFAULT_SEND_GAS;

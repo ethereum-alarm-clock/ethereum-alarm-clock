@@ -14,6 +14,12 @@ library RequestMetaLib {
 
         // Was the request cancelled.
         bool isCancelled;
+        
+        // Was the request called.
+        bool wasCalled;
+
+        // Was the return value from the call successful.
+        bool wasSuccessful;
     }
 
     function reportExecution(RequestMeta storage self, uint gasReserve) returns (bool) {

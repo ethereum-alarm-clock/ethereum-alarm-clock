@@ -4,7 +4,7 @@
 contract RequestFactoryInterface {
     event RequestCreated(address request);
 
-    function createRequest(address[2] addressArgs,
+    function createRequest(address[3] addressArgs,
                            uint[11] uintArgs,
                            bytes callData) returns (address);
     function receiveExecutionNotification() returns (bool);

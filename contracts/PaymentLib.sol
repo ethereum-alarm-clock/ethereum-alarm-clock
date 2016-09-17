@@ -1,7 +1,13 @@
 //pragma solidity 0.4.1;
 
+import {SafeSendLib} from "contracts/SafeSendLib.sol";
+import {MathLib} from "contracts/MathLib.sol";
+
 
 library PaymentLib {
+    using SafeSendLib for address;
+    using MathLib for uint;
+
     struct PaymentData {
         // The gas price that was used during creation of this request.
         uint anchorGasPrice;
@@ -10,11 +16,20 @@ library PaymentLib {
         // this request.
         uint payment;
 
+        // The address that the payment should be sent to.
+        address paymentBenefactor;
+
+        // The amount that is owed to the payment benefactor.
+        uint paymentOwed;
+
         // The amount in wei that will be payed to the donationBenefactor address.
         uint donation;
 
-        // The address that the donation amount will be paid to.
+        // The address that the donation should be sent to.
         address donationBenefactor;
+
+        // The amount that is owed to the donation benefactor.
+        uint donationOwed;
     }
 
     /*
@@ -41,10 +56,13 @@ library PaymentLib {
     */
     function getMultiplier(PaymentData storage self) returns (uint) {
         if (tx.gasprice > self.anchorGasPrice) {
-            return 100 * self.anchorGasPrice / tx.gasprice;
+            return self.anchorGasPrice.safeMultiply(100) / tx.gasprice;
         }
         else {
-            return 200 - 100 * self.anchorGasPrice / (2 * self.anchorGasPrice - tx.gasprice);
+            return 200 - (
+                self.anchorGasPrice.safeMultiply(100) /
+                self.anchorGasPrice.safeMultiply(2).flooredSub(tx.gasprice)
+            ).max(200);
         }
     }
 
@@ -67,46 +85,40 @@ library PaymentLib {
      *  with an additional modifier.  This is used when the call was claimed.
      */
     function getPaymentWithModifier(PaymentData storage self,
-                                    uint8 paymentModifier)returns (uint) {
-        return getPayment(self) * 100 / paymentModifier;
-    }
-
-    event SendFailed(address to, uint value);
-
-    uint constant _DEFAULT_SEND_GAS = 90000;
-
-    function DEFAULT_SEND_GAS() returns (uint) {
-        return _DEFAULT_SEND_GAS;
+                                    uint8 paymentModifier) returns (uint) {
+        return getPayment(self).safeMultiply(100) / paymentModifier;
     }
 
     /*
-     * Send ether to an address.
-     * On failure log the `SendFailed` event.
-     * Returns the amount of wei that was sent (which will be 0 on failure).
+     * Send the donationOwed amount to the donationBenefactor
      */
-    function safeSend(address to, uint value) internal returns (uint) {
-        return safeSend(to, value, _DEFAULT_SEND_GAS);
+    function sendDonation(PaymentData storage self) returns (bool) {
+        return sendDonation(self, SafeSendLib.DEFAULT_SEND_GAS());
+    }
+
+    function sendDonation(PaymentData storage self, uint sendGas) returns (bool) {
+        uint donationAmount = self.donationOwed;
+        // re-entrance protection.
+        self.donationOwed = 0;
+        self.donationOwed = donationAmount.flooredSub(self.donationBenefactor.safeSend(donationAmount,
+                                                                                       sendGas));
+        return true;
     }
 
     /*
-     * Same as `safeSend` but allows specifying the gas to be included with the
-     * send.
+     * Send the paymentOwed amount to the paymentBenefactor
      */
-    function safeSend(address to, uint value, uint sendGas) internal returns (uint) {
-        if (value > this.balance) {
-            value = this.balance;
-        }
+    function sendPayment(PaymentData storage self) returns (bool) {
+        return sendPayment(self, SafeSendLib.DEFAULT_SEND_GAS());
+    }
 
-        if (value == 0) {
-            return 0;
-        }
-
-        if (!to.call.value(value).gas(sendGas)()) {
-            SendFailed(to, value);
-            return 0;
-        }
-
-        return value;
+    function sendPayment(PaymentData storage self, uint sendGas) returns (bool) {
+        uint paymentAmount = self.paymentOwed;
+        // re-entrance protection.
+        self.paymentOwed = 0;
+        self.paymentOwed = paymentAmount.flooredSub(self.paymentBenefactor.safeSend(paymentAmount,
+                                                                                    sendGas));
+        return true;
     }
 
     /*
@@ -121,6 +133,9 @@ library PaymentLib {
                                uint donation,
                                uint callGas,
                                uint callValue) returns (bool) {
-        return endowment >= 2 * (payment + donation) + callGas * tx.gasprice + callValue;
+        return endowment >= payment.safeAdd(donation)
+                                   .safeMultiply(2)
+                                   .safeAdd(callGas.safeMultiply(tx.gasprice))
+                                   .safeAdd(callValue);
     }
 }

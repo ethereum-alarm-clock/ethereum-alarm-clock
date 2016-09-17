@@ -68,58 +68,6 @@ contract TransactionRequest is Digger {
             throw;
         }
     }
-    //function requestData() constant returns (address[6],
-    //                                         bool[3],
-    //                                         uint[15],
-    //                                         uint8[1]) {
-    //    // Address values
-    //    address[6] memory addressValues = [
-    //        txnRequest.claimData.claimedBy,
-    //        txnRequest.meta.createdBy,
-    //        txnRequest.meta.owner,
-    //        txnRequest.paymentData.donationBenefactor,
-    //        txnRequest.paymentData.paymentBenefactor,
-    //        txnRequest.txnData.toAddress
-    //    ];
-
-    //    // Boolean values
-    //    bool[3] memory boolValues = [
-    //        txnRequest.meta.isCancelled,
-    //        txnRequest.meta.wasCalled,
-    //        txnRequest.meta.wasSuccessful
-    //    ];
-
-    //    // UInt256 values
-    //    uint[15] memory uintValues = [
-    //        txnRequest.claimData.claimDeposit,
-    //        txnRequest.paymentData.anchorGasPrice,
-    //        txnRequest.paymentData.donation,
-    //        txnRequest.paymentData.donationOwed,
-    //        txnRequest.paymentData.payment,
-    //        txnRequest.paymentData.paymentOwed,
-    //        txnRequest.schedule.claimWindowSize,
-    //        txnRequest.schedule.freezePeriod,
-    //        txnRequest.schedule.reservedWindowSize,
-    //        uint(txnRequest.schedule.temporalUnit),
-    //        txnRequest.schedule.windowStart,
-    //        txnRequest.schedule.windowSize,
-    //        txnRequest.txnData.callGas,
-    //        txnRequest.txnData.callValue,
-    //        txnRequest.txnData.requiredStackDepth
-    //    ];
-
-    //    // Uint8 values
-    //    uint8[1] memory uint8Values = [
-    //        txnRequest.claimData.paymentModifier
-    //    ];
-
-    //    return (
-    //        addressValues,
-    //        boolValues,
-    //        uintValues,
-    //        uint8Values
-    //    );
-    //}
 
     function callData() constant returns (bytes) {
         return txnRequest.txnData.callData;

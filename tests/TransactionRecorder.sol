@@ -1,4 +1,9 @@
-contract TransactionRecorder {
+import {Proxy} from "tests/Proxy.sol";
+
+
+contract TransactionRecorder is Proxy {
+    bool public wasCalled;
+
     uint public lastCallValue;
     address public lastCaller;
     bytes public lastCallData;
@@ -9,5 +14,14 @@ contract TransactionRecorder {
         lastCallData = msg.data;
         lastCaller = msg.sender;
         lastCallValue = msg.value;
+        wasCalled = true;
+    }
+
+    function __reset__() public {
+        lastCallGas = 0;
+        lastCallData = '';
+        lastCaller = 0x0;
+        lastCallValue = 0;
+        wasCalled = false;
     }
 }

@@ -24,8 +24,13 @@ def request_factory(chain, web3):
 
 
 @pytest.fixture()
-def RequestLib(chain):
-    return type(chain.get_contract('RequestLib'))
+def request_lib(chain):
+    return chain.get_contract('RequestLib')
+
+
+@pytest.fixture()
+def RequestLib(request_lib):
+    return type(request_lib)
 
 
 @pytest.fixture()
@@ -61,6 +66,8 @@ def RequestData(chain,
                 txn_recorder,
                 TransactionRequest):
     class _RequestData(object):
+        _contract = None
+
         def __init__(self,
                      # claim
                      claimedBy=NULL_ADDRESS,
@@ -223,13 +230,20 @@ def RequestData(chain,
             txn_request_address = chain.wait.for_contract_address(deploy_txn_hash)
             return TransactionRequest(address=txn_request_address)
 
+        def refresh(self):
+            if not self._contract:
+                raise ValueError("No contract set")
+            self.__dict__.update(self.from_contract(self._contract).__dict__)
+
         @classmethod
         def from_contract(cls, txn_request):
             address_args, bool_args, uint_args, uint8_args = txn_request.call().requestData()
             call_data = txn_request.call().callData()
-            return cls.from_deserialize(
+            instance = cls.from_deserialize(
                 address_args, bool_args, uint_args, uint8_args, call_data,
             )
+            instance._contract = txn_request
+            return instance
 
         @classmethod
         def from_deserialize(cls, address_args, bool_args, uint_args, uint8_args, call_data):
@@ -320,8 +334,8 @@ def get_txn_request(chain,
     return _get_txn_request
 
 
-@pytest.fixture()
-def AbortReasons():
+@pytest.fixture
+def ABORT_REASONS_ENUM_KEYS():
     return (
         'WasCancelled',
         'AlreadyCalled',
@@ -334,7 +348,36 @@ def AbortReasons():
 
 
 @pytest.fixture()
-def get_execute_data(chain, web3, RequestLib, AbortReasons, logs_to_event_data):
+def AbortReasons(ABORT_REASONS_ENUM_KEYS):
+    return type('AbortReasons', (object,), {
+        name: idx for idx, name in enumerate(ABORT_REASONS_ENUM_KEYS)
+    })
+
+
+@pytest.fixture()
+def get_abort_data(chain, web3, RequestLib, logs_to_event_data):
+    def _get_abort_data(execute_txn_hash):
+        execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
+        abort_filter = RequestLib.pastEvents('Aborted', {
+            'fromBlock': execute_txn_receipt['blockNumber'],
+            'toBlock': execute_txn_receipt['blockNumber'],
+        })
+        abort_logs = abort_filter.get()
+        if len(abort_logs) == 0:
+            decoded_events = logs_to_event_data(execute_txn_receipt['logs'])
+            if decoded_events:
+                raise AssertionError(
+                    "Something went wrong.  The following events were found in"
+                    "the logs for the given transaction hash:\n"
+                    "{0}".format('\n'.join(decoded_events))
+                )
+            raise AssertionError("Something went wrong.  No 'Aborted' log entries found")
+        return abort_logs
+    return _get_abort_data
+
+
+@pytest.fixture()
+def get_execute_data(chain, web3, RequestLib, ABORT_REASONS_ENUM_KEYS, get_abort_data):
     def _get_execute_data(execute_txn_hash):
         execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
         execute_filter = RequestLib.pastEvents('Executed', {
@@ -343,22 +386,9 @@ def get_execute_data(chain, web3, RequestLib, AbortReasons, logs_to_event_data):
         })
         execute_logs = execute_filter.get()
         if len(execute_logs) == 0:
-            abort_filter = RequestLib.pastEvents('Aborted', {
-                'fromBlock': execute_txn_receipt['blockNumber'],
-                'toBlock': execute_txn_receipt['blockNumber'],
-            })
-            abort_logs = abort_filter.get()
-            if abort_logs:
-                errors = [AbortReasons[entry['args']['reason']] for entry in abort_logs]
-                raise AssertionError("Execution Failed: {0}".format(', '.join(errors)))
-            decoded_events = logs_to_event_data(execute_txn_receipt['logs'])
-            if decoded_events:
-                raise AssertionError(
-                    "Something went wrong.  The following events were found in"
-                    "the logs for the given transaction hash:\n"
-                    "{0}".format('\n'.join(decoded_events))
-                )
-            raise AssertionError("Something went wrong.  No 'Executed' log entries found")
+            abort_logs = get_abort_data(execute_txn_hash)
+            errors = [ABORT_REASONS_ENUM_KEYS[entry['args']['reason']] for entry in abort_logs]
+            raise AssertionError("Execution Failed: {0}".format(', '.join(errors)))
         execute_data = execute_logs[0]
         return execute_data
     return _get_execute_data
@@ -479,3 +509,14 @@ def TransactionRecorder(test_contract_factories):
 def txn_recorder(chain, TransactionRecorder):
     chain.contract_factories['TransactionRecorder'] = TransactionRecorder
     return chain.get_contract('TransactionRecorder')
+
+
+@pytest.fixture()
+def Proxy(test_contract_factories):
+    return test_contract_factories.Proxy
+
+
+@pytest.fixture()
+def proxy(chain, Proxy):
+    chain.contract_factories['Proxy'] = Proxy
+    return chain.get_contract('Proxy')

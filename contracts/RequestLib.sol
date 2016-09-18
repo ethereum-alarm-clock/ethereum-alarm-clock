@@ -44,10 +44,12 @@ library RequestLib {
         InsufficientGas
     }
 
-    // TODO: maybe cancel reward.
     event Cancelled(uint rewardPayment, uint measuredGasConsumption);
     event Claimed();
-    event Aborted(AbortReason reason);
+    // TODO: Figure out how log topics are constructed for events that use
+    // Enums as args.
+    //event Aborted(AbortReason reason);
+    event Aborted(uint8 reason);
     event Executed(uint payment, uint donation, uint measuredGasConsumption);
 
     /*
@@ -257,7 +259,11 @@ library RequestLib {
 
     function execute(Request storage self) returns (bool) {
         /*
-         *  Send the requested transaction.
+         *  Execute the TransactionRequest
+         *
+         *  +---------------------+
+         *  | Phase 1: Accounting |
+         *  +---------------------+
          *
          *  Must pass all of the following checks:
          *
@@ -276,40 +282,74 @@ library RequestLib {
          *  6. if (msg.sender != tx.origin):
          *         - Verify stack can be increased by requiredStackDepth
          *  7. msg.gas >= callGas
+         *
+         *  +--------------------+
+         *  | Phase 2: Execution |
+         *  +--------------------+
+         *
+         *  1. Mark as called (must be before actual execution to prevent
+         *     re-entrance.
+         *  2. Send Transaction and record success or failure.
+         *
+         *  +---------------------+
+         *  | Phase 3: Accounting |
+         *  +---------------------+
+         *
+         *  1. Calculate and send donation amount.
+         *  2. Calculate and send payment amount.
+         *  3. Send remaining ether back to owner.
+         *
          */
         var startGas = msg.gas;
 
+        // +----------------------+
+        // | Begin: Authorization |
+        // +----------------------+
+
         if (msg.gas < requiredExecutionGas(self)) {
-            Aborted(AbortReason.InsufficientGas);
+            Aborted(uint8(AbortReason.InsufficientGas));
             return false;
         } else if (self.meta.wasCalled) {
-            Aborted(AbortReason.AlreadyCalled);
+            Aborted(uint8(AbortReason.AlreadyCalled));
             return false;
         } else if (self.meta.isCancelled) {
-            Aborted(AbortReason.WasCancelled);
+            Aborted(uint8(AbortReason.WasCancelled));
             return false;
         } else if (self.schedule.isBeforeWindow()) {
-            Aborted(AbortReason.BeforeCallWindow);
+            Aborted(uint8(AbortReason.BeforeCallWindow));
             return false;
         } else if (self.schedule.isAfterWindow()) {
-            Aborted(AbortReason.AfterCallWindow);
+            Aborted(uint8(AbortReason.AfterCallWindow));
             return false;
         } else if (self.claimData.isClaimed() &&
                    msg.sender != self.claimData.claimedBy &&
                    self.schedule.inReservedWindow()) {
-            Aborted(AbortReason.ReservedForClaimer);
+            Aborted(uint8(AbortReason.ReservedForClaimer));
             return false;
         } else if (msg.sender != tx.origin && !self.txnData.stackCanBeExtended()) {
-            Aborted(AbortReason.StackTooDeep);
+            Aborted(uint8(AbortReason.StackTooDeep));
             return false;
         }
 
-        // Ensure the request is marked as having been called before sending
-        // the transaction to prevent re-entrance.
+        // +--------------------+
+        // | End: Authorization |
+        // +--------------------+
+        // +------------------+
+        // | Begin: Execution |
+        // +------------------+
+
+        // Mark as being called before sending transaction to prevent re-entrance
         self.meta.wasCalled = true;
 
         // Send the transaction
         self.meta.wasSuccessful = self.txnData.sendTransaction();
+
+        // +----------------+
+        // | End: Execution |
+        // +----------------+
+        // +-------------------+
+        // | Begin: Accounting |
+        // +-------------------+
 
         // Compute the donation amount
         if (self.paymentData.hasBenefactor()) {
@@ -356,6 +396,10 @@ library RequestLib {
 
         // Send all extra ether back to the owner.
         sendOwnerEther(self);
+
+        // +-----------------+
+        // | End: Accounting |
+        // +-----------------+
 
         return true;
     }

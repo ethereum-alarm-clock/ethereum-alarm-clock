@@ -1,4 +1,7 @@
-contract ErrorGenerator {
+import {Proxy} from "tests/Proxy.sol";
+
+
+contract ErrorGenerator is Proxy {
     function doThrow() {
         doThrow(true);
     }
@@ -11,9 +14,5 @@ contract ErrorGenerator {
 
     function() {
         throw;
-    }
-
-    function __proxy(address to, bytes callData) returns (bool) {
-        return to.call(callData);
     }
 }

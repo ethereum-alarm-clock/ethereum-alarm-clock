@@ -10,34 +10,71 @@ def scheduler(chain, request_tracker, request_factory):
     return block_scheduler
 
 
-def test_scheduling_with_no_args(chain, web3, denoms, scheduler, RequestData, get_txn_request):
-    schedule_txn_hash = scheduler.transact({
-        'value': 10 * denoms.ether,
-    }).scheduleTransaction()
-    schedule_txn_receipt = web3.eth.getTransactionReceipt(schedule_txn_hash)
-
-    txn_request = get_txn_request(schedule_txn_hash)
-    request_data = RequestData.from_contract(txn_request)
-
-    assert request_data.txnData.toAddress == web3.eth.coinbase
-    assert request_data.schedule.windowStart == schedule_txn_receipt['blockNumber'] + 10
-
-
-def test_scheduling_with_specified_block(chain,
-                                         web3,
-                                         denoms,
-                                         scheduler,
-                                         RequestData,
-                                         get_txn_request):
-    target_block = web3.eth.blockNumber + 100
+def test_scheduling_with_full_args(chain,
+                                   web3,
+                                   denoms,
+                                   txn_recorder,
+                                   scheduler,
+                                   RequestData,
+                                   get_txn_request):
+    window_start = web3.eth.blockNumber + 20
     schedule_txn_hash = scheduler.transact({
         'value': 10 * denoms.ether,
     }).scheduleTransaction(
-        targetBlock=target_block,
+        txn_recorder.address,
+        'this-is-the-call-data',
+        255,  # windowSize
+        [
+            1212121,  # callGas
+            123454321,  # callValue
+            98765,  # donation
+            80008,  # payment
+            123,  # requiredStackDepth
+            window_start,  # windowStart
+        ],
     )
+    web3.eth.getTransactionReceipt(schedule_txn_hash)
 
     txn_request = get_txn_request(schedule_txn_hash)
     request_data = RequestData.from_contract(txn_request)
 
-    assert request_data.txnData.toAddress == web3.eth.coinbase
-    assert request_data.schedule.windowStart == target_block
+    assert request_data.txnData.toAddress == txn_recorder.address
+    assert request_data.txnData.callData == 'this-is-the-call-data'
+    assert request_data.schedule.windowSize == 255
+    assert request_data.txnData.callGas == 1212121
+    assert request_data.paymentData.donation == 98765
+    assert request_data.paymentData.payment == 80008
+    assert request_data.txnData.requiredStackDepth == 123
+    assert request_data.schedule.windowStart == window_start
+
+
+def test_scheduling_with_simplified_args(chain,
+                                         web3,
+                                         denoms,
+                                         txn_recorder,
+                                         scheduler,
+                                         RequestData,
+                                         get_txn_request):
+    window_start = web3.eth.blockNumber + 20
+    schedule_txn_hash = scheduler.transact({
+        'value': 10 * denoms.ether,
+    }).scheduleTransaction(
+        txn_recorder.address,
+        'this-is-the-call-data',
+        255,  # windowSize
+        [
+            1212121,  # callGas
+            123454321,  # callValue
+            window_start,  # windowStart
+        ],
+    )
+    web3.eth.getTransactionReceipt(schedule_txn_hash)
+
+    txn_request = get_txn_request(schedule_txn_hash)
+    request_data = RequestData.from_contract(txn_request)
+
+    assert request_data.txnData.toAddress == txn_recorder.address
+    assert request_data.txnData.callData == 'this-is-the-call-data'
+    assert request_data.schedule.windowSize == 255
+    assert request_data.txnData.callGas == 1212121
+    assert request_data.schedule.windowStart == window_start

@@ -12,9 +12,9 @@ library FutureBlockTransactionLib {
         uint donation;
         uint payment;
 
-        uint8 gracePeriod;
+        uint8 windowSize;
 
-        uint targetBlock;
+        uint windowStart;
         uint callGas;
         uint callValue;
         bytes callData;
@@ -28,8 +28,8 @@ library FutureBlockTransactionLib {
     function reset(FutureBlockTransaction storage self) {
         self.donation = 12345;
         self.payment = 54321;
-        self.gracePeriod = 255;
-        self.targetBlock = block.number + 10;
+        self.windowSize = 255;
+        self.windowStart = block.number + 10;
         self.toAddress = msg.sender;
         self.callGas = 90000;
         self.callData = "";
@@ -61,7 +61,7 @@ library FutureBlockTransactionLib {
                 10,                      // scheduler.freezePeriod
                 16,                      // scheduler.reservedWindowSize
                 1,                       // scheduler.temporalUnit (block)
-                self.targetBlock,        // scheduler.windowStart
+                self.windowStart,        // scheduler.windowStart
                 255,                     // scheduler.windowSize
                 self.callGas,            // txnData.callGas
                 self.callValue,          // txnData.callValue
@@ -76,7 +76,7 @@ library FutureBlockTransactionLib {
         }
 
         var tracker = RequestTrackerInterface(trackerAddress);
-        tracker.addRequest(newRequestAddress, self.targetBlock);
+        tracker.addRequest(newRequestAddress, self.windowStart);
 
         return newRequestAddress;
     }

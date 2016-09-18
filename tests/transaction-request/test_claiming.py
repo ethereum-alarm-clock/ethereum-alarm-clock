@@ -135,3 +135,15 @@ def test_deposit_returned_if_claim_rejected(chain, web3, RequestData):
 
     updated_request_data = RequestData.from_contract(txn_request)
     assert updated_request_data.claimData.claimedBy == '0x0000000000000000000000000000000000000000'
+
+
+def test_executing_own_claimed_call():
+    assert False
+
+
+def test_executing_other_claimed_call_after_reserved_window():
+    assert False
+
+
+def test_claim_block_determines_payment_amount():
+    assert False

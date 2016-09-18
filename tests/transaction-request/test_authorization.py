@@ -179,14 +179,78 @@ def test_execution_rejected_if_claimed_by_other(chain,
                                                 get_execute_data,
                                                 get_abort_data,
                                                 AbortReasons):
-    assert False
+    txn_request = RequestData(
+        windowStart=web3.eth.blockNumber + 255 + 10 + 5,
+        toAddress=txn_recorder.address,
+    ).direct_deploy()
+    request_data = RequestData.from_contract(txn_request)
+
+    claim_at = request_data.schedule.windowStart - request_data.schedule.freezePeriod - 10
+    chain.wait.for_block(claim_at)
+
+    txn_request.transact({
+        'from': web3.eth.accounts[1],
+        'value': 2 * request_data.paymentData.payment,
+    }).claim()
+
+    request_data.refresh()
+    assert request_data.claimData.claimedBy == web3.eth.accounts[1]
+
+    chain.wait.for_block(request_data.schedule.windowStart)
+
+    assert txn_recorder.call().wasCalled() is False
+    assert request_data.meta.wasCalled is False
+
+    execute_txn_hash = txn_request.transact().execute()
+    chain.wait.for_receipt(execute_txn_hash)
+
+    assert txn_recorder.call().wasCalled() is False
+    assert request_data.meta.wasCalled is False
+
+    with pytest.raises(AssertionError):
+        get_execute_data(execute_txn_hash)
+
+    abort_data = get_abort_data(execute_txn_hash)
+    reasons = {entry['args']['reason'] for entry in abort_data}
+    assert AbortReasons.ReservedForClaimer in reasons
 
 
 def test_execution_rejected_if_stack_too_deep(chain,
                                               web3,
                                               RequestData,
                                               txn_recorder,
+                                              digger_proxy,
                                               get_execute_data,
                                               get_abort_data,
                                               AbortReasons):
-    assert False
+    txn_request = RequestData(
+        toAddress=txn_recorder.address,
+        requiredStackDepth=1000,
+    ).direct_deploy()
+    request_data = RequestData.from_contract(txn_request)
+
+    assert txn_recorder.call().wasCalled() is False
+    assert request_data.meta.wasCalled is False
+    assert request_data.txnData.requiredStackDepth == 1000
+
+    chain.wait.for_block(request_data.schedule.windowStart)
+
+    execute_call_data = decode_hex(txn_request._encode_transaction_data('execute'))
+
+    execute_txn_hash = digger_proxy.transact().__dig_then_proxy(
+        24,
+        txn_request.address,
+        execute_call_data,
+    )
+    chain.wait.for_receipt(execute_txn_hash)
+
+    assert digger_proxy.call().result() is True
+    assert txn_recorder.call().wasCalled() is False
+    assert request_data.meta.wasCalled is False
+
+    with pytest.raises(AssertionError):
+        get_execute_data(execute_txn_hash)
+
+    abort_data = get_abort_data(execute_txn_hash)
+    reasons = {entry['args']['reason'] for entry in abort_data}
+    assert AbortReasons.StackTooDeep in reasons

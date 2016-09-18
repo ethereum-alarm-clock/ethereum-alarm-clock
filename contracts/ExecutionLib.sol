@@ -39,7 +39,7 @@ library ExecutionLib {
      */
     function stackCanBeExtended(ExecutionData storage self) returns (bool) {
         if (self.requiredStackDepth == 0) return true;
-        return address(this).call
+        return address(this).callcode
                             .gas(_GAS_PER_DEPTH * self.requiredStackDepth)
                             (
                                 bytes4(sha3("__dig(uint256)")),

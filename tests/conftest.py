@@ -520,3 +520,14 @@ def Proxy(test_contract_factories):
 def proxy(chain, Proxy):
     chain.contract_factories['Proxy'] = Proxy
     return chain.get_contract('Proxy')
+
+
+@pytest.fixture()
+def DiggerProxy(test_contract_factories):
+    return test_contract_factories.DiggerProxy
+
+
+@pytest.fixture()
+def digger_proxy(chain, DiggerProxy):
+    chain.contract_factories['DiggerProxy'] = DiggerProxy
+    return chain.get_contract('DiggerProxy')

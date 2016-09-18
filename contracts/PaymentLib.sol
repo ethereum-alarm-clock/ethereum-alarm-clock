@@ -98,10 +98,12 @@ library PaymentLib {
 
     function sendDonation(PaymentData storage self, uint sendGas) returns (bool) {
         uint donationAmount = self.donationOwed;
-        // re-entrance protection.
-        self.donationOwed = 0;
-        self.donationOwed = donationAmount.flooredSub(self.donationBenefactor.safeSend(donationAmount,
-                                                                                       sendGas));
+        if (donationAmount > 0) {
+            // re-entrance protection.
+            self.donationOwed = 0;
+            self.donationOwed = donationAmount.flooredSub(self.donationBenefactor.safeSend(donationAmount,
+                                                                                           sendGas));
+        }
         return true;
     }
 
@@ -114,10 +116,12 @@ library PaymentLib {
 
     function sendPayment(PaymentData storage self, uint sendGas) returns (bool) {
         uint paymentAmount = self.paymentOwed;
-        // re-entrance protection.
-        self.paymentOwed = 0;
-        self.paymentOwed = paymentAmount.flooredSub(self.paymentBenefactor.safeSend(paymentAmount,
-                                                                                    sendGas));
+        if (paymentAmount > 0) {
+            // re-entrance protection.
+            self.paymentOwed = 0;
+            self.paymentOwed = paymentAmount.flooredSub(self.paymentBenefactor.safeSend(paymentAmount,
+                                                                                        sendGas));
+        }
         return true;
     }
 

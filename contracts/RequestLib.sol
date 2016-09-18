@@ -460,7 +460,10 @@ library RequestLib {
      */
     function claim(Request storage self) returns (bool) {
         if (!isClaimable(self)) {
-            return false;
+            if (msg.sender.sendOrThrow(msg.value)) {
+                return false;
+            }
+            throw;
         }
         self.claimData.claim(self.schedule.computePaymentModifier());
     }

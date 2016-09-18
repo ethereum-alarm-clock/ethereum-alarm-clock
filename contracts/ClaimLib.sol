@@ -55,9 +55,12 @@ library ClaimLib {
         uint depositAmount;
 
         depositAmount = self.claimDeposit;
-        // re-entrance protection.
-        self.claimDeposit = 0;
-        self.claimDeposit = depositAmount.flooredSub(self.claimedBy.safeSend(depositAmount, sendGas));
+        if (depositAmount > 0) {
+            // re-entrance protection.
+            self.claimDeposit = 0;
+            self.claimDeposit = depositAmount.flooredSub(self.claimedBy.safeSend(depositAmount,
+                                                                                 sendGas));
+        }
 
         return true;
     }

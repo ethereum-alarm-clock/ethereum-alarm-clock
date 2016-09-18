@@ -94,7 +94,7 @@ library RequestLib {
                                                              request.schedule.freezePeriod,
                                                              request.schedule.windowStart);
         is_valid[4] = ExecutionLib.validateRequiredStackDepth(request.txnData.requiredStackDepth);
-        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas, _EXTRA_GAS);
+        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas, _EXECUTE_EXTRA_GAS);
         is_valid[6] = ExecutionLib.validateToAddress(request.txnData.toAddress);
 
         return is_valid;
@@ -249,6 +249,9 @@ library RequestLib {
         InsufficientGas
     }
 
+    // TODO: maybe cancel reward.
+    event Cancelled(uint rewardPayment, uint measuredGasConsumption);
+    event Claimed();
     event Aborted(Reason reason);
     event Executed(uint payment, uint donation, uint measuredGasConsumption);
 
@@ -308,8 +311,6 @@ library RequestLib {
         // Send the transaction
         self.meta.wasSuccessful = self.txnData.sendTransaction();
 
-        if (self.paymentData.getDonation() == 0) throw;
-
         // Compute the donation amount
         if (self.paymentData.hasBenefactor()) {
             self.paymentData.donationOwed = self.paymentData.getDonation()
@@ -331,11 +332,11 @@ library RequestLib {
         }
 
         // Record the amount of gas used by execution.
-        uint measuredGasConsumption = startGas.flooredSub(msg.gas).safeAdd(_EXTRA_GAS);
+        uint measuredGasConsumption = startGas.flooredSub(msg.gas).safeAdd(_EXECUTE_EXTRA_GAS);
 
-        // +--------------------------------------------------------------+
-        // | NOTE: All code after this must be accounted for by EXTRA_GAS |
-        // +--------------------------------------------------------------+
+        // +----------------------------------------------------------------------+
+        // | NOTE: All code after this must be accounted for by EXECUTE_EXTRA_GAS |
+        // +----------------------------------------------------------------------+
 
         // Add the gas reimbursment amount to the payment.
         self.paymentData.paymentOwed = measuredGasConsumption.safeMultiply(tx.gasprice)
@@ -364,36 +365,35 @@ library RequestLib {
                                    .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
     }
 
-    // TODO: compute this
-    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 0;
-
     /*
      * The amount of gas needed to do all of the pre execution checks.
      */
+    // TODO: measure this.
+    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 0;
+
     function GAS_TO_AUTHORIZE_EXECUTION() returns (uint) {
         return _GAS_TO_AUTHORIZE_EXECUTION;
     }
-
-    // TODO: compute this
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 190000;
 
     /*
      * The amount of gas needed to complete the execute method after
      * the transaction has been sent.
      */
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 190000;
+
     function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
         return _GAS_TO_COMPLETE_EXECUTION;
     }
 
-    // TODO: compute this
-    uint constant _EXTRA_GAS = 185000;
-
+    
     /*
      *  The amount of gas used by the portion of the `execute` function
      *  that cannot be accounted for via gas tracking.
      */
-    function EXTRA_GAS() returns (uint) {
-        return _EXTRA_GAS;
+    uint constant _EXECUTE_EXTRA_GAS = 185000;
+
+    function EXECUTE_EXTRA_GAS() returns (uint) {
+        return _EXECUTE_EXTRA_GAS;
     }
 
     /*
@@ -418,10 +418,26 @@ library RequestLib {
     }
 
     /*
+     *  Constant value to account for the gas usage that cannot be accounted
+     *  for using gas-tracking within the `cancel` function.
+     */
+    uint constant _CANCEL_EXTRA_GAS = 0;
+
+    function CANCEL_EXTRA_GAS() returns (uint) {
+        return _CANCEL_EXTRA_GAS;
+    }
+
+    /*
      *  Cancel the transaction request, attempting to send all appropriate
-     *  refunds.
+     *  refunds.  To incentivise cancellation by other parties, a small reward
+     *  payment is issued to the party that cancels the request if they are not
+     *  the owner.
      */
     function cancel(Request storage self) returns (bool) {
+        uint startGas = msg.gas;
+        uint rewardPayment;
+        uint measuredGasConsumption;
+
         if (!isCancellable(self)) {
             return false;
         }
@@ -431,6 +447,21 @@ library RequestLib {
 
         // refund any claim deposit.
         self.claimData.refundDeposit();
+
+        // send a reward to the canceller if it isn't the owner.  This also
+        // guarantees that it is being cancelled after the call window since
+        // the `isCancellable()` function checks this.
+        if (msg.sender != self.meta.owner) {
+            rewardPayment = self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier());
+            measuredGasConsumption = startGas.flooredSub(msg.gas)
+                                              .safeAdd(_CANCEL_EXTRA_GAS);
+            rewardPayment = measuredGasConsumption.safeMultiply(tx.gasprice)
+                                                  .safeAdd(rewardPayment);
+            msg.sender.safeSend(rewardPayment);
+        }
+
+        // Log the event
+        Cancelled(rewardPayment, measuredGasConsumption);
 
         // send the remaining ether to the owner.
         sendOwnerEther(self);
@@ -466,6 +497,8 @@ library RequestLib {
             throw;
         }
         self.claimData.claim(self.schedule.computePaymentModifier());
+        Claimed();
+        return true;
     }
 
     /*

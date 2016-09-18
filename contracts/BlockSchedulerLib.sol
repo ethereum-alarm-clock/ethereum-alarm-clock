@@ -3,9 +3,12 @@
 import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
 import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 import {PaymentLib} from "contracts/PaymentLib.sol";
+import {SafeSendLib} from "contracts/SafeSendLib.sol";
 
 
 library FutureBlockTransactionLib {
+    using SafeSendLib for address;
+
     address constant DONATION_BENEFACTOR = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
     struct FutureBlockTransaction {
@@ -71,8 +74,14 @@ library FutureBlockTransactionLib {
         );
 
         if (newRequestAddress == 0x0) {
-            // something went wrong....
+            // Something went wrong during creation (likely a ValidationError).
+            // Try to return the ether that was sent.  If this fails then
+            // resort to throwing an exception to force reversion.
             return 0x0;
+            if (msg.sender.sendOrThrow(msg.value)) {
+                return 0x0;
+            }
+            throw;
         }
 
         var tracker = RequestTrackerInterface(trackerAddress);

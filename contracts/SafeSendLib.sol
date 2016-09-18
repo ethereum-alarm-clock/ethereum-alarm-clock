@@ -33,7 +33,7 @@ library SafeSendLib {
         }
 
         if (to == 0x0) {
-            throw;
+            //throw;
         }
 
         if (!to.call.value(value).gas(sendGas)()) {
@@ -50,7 +50,7 @@ library SafeSendLib {
     function sendOrThrow(address to, uint value) returns (bool) {
         uint remainder = safeSend(to, value, msg.gas);
         if (remainder > 0) {
-            throw;
+            //throw;
         }
         return true;
     }

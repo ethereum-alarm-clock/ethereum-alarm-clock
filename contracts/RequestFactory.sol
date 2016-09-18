@@ -3,11 +3,13 @@
 import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
 import {TransactionRequest} from "contracts/TransactionRequest.sol";
 import {RequestLib} from "contracts/RequestLib.sol";
+import {SafeSendLib} from "contracts/SafeSendLib.sol";
 import {IterTools} from "contracts/IterTools.sol";
 
 
 contract RequestFactory is RequestFactoryInterface {
     using IterTools for bool[7];
+    using SafeSendLib for address;
 
     /*
      *  ValidationError
@@ -65,7 +67,13 @@ contract RequestFactory is RequestFactoryInterface {
             if (!is_valid[4]) ValidationError(Errors.InvalidRequiredStackDepth);
             if (!is_valid[5]) ValidationError(Errors.CallGasTooHigh);
             if (!is_valid[6]) ValidationError(Errors.EmptyToAddress);
-            return 0x0;
+
+            // Try to return the ether sent with the message.  If this failed
+            // then throw to force it to be returned.
+            if (msg.sender.sendOrThrow(msg.value)) {
+                return 0x0;
+            }
+            throw;
         }
 
         var request = (new TransactionRequest).value(msg.value)(

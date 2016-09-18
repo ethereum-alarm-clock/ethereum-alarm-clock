@@ -33,6 +33,13 @@ contract BlockScheduler is BaseScheduler {
     }
 
     /*
+     * Fallback function to be able to receive ether.  This can occur
+     * legidimately when scheduling fails due to a validation error.
+     */
+    function() {
+    }
+
+    /*
      *  Full scheduling API exposing all fields.
      * 
      *  uintArgs[0] callGas

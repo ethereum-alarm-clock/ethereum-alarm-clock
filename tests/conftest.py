@@ -365,6 +365,52 @@ def get_execute_data(chain, web3, RequestLib, AbortReasons, logs_to_event_data):
 
 
 @pytest.fixture()
+def get_claim_data(chain, web3, RequestLib, logs_to_event_data):
+    def _get_claim_data(claim_txn_hash):
+        claim_txn_receipt = chain.wait.for_receipt(claim_txn_hash)
+        claim_filter = RequestLib.pastEvents('Claimed', {
+            'fromBlock': claim_txn_receipt['blockNumber'],
+            'toBlock': claim_txn_receipt['blockNumber'],
+        })
+        claim_logs = claim_filter.get()
+        if len(claim_logs) == 0:
+            decoded_events = logs_to_event_data(claim_txn_receipt['logs'])
+            if decoded_events:
+                raise AssertionError(
+                    "Something went wrong.  The following events were found in"
+                    "the logs for the given transaction hash:\n"
+                    "{0}".format('\n'.join(decoded_events))
+                )
+            raise AssertionError("Something went wrong.  No 'Claimed' log entries found")
+        claim_data = claim_logs[0]
+        return claim_data
+    return _get_claim_data
+
+
+@pytest.fixture()
+def get_cancel_data(chain, web3, RequestLib, logs_to_event_data):
+    def _get_cancel_data(cancel_txn_hash):
+        cancel_txn_receipt = chain.wait.for_receipt(cancel_txn_hash)
+        cancel_filter = RequestLib.pastEvents('Cancelled', {
+            'fromBlock': cancel_txn_receipt['blockNumber'],
+            'toBlock': cancel_txn_receipt['blockNumber'],
+        })
+        cancel_logs = cancel_filter.get()
+        if len(cancel_logs) == 0:
+            decoded_events = logs_to_event_data(cancel_txn_receipt['logs'])
+            if decoded_events:
+                raise AssertionError(
+                    "Something went wrong.  The following events were found in"
+                    "the logs for the given transaction hash:\n"
+                    "{0}".format('\n'.join(decoded_events))
+                )
+            raise AssertionError("Something went wrong.  No 'Cancelled' log entries found")
+        cancel_data = cancel_logs[0]
+        return cancel_data
+    return _get_cancel_data
+
+
+@pytest.fixture()
 def logs_to_event_data(TopicMap):
     from web3.utils.events import (
         get_event_data,

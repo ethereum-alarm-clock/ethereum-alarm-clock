@@ -183,3 +183,139 @@ def test_cancellable_if_call_is_missed(chain, web3, RequestData):
 
     updated_request_data = RequestData.from_contract(txn_request)
     assert updated_request_data.meta.isCancelled is True
+
+
+def test_accounting_for_pre_execution_cancellation(chain,
+                                                   web3,
+                                                   denoms,
+                                                   RequestData,
+                                                   get_cancel_data):
+    txn_request = RequestData(
+        windowStart=web3.eth.blockNumber + 255 + 10 + 5,
+        owner=web3.eth.accounts[1],
+    ).direct_deploy({
+        'from': web3.eth.accounts[1],
+        'value': 10 * denoms.ether,
+    })
+    request_data = RequestData.from_contract(txn_request)
+
+    cancel_at = request_data.schedule.windowStart - request_data.schedule.freezePeriod - 5
+
+    # sanity
+    assert cancel_at > web3.eth.blockNumber
+    assert request_data.meta.owner == web3.eth.accounts[1]
+    assert request_data.meta.isCancelled is False
+
+    chain.wait.for_block(cancel_at)
+
+    before_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    before_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    cancel_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).cancel()
+    cancel_txn_receipt = chain.wait.for_receipt(cancel_txn_hash)
+
+    after_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    after_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    updated_request_data = RequestData.from_contract(txn_request)
+    assert updated_request_data.meta.isCancelled is True
+
+    cancel_data = get_cancel_data(cancel_txn_hash)
+    # since this was cancelled by the owner.
+    assert cancel_data['args']['rewardPayment'] == 0
+    assert cancel_data['args']['measuredGasConsumption'] == 0
+
+    assert before_contract_balance == 10 * denoms.ether
+    assert after_contract_balance == 0
+
+    assert after_cancel_balance - before_cancel_balance == 10 * denoms.ether - cancel_txn_receipt['gasUsed'] * web3.eth.gasPrice
+
+
+def test_accounting_for_missed_execution_cancellation_by_owner(chain,
+                                                               web3,
+                                                               denoms,
+                                                               RequestData,
+                                                               get_cancel_data):
+    txn_request = RequestData(
+        windowStart=web3.eth.blockNumber + 255 + 10 + 5,
+        owner=web3.eth.accounts[1],
+    ).direct_deploy({
+        'from': web3.eth.accounts[1],
+        'value': 10 * denoms.ether,
+    })
+    request_data = RequestData.from_contract(txn_request)
+
+    cancel_at = request_data.schedule.windowStart + request_data.schedule.windowSize + 1
+
+    # sanity
+    assert cancel_at > web3.eth.blockNumber
+    assert request_data.meta.owner == web3.eth.accounts[1]
+    assert request_data.meta.isCancelled is False
+
+    chain.wait.for_block(cancel_at)
+
+    before_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    before_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    cancel_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).cancel()
+    cancel_txn_receipt = chain.wait.for_receipt(cancel_txn_hash)
+
+    after_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    after_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    updated_request_data = RequestData.from_contract(txn_request)
+    assert updated_request_data.meta.isCancelled is True
+
+    cancel_data = get_cancel_data(cancel_txn_hash)
+    # since this was cancelled by the owner.
+    assert cancel_data['args']['rewardPayment'] == 0
+    assert cancel_data['args']['measuredGasConsumption'] == 0
+
+    assert before_contract_balance == 10 * denoms.ether
+    assert after_contract_balance == 0
+
+    assert after_cancel_balance - before_cancel_balance == 10 * denoms.ether - cancel_txn_receipt['gasUsed'] * web3.eth.gasPrice
+
+
+def test_accounting_for_missed_execution_cancellation_not_by_owner(chain,
+                                                                   web3,
+                                                                   denoms,
+                                                                   RequestData,
+                                                                   get_cancel_data):
+    txn_request = RequestData(
+        windowStart=web3.eth.blockNumber + 255 + 10 + 5,
+        owner=web3.eth.coinbase,
+    ).direct_deploy()
+    request_data = RequestData.from_contract(txn_request)
+
+    cancel_at = request_data.schedule.windowStart + request_data.schedule.windowSize + 1
+
+    # sanity
+    assert cancel_at > web3.eth.blockNumber
+    assert request_data.meta.owner == web3.eth.coinbase
+    assert request_data.meta.isCancelled is False
+
+    chain.wait.for_block(cancel_at)
+
+    before_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    before_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    cancel_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).cancel()
+    cancel_txn_receipt = chain.wait.for_receipt(cancel_txn_hash)
+
+    after_cancel_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    after_contract_balance = web3.eth.getBalance(txn_request.address)
+
+    updated_request_data = RequestData.from_contract(txn_request)
+    assert updated_request_data.meta.isCancelled is True
+
+    cancel_data = get_cancel_data(cancel_txn_hash)
+    measured_gas_consumption = cancel_data['args']['measuredGasConsumption']
+    assert measured_gas_consumption >= cancel_txn_receipt['gasUsed']
+
+    assert cancel_data['args']['rewardPayment'] == measured_gas_consumption * web3.eth.gasPrice + updated_request_data.paymentData.payment // 100
+
+    assert before_contract_balance == 10 * denoms.ether
+    assert after_contract_balance == 0
+
+    assert after_cancel_balance - before_cancel_balance == cancel_data['args']['rewardPayment'] - cancel_txn_receipt['gasUsed'] * web3.eth.gasPrice

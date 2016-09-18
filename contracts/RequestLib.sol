@@ -34,6 +34,22 @@ library RequestLib {
         SerializedRequest serializedValues;
     }
 
+    enum AbortReason {
+        WasCancelled,
+        AlreadyCalled,
+        BeforeCallWindow,
+        AfterCallWindow,
+        ReservedForClaimer,
+        StackTooDeep,
+        InsufficientGas
+    }
+
+    // TODO: maybe cancel reward.
+    event Cancelled(uint rewardPayment, uint measuredGasConsumption);
+    event Claimed();
+    event Aborted(AbortReason reason);
+    event Executed(uint payment, uint donation, uint measuredGasConsumption);
+
     /*
      *  Validate the initialization parameters for a transaction request.
      */
@@ -239,22 +255,6 @@ library RequestLib {
         self.claimData.paymentModifier = uint8Values[0];
     }
 
-    enum Reason {
-        WasCancelled,
-        AlreadyCalled,
-        BeforeCallWindow,
-        AfterCallWindow,
-        ReservedForClaimer,
-        StackTooDeep,
-        InsufficientGas
-    }
-
-    // TODO: maybe cancel reward.
-    event Cancelled(uint rewardPayment, uint measuredGasConsumption);
-    event Claimed();
-    event Aborted(Reason reason);
-    event Executed(uint payment, uint donation, uint measuredGasConsumption);
-
     function execute(Request storage self) returns (bool) {
         /*
          *  Send the requested transaction.
@@ -280,27 +280,27 @@ library RequestLib {
         var startGas = msg.gas;
 
         if (msg.gas < requiredExecutionGas(self)) {
-            Aborted(Reason.InsufficientGas);
+            Aborted(AbortReason.InsufficientGas);
             return false;
         } else if (self.meta.wasCalled) {
-            Aborted(Reason.AlreadyCalled);
+            Aborted(AbortReason.AlreadyCalled);
             return false;
         } else if (self.meta.isCancelled) {
-            Aborted(Reason.WasCancelled);
+            Aborted(AbortReason.WasCancelled);
             return false;
         } else if (self.schedule.isBeforeWindow()) {
-            Aborted(Reason.BeforeCallWindow);
+            Aborted(AbortReason.BeforeCallWindow);
             return false;
         } else if (self.schedule.isAfterWindow()) {
-            Aborted(Reason.AfterCallWindow);
+            Aborted(AbortReason.AfterCallWindow);
             return false;
         } else if (self.claimData.isClaimed() &&
                    msg.sender != self.claimData.claimedBy &&
                    self.schedule.inReservedWindow()) {
-            Aborted(Reason.ReservedForClaimer);
+            Aborted(AbortReason.ReservedForClaimer);
             return false;
         } else if (msg.sender != tx.origin && !self.txnData.stackCanBeExtended()) {
-            Aborted(Reason.StackTooDeep);
+            Aborted(AbortReason.StackTooDeep);
             return false;
         }
 
@@ -421,7 +421,7 @@ library RequestLib {
      *  Constant value to account for the gas usage that cannot be accounted
      *  for using gas-tracking within the `cancel` function.
      */
-    uint constant _CANCEL_EXTRA_GAS = 0;
+    uint constant _CANCEL_EXTRA_GAS = 85000;
 
     function CANCEL_EXTRA_GAS() returns (uint) {
         return _CANCEL_EXTRA_GAS;
@@ -452,9 +452,9 @@ library RequestLib {
         // guarantees that it is being cancelled after the call window since
         // the `isCancellable()` function checks this.
         if (msg.sender != self.meta.owner) {
-            rewardPayment = self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier());
+            rewardPayment = self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier()) / 100 / 100;
             measuredGasConsumption = startGas.flooredSub(msg.gas)
-                                              .safeAdd(_CANCEL_EXTRA_GAS);
+                                             .safeAdd(_CANCEL_EXTRA_GAS);
             rewardPayment = measuredGasConsumption.safeMultiply(tx.gasprice)
                                                   .safeAdd(rewardPayment);
             msg.sender.safeSend(rewardPayment);

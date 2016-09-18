@@ -33,7 +33,7 @@ library SafeSendLib {
         }
 
         if (to == 0x0) {
-            //throw;
+            throw;
         }
 
         if (!to.call.value(value).gas(sendGas)()) {
@@ -48,10 +48,22 @@ library SafeSendLib {
      * Try to send to the account.  If the send fails, then throw.
      */
     function sendOrThrow(address to, uint value) returns (bool) {
-        uint remainder = safeSend(to, value, msg.gas);
-        if (remainder > 0) {
-            //throw;
+        if (value > this.balance) {
+            throw;
         }
+
+        if (value == 0) {
+            return true;
+        }
+
+        if (to == 0x0) {
+            throw;
+        }
+
+        if (!to.call.value(value)()) {
+            throw;
+        }
+
         return true;
     }
 }

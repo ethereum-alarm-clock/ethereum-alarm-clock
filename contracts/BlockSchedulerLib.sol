@@ -77,7 +77,6 @@ library FutureBlockTransactionLib {
             // Something went wrong during creation (likely a ValidationError).
             // Try to return the ether that was sent.  If this fails then
             // resort to throwing an exception to force reversion.
-            return 0x0;
             if (msg.sender.sendOrThrow(msg.value)) {
                 return 0x0;
             }

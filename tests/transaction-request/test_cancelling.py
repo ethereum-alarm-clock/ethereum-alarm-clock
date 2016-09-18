@@ -79,7 +79,7 @@ def test_not_cancellable_once_claimed(chain, web3, RequestData):
     chain.wait.for_receipt(claim_txn_hash)
 
     claimed_request_data = RequestData.from_contract(txn_request)
-    assert claimed_request_data.claimData.claimedBy == web3.eth.coinbase
+    assert claimed_request_data.claimData.claimedBy == web3.eth.accounts[1]
 
     cancel_txn_hash = txn_request.transact().cancel()
     chain.wait.for_receipt(cancel_txn_hash)

@@ -1,4 +1,6 @@
 import os
+import functools
+import itertools
 
 import pytest
 
@@ -293,30 +295,16 @@ def ValidationErrors():
 
 
 @pytest.fixture()
-def get_txn_request(chain,
-                    web3,
-                    request_factory,
-                    RequestFactory,
-                    TransactionRequest,
-                    ValidationErrors,
-                    logs_to_event_data,
-                    TopicMap):
-    def _get_txn_request(txn_hash):
+def extract_event_logs(chain, web3, logs_to_event_data):
+    def _extract_event_logs(event_name, contract, txn_hash):
         txn_receipt = chain.wait.for_receipt(txn_hash)
-        request_created_filter = RequestFactory.pastEvents('RequestCreated', {
+        filter = contract.pastEvents(event_name, {
             'fromBlock': txn_receipt['blockNumber'],
             'toBlock': txn_receipt['blockNumber'],
         })
-        request_created_logs = request_created_filter.get()
-        if len(request_created_logs) == 0:
-            error_filter = RequestFactory.pastEvents('ValidationError', {
-                'fromBlock': txn_receipt['blockNumber'],
-                'toBlock': txn_receipt['blockNumber'],
-            })
-            error_logs = error_filter.get()
-            if error_logs:
-                errors = [ValidationErrors[entry['args']['reason']] for entry in error_logs]
-                raise AssertionError("ValidationError: {0}".format(', '.join(errors)))
+        log_entries = filter.get()
+
+        if len(log_entries) == 0:
             decoded_events = logs_to_event_data(txn_receipt['logs'])
             if decoded_events:
                 raise AssertionError(
@@ -324,11 +312,36 @@ def get_txn_request(chain,
                     "the logs for the given transaction hash:\n"
                     "{0}".format('\n'.join(decoded_events))
                 )
-            raise AssertionError("Something went wrong.  No 'RequestCreated' log entries found")
+            raise AssertionError(
+                "Something went wrong.  No '{0}' log entries found".format(event_name)
+            )
+        event_data = log_entries[0]
+        return event_data
+    return _extract_event_logs
 
-        log_data = request_created_logs[0]
 
-        request_address = log_data['args']['request']
+@pytest.fixture()
+def get_txn_request(chain,
+                    web3,
+                    extract_event_logs,
+                    RequestFactory,
+                    TransactionRequest,
+                    ValidationErrors):
+    def _get_txn_request(txn_hash):
+        try:
+            request_created_data = extract_event_logs('RequestCreated', RequestFactory, txn_hash)
+        except AssertionError:
+            validation_error_data = extract_event_logs('ValidationError', RequestFactory, txn_hash)
+            if validation_error_data:
+                errors = [
+                    ValidationErrors[entry['args']['error']]
+                    for entry in validation_error_data
+                ]
+                raise AssertionError("ValidationError: {0}".format(', '.join(errors)))
+            raise
+
+        request_address = request_created_data['args']['request']
+
         txn_request = TransactionRequest(address=request_address)
         return txn_request
     return _get_txn_request
@@ -355,109 +368,54 @@ def AbortReasons(ABORT_REASONS_ENUM_KEYS):
 
 
 @pytest.fixture()
-def get_abort_data(chain, web3, RequestLib, logs_to_event_data):
-    def _get_abort_data(execute_txn_hash):
-        execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
-        abort_filter = RequestLib.pastEvents('Aborted', {
-            'fromBlock': execute_txn_receipt['blockNumber'],
-            'toBlock': execute_txn_receipt['blockNumber'],
-        })
-        abort_logs = abort_filter.get()
-        if len(abort_logs) == 0:
-            decoded_events = logs_to_event_data(execute_txn_receipt['logs'])
-            if decoded_events:
-                raise AssertionError(
-                    "Something went wrong.  The following events were found in"
-                    "the logs for the given transaction hash:\n"
-                    "{0}".format('\n'.join(decoded_events))
-                )
-            raise AssertionError("Something went wrong.  No 'Aborted' log entries found")
-        return abort_logs
-    return _get_abort_data
+def get_abort_data(chain, web3, RequestLib):
+    return functools.partial(extract_event_logs, 'Aborted', RequestLib)
 
 
 @pytest.fixture()
-def get_execute_data(chain, web3, RequestLib, ABORT_REASONS_ENUM_KEYS, get_abort_data):
-    def _get_execute_data(execute_txn_hash):
-        execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
-        execute_filter = RequestLib.pastEvents('Executed', {
-            'fromBlock': execute_txn_receipt['blockNumber'],
-            'toBlock': execute_txn_receipt['blockNumber'],
-        })
-        execute_logs = execute_filter.get()
-        if len(execute_logs) == 0:
-            abort_logs = get_abort_data(execute_txn_hash)
-            errors = [ABORT_REASONS_ENUM_KEYS[entry['args']['reason']] for entry in abort_logs]
-            raise AssertionError("Execution Failed: {0}".format(', '.join(errors)))
-        execute_data = execute_logs[0]
-        return execute_data
+def get_execute_data(chain, web3, RequestLib, get_abort_data):
+    def _get_execute_data(txn_hash):
+        try:
+            return extract_event_logs('Executed', RequestFactory, txn_hash)
+        except AssertionError:
+            abort_data = get_abort_data(txn_hash)
+            if abort_data:
+                errors = [
+                    ABORT_REASONS_ENUM_KEYS[entry['args']['reason']]
+                    for entry in abort_data
+                ]
+                raise AssertionError("Aborted: {0}".format(', '.join(errors)))
+            raise
     return _get_execute_data
 
 
 @pytest.fixture()
 def get_claim_data(chain, web3, RequestLib, logs_to_event_data):
-    def _get_claim_data(claim_txn_hash):
-        claim_txn_receipt = chain.wait.for_receipt(claim_txn_hash)
-        claim_filter = RequestLib.pastEvents('Claimed', {
-            'fromBlock': claim_txn_receipt['blockNumber'],
-            'toBlock': claim_txn_receipt['blockNumber'],
-        })
-        claim_logs = claim_filter.get()
-        if len(claim_logs) == 0:
-            decoded_events = logs_to_event_data(claim_txn_receipt['logs'])
-            if decoded_events:
-                raise AssertionError(
-                    "Something went wrong.  The following events were found in"
-                    "the logs for the given transaction hash:\n"
-                    "{0}".format('\n'.join(decoded_events))
-                )
-            raise AssertionError("Something went wrong.  No 'Claimed' log entries found")
-        claim_data = claim_logs[0]
-        return claim_data
-    return _get_claim_data
+    return functools.partial(extract_event_logs, 'Claimed', RequestLib)
 
 
 @pytest.fixture()
 def get_cancel_data(chain, web3, RequestLib, logs_to_event_data):
-    def _get_cancel_data(cancel_txn_hash):
-        cancel_txn_receipt = chain.wait.for_receipt(cancel_txn_hash)
-        cancel_filter = RequestLib.pastEvents('Cancelled', {
-            'fromBlock': cancel_txn_receipt['blockNumber'],
-            'toBlock': cancel_txn_receipt['blockNumber'],
-        })
-        cancel_logs = cancel_filter.get()
-        if len(cancel_logs) == 0:
-            decoded_events = logs_to_event_data(cancel_txn_receipt['logs'])
-            if decoded_events:
-                raise AssertionError(
-                    "Something went wrong.  The following events were found in"
-                    "the logs for the given transaction hash:\n"
-                    "{0}".format('\n'.join(decoded_events))
-                )
-            raise AssertionError("Something went wrong.  No 'Cancelled' log entries found")
-        cancel_data = cancel_logs[0]
-        return cancel_data
-    return _get_cancel_data
+    return functools.partial(extract_event_logs, 'Cancelled', RequestLib)
 
 
 @pytest.fixture()
-def logs_to_event_data(TopicMap):
+def logs_to_event_data(topics_to_abi):
     from web3.utils.events import (
         get_event_data,
     )
 
     def _logs_to_event_data(log_entries):
         return [
-            get_event_data(TopicMap[log_entry['topics'][0]], log_entry)
+            get_event_data(topics_to_abi[log_entry['topics'][0]], log_entry)
             for log_entry in log_entries
-            if log_entry['topics'] and log_entry['topics'][0] in TopicMap
+            if log_entry['topics'] and log_entry['topics'][0] in topics_to_abi
         ]
     return _logs_to_event_data
 
 
 @pytest.fixture()
-def TopicMap(project):
-    import itertools
+def topics_to_abi(project):
     from web3.utils.abi import (
         filter_by_type,
         event_abi_to_log_topic,
@@ -465,11 +423,11 @@ def TopicMap(project):
     all_events_abi = filter_by_type('event', itertools.chain.from_iterable(
         contract['abi'] for contract in project.compiled_contracts.values()
     ))
-    topic_to_abi = {
+    _topic_to_abi = {
         event_abi_to_log_topic(abi): abi
         for abi in all_events_abi
     }
-    return topic_to_abi
+    return _topic_to_abi
 
 
 @pytest.fixture()

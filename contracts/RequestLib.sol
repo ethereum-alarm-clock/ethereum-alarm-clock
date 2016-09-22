@@ -357,6 +357,12 @@ library RequestLib {
                                                             .safeAdd(self.paymentData.donationOwed);
         }
 
+        // record this so that we can log it later.
+        var totalDonationPayment = self.paymentData.donationOwed;
+
+        // Send the donation.
+        self.paymentData.sendDonation();
+
         // Compute the payment amount and who it should be sent do.
         self.paymentData.paymentBenefactor = msg.sender;
         if (self.claimData.isClaimed()) {
@@ -385,11 +391,8 @@ library RequestLib {
         // Log the two payment amounts.  Otherwise it is non-trivial to figure
         // out how much was payed.
         Executed(self.paymentData.paymentOwed,
-                 self.paymentData.donationOwed,
+                 totalDonationPayment,
                  measuredGasConsumption);
-
-        // Send the donation.
-        self.paymentData.sendDonation();
 
         // Send the payment.
         self.paymentData.sendPayment();
@@ -434,7 +437,7 @@ library RequestLib {
      *  The amount of gas used by the portion of the `execute` function
      *  that cannot be accounted for via gas tracking.
      */
-    uint constant _EXECUTE_EXTRA_GAS = 185000;
+    uint constant _EXECUTE_EXTRA_GAS = 145000;
 
     function EXECUTE_EXTRA_GAS() returns (uint) {
         return _EXECUTE_EXTRA_GAS;

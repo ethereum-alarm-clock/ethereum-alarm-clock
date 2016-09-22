@@ -99,11 +99,13 @@ def test_not_cancellable_during_freeze_window(chain, web3, RequestData):
     assert request_data.meta.owner == web3.eth.coinbase
     assert request_data.meta.isCancelled is False
 
+    chain.wait.for_block(cancel_at)
+
     cancel_txn_hash = txn_request.transact().cancel()
     chain.wait.for_receipt(cancel_txn_hash)
 
-    updated_request_data = RequestData.from_contract(txn_request)
-    assert updated_request_data.meta.isCancelled is False
+    request_data.refresh()
+    assert request_data.meta.isCancelled is False
 
 
 def test_not_cancellable_during_execution_window(chain, web3, RequestData):

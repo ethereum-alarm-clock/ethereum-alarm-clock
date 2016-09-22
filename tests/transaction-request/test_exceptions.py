@@ -29,7 +29,7 @@ def test_txn_request_for_txn_that_throw_exception(chain,
     measured_gas_consumption = execute_data['args']['measuredGasConsumption']
 
     assert measured_gas_consumption > gas_used
-    assert measured_gas_consumption - gas_used < 50000
+    assert measured_gas_consumption - gas_used < 120000
 
 
 def test_txn_request_when_everything_throws(chain,

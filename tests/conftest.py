@@ -295,8 +295,8 @@ def ValidationErrors():
 
 
 @pytest.fixture()
-def extract_event_logs(chain, web3, logs_to_event_data):
-    def _extract_event_logs(event_name, contract, txn_hash):
+def extract_event_logs(chain, web3, get_all_event_data):
+    def _extract_event_logs(event_name, contract, txn_hash, return_single=True):
         txn_receipt = chain.wait.for_receipt(txn_hash)
         filter = contract.pastEvents(event_name, {
             'fromBlock': txn_receipt['blockNumber'],
@@ -305,18 +305,23 @@ def extract_event_logs(chain, web3, logs_to_event_data):
         log_entries = filter.get()
 
         if len(log_entries) == 0:
-            decoded_events = logs_to_event_data(txn_receipt['logs'])
-            if decoded_events:
+            all_event_logs = get_all_event_data(txn_receipt['logs'])
+            if all_event_logs:
                 raise AssertionError(
                     "Something went wrong.  The following events were found in"
                     "the logs for the given transaction hash:\n"
-                    "{0}".format('\n'.join(decoded_events))
+                    "{0}".format('\n'.join([
+                        event_log['event'] for event_log in all_event_logs
+                    ]))
                 )
             raise AssertionError(
                 "Something went wrong.  No '{0}' log entries found".format(event_name)
             )
-        event_data = log_entries[0]
-        return event_data
+        if return_single:
+            event_data = log_entries[0]
+            return event_data
+        else:
+            return log_entries
     return _extract_event_logs
 
 
@@ -331,7 +336,7 @@ def get_txn_request(chain,
         try:
             request_created_data = extract_event_logs('RequestCreated', RequestFactory, txn_hash)
         except AssertionError:
-            validation_error_data = extract_event_logs('ValidationError', RequestFactory, txn_hash)
+            validation_error_data = extract_event_logs('ValidationError', RequestFactory, txn_hash, return_single=False)
             if validation_error_data:
                 errors = [
                     ValidationErrors[entry['args']['error']]
@@ -368,17 +373,24 @@ def AbortReasons(ABORT_REASONS_ENUM_KEYS):
 
 
 @pytest.fixture()
-def get_abort_data(chain, web3, RequestLib):
-    return functools.partial(extract_event_logs, 'Aborted', RequestLib)
+def get_abort_data(chain, web3, RequestLib, extract_event_logs):
+    def _get_abort_data(txn_hash, return_single=False):
+        return extract_event_logs('Aborted', RequestLib, txn_hash, return_single=return_single)
+    return _get_abort_data
 
 
 @pytest.fixture()
-def get_execute_data(chain, web3, RequestLib, get_abort_data):
+def get_execute_data(chain,
+                     web3,
+                     RequestLib,
+                     extract_event_logs,
+                     get_abort_data,
+                     ABORT_REASONS_ENUM_KEYS):
     def _get_execute_data(txn_hash):
         try:
-            return extract_event_logs('Executed', RequestFactory, txn_hash)
+            return extract_event_logs('Executed', RequestLib, txn_hash)
         except AssertionError:
-            abort_data = get_abort_data(txn_hash)
+            abort_data = get_abort_data(txn_hash, return_single=False)
             if abort_data:
                 errors = [
                     ABORT_REASONS_ENUM_KEYS[entry['args']['reason']]
@@ -390,28 +402,29 @@ def get_execute_data(chain, web3, RequestLib, get_abort_data):
 
 
 @pytest.fixture()
-def get_claim_data(chain, web3, RequestLib, logs_to_event_data):
+def get_claim_data(chain, web3, RequestLib, extract_event_logs):
     return functools.partial(extract_event_logs, 'Claimed', RequestLib)
 
 
 @pytest.fixture()
-def get_cancel_data(chain, web3, RequestLib, logs_to_event_data):
+def get_cancel_data(chain, web3, RequestLib, extract_event_logs):
     return functools.partial(extract_event_logs, 'Cancelled', RequestLib)
 
 
 @pytest.fixture()
-def logs_to_event_data(topics_to_abi):
+def get_all_event_data(topics_to_abi):
     from web3.utils.events import (
         get_event_data,
     )
 
-    def _logs_to_event_data(log_entries):
-        return [
+    def _get_all_event_data(log_entries):
+        all_event_data = [
             get_event_data(topics_to_abi[log_entry['topics'][0]], log_entry)
             for log_entry in log_entries
             if log_entry['topics'] and log_entry['topics'][0] in topics_to_abi
         ]
-    return _logs_to_event_data
+        return all_event_data
+    return _get_all_event_data
 
 
 @pytest.fixture()

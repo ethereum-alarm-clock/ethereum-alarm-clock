@@ -18,6 +18,12 @@ library RequestLib {
     using SafeSendLib for address;
     using MathLib for uint;
 
+    /*
+     *  This struct exists to circumvent an issue with returning multiple
+     *  values from a library function.  I found through experimentation that I
+     *  could not return more than 4 things from a library function, even if I
+     *  put them in arrays.
+     */
     struct SerializedRequest {
         address[6] addressValues;
         bool[3] boolValues;
@@ -170,7 +176,10 @@ library RequestLib {
      *
      *  Parameter order is alphabetical by type, then namespace, then name
      *
-     *  TODO: figure out why this fails.
+     *  NOTE: This exists because of an issue I ran into related to returning
+     *  multiple values from a library function.  I found through
+     *  experimentation that I was unable to return more than 4 things, even if
+     *  I used the trick of returning arrays of items.
      */
     function serialize(Request storage self) returns (bool) {
         // Address values

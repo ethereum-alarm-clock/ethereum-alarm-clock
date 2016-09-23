@@ -4,6 +4,15 @@ import itertools
 
 import pytest
 
+import rlp
+from ethereum import blocks
+
+from web3.utils.encoding import (
+    decode_hex,
+)
+
+from testrpc import testrpc
+
 
 NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -502,3 +511,29 @@ def DiggerProxy(test_contract_factories):
 def digger_proxy(chain, DiggerProxy):
     chain.contract_factories['DiggerProxy'] = DiggerProxy
     return chain.get_contract('DiggerProxy')
+
+
+@pytest.fixture()
+def evm(web3):
+    tester_client = testrpc.tester_client
+    assert web3.eth.blockNumber == len(tester_client.evm.blocks) - 1
+    return tester_client.evm
+
+
+@pytest.fixture()
+def set_timestamp(web3, evm):
+    def _set_timestamp(timestamp):
+        evm.block.finalize()
+        evm.block.commit_state()
+        evm.db.put(evm.block.hash, rlp.encode(evm.block))
+
+        block = blocks.Block.init_from_parent(
+            evm.block,
+            decode_hex(web3.eth.coinbase),
+            timestamp=timestamp,
+        )
+
+        evm.block = block
+        evm.blocks.append(evm.block)
+        return timestamp
+    return _set_timestamp

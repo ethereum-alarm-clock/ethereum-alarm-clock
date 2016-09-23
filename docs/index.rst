@@ -37,6 +37,8 @@ Contents:
    introduction
    quickstart
    architecture
+   transaction_request
+   claiming
 
    overview
    scheduling

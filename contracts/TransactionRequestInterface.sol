@@ -25,4 +25,12 @@ contract TransactionRequestInterface {
     function sendDonation() public returns (bool);
     function sendPayment() public returns (bool);
     function sendOwnerEther() public returns (bool);
+
+    /*
+     *  Sending arbitrary requests as this contract.
+     */
+    function sendProxyTransaction(address toAddress,
+                                  uint callGas,
+                                  uint callValue,
+                                  bytes callData) public returns (bool);
 }

@@ -118,7 +118,7 @@ library RequestScheduleLib {
      *  Helper: Returns boolean if we are after the execution window.
      */
     function isAfterWindow(ExecutionWindow storage self) returns (bool) {
-        return getNow(self) >= windowEnd(self);
+        return getNow(self) > windowEnd(self);
     }
 
     /*

@@ -10,15 +10,15 @@ def scheduler(chain, request_tracker, request_factory):
     return block_scheduler
 
 
-def test_scheduling_with_full_args(chain,
-                                   web3,
-                                   denoms,
-                                   txn_recorder,
-                                   scheduler,
-                                   request_factory,
-                                   request_tracker,
-                                   RequestData,
-                                   get_txn_request):
+def test_block_scheduling_with_full_args(chain,
+                                         web3,
+                                         denoms,
+                                         txn_recorder,
+                                         scheduler,
+                                         request_factory,
+                                         request_tracker,
+                                         RequestData,
+                                         get_txn_request):
     window_start = web3.eth.blockNumber + 20
     schedule_txn_hash = scheduler.transact({
         'value': 10 * denoms.ether,
@@ -52,13 +52,13 @@ def test_scheduling_with_full_args(chain,
     assert request_data.schedule.windowStart == window_start
 
 
-def test_scheduling_with_simplified_args(chain,
-                                         web3,
-                                         denoms,
-                                         txn_recorder,
-                                         scheduler,
-                                         RequestData,
-                                         get_txn_request):
+def test_block_scheduling_with_simplified_args(chain,
+                                               web3,
+                                               denoms,
+                                               txn_recorder,
+                                               scheduler,
+                                               RequestData,
+                                               get_txn_request):
     window_start = web3.eth.blockNumber + 20
     schedule_txn_hash = scheduler.transact({
         'value': 10 * denoms.ether,

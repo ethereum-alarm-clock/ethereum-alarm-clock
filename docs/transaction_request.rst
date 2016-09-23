@@ -248,3 +248,28 @@ The :class:`TransactionRequest` contract has three primary actions that can be p
 
 Cancellation
 ^^^^^^^^^^^^
+
+.. method:: TransactionRequest.cancel()
+
+Cancellation can occur if either of the two are true.
+
+* The current block or time is before the freeze period and the request has not
+  been claimed.
+* The current block or time is after the execution window and the request was
+  not executed.
+
+When cancelling prior to the execution window, only the ``owner`` of the call
+may trigger cancellation.
+
+When cancelling after the execution window, anyone may trigger cancellation.
+To ensure that funds are not forever left to rot in these contracts, there is
+an incentive layer for this function to be called by others whenever a request
+fails to be executed.  When cancellation is executed by someone other than the
+``owner`` of the contract, ``1%`` of what would have been paid to someone for
+execution is paid to the account that triggers cancellation.
+
+
+Claiming
+--------
+
+TODO

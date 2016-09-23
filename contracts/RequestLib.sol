@@ -508,12 +508,23 @@ library RequestLib {
         // guarantees that it is being cancelled after the call window since
         // the `isCancellable()` function checks this.
         if (msg.sender != self.meta.owner) {
-            rewardPayment = self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier()) / 100 / 100;
+            // TODO: using `paymentData.paymentBenefactor` and
+            // `paymentData.paymentOwed` is overloading those values. This
+            // should really be done with `rewardBenefactor` and `rewardOwed`
+            // fields.
+            self.paymentData.paymentBenefactor = msg.sender;
+            self.paymentData.paymentOwed = self.paymentData.paymentOwed.safeAdd(
+                self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier()) / 100 / 100
+            );
             measuredGasConsumption = startGas.flooredSub(msg.gas)
                                              .safeAdd(_CANCEL_EXTRA_GAS);
-            rewardPayment = measuredGasConsumption.safeMultiply(tx.gasprice)
-                                                  .safeAdd(rewardPayment);
-            msg.sender.safeSend(rewardPayment);
+            self.paymentData.paymentOwed = measuredGasConsumption.safeMultiply(tx.gasprice)
+                                                                 .safeAdd(self.paymentData.paymentOwed);
+            // take note of the reward payment so we can log it.
+            rewardPayment = self.paymentData.paymentOwed;
+
+            // send the reward payment.
+            self.paymentData.sendPayment();
         }
 
         // Log the event

@@ -7,14 +7,10 @@ env:
   global:
     - SOLC_BINARY="$TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/solc"
   matrix:
-    - TEST_DIR=accounting
-    - TEST_DIR=call-state
-    - TEST_DIR=canary
-    - TEST_DIR=cancelling
-    - TEST_DIR=claiming
-    - TEST_DIR=data-registry
-    - TEST_DIR=execution
-    - TEST_DIR=scheduling
+    - TEST_DIR=block-scheduling
+    - TEST_DIR=request-factory
+    - TEST_DIR=request-tracker
+    - TEST_DIR=transaction-request
 cache:
   - pip: true
   - directories:

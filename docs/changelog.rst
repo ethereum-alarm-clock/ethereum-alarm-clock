@@ -1,6 +1,20 @@
 Changelog
 =========
 
+1.0.0 (unreleased)
+-----
+
+- Full rewrite of all contracts.
+- Support for both time and block based scheduling.
+- New permissionless call tracker now used to track scheduled calls.
+- Donation address can now be configured.
+- Request execution window size is now configurable.
+- Reserved claim window size is now configurable.
+- Freeze period is now configurable.
+- Claim window size is now configurable.
+- All payments now support pull mechanism for retrieving payments.
+
+
 0.7.0
 -----
 

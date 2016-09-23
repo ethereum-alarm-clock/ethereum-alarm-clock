@@ -89,6 +89,6 @@ contract TransactionRequest is Digger {
     }
 
     function sendOwnerEther() public returns (bool) {
-        return txnRequest.sendOwnerEther();
+        return txnRequest.sendOwnerEther(0);
     }
 }

@@ -162,7 +162,11 @@ def test_deposit_returned_if_claim_rejected(chain, web3, RequestData, get_claim_
     assert request_data.claimData.claimedBy == '0x0000000000000000000000000000000000000000'
 
 
-def test_deposit_returned_even_if_returning_it_throws(chain, web3, RequestData, get_claim_data, proxy):
+def test_deposit_returned_even_if_returning_it_throws(chain,
+                                                      web3,
+                                                      RequestData,
+                                                      get_claim_data,
+                                                      error_generator):
     txn_request = RequestData(windowStart=web3.eth.blockNumber + 255 + 10 + 5).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
@@ -176,19 +180,19 @@ def test_deposit_returned_even_if_returning_it_throws(chain, web3, RequestData, 
     deposit_amount = 2 * request_data.paymentData.payment
 
     before_contract_balance = web3.eth.getBalance(txn_request.address)
-    before_account_balance = web3.eth.getBalance(proxy.address)
+    before_account_balance = web3.eth.getBalance(error_generator.address)
 
     assert before_account_balance == 0
 
     claim_call_data = decode_hex(txn_request._encode_transaction_data('claim'))
 
-    claim_txn_hash = proxy.transact({
+    claim_txn_hash = error_generator.transact({
         'value': deposit_amount,
     }).__proxy(txn_request.address, claim_call_data, )
     chain.wait.for_receipt(claim_txn_hash)
 
     after_contract_balance = web3.eth.getBalance(txn_request.address)
-    after_account_balance = web3.eth.getBalance(proxy.address)
+    after_account_balance = web3.eth.getBalance(error_generator.address)
 
     assert after_contract_balance == before_contract_balance
     assert after_account_balance == deposit_amount
@@ -269,5 +273,24 @@ def test_executing_other_claimed_call_after_reserved_window(chain,
     assert get_execute_data(execute_txn_hash)
 
 
-def test_claim_block_determines_payment_amount():
-    assert False
+def test_claim_block_determines_payment_amount(chain, web3, RequestData):
+    txn_request = RequestData(windowStart=web3.eth.blockNumber + 255 + 10 + 5).direct_deploy()
+    request_data = RequestData.from_contract(txn_request)
+
+    claim_at = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize + request_data.schedule.claimWindowSize * 2 // 3
+
+    expected_payment_modifier = 100 * 2 // 3
+
+    # sanity
+    assert request_data.claimData.paymentModifier == 0
+    assert claim_at > web3.eth.blockNumber
+
+    chain.wait.for_block(claim_at)
+
+    claim_txn_hash = txn_request.transact({
+        'value': 2 * request_data.paymentData.payment,
+    }).claim()
+    chain.wait.for_receipt(claim_txn_hash)
+
+    request_data.refresh()
+    assert request_data.claimData.paymentModifier == expected_payment_modifier

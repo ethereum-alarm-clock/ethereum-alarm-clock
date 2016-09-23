@@ -553,7 +553,7 @@ library RequestLib {
      */
     function refundClaimDeposit(Request storage self) returns (bool) {
         if (self.meta.isCancelled || self.meta.wasCalled) {
-            return self.claimData.refundDeposit(msg.gas);
+            return self.claimData.refundDeposit(0);
         }
         return false;
     }
@@ -563,7 +563,7 @@ library RequestLib {
      */
     function sendDonation(Request storage self) returns (bool) {
         if (self.meta.wasCalled) {
-            return self.paymentData.sendDonation(msg.gas);
+            return self.paymentData.sendDonation(0);
         }
         return false;
     }
@@ -573,7 +573,7 @@ library RequestLib {
      */
     function sendPayment(Request storage self) returns (bool) {
         if (self.meta.wasCalled) {
-            return self.paymentData.sendPayment(msg.gas);
+            return self.paymentData.sendPayment(0);
         }
         return false;
     }

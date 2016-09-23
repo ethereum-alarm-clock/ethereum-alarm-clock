@@ -2,17 +2,29 @@ import {Proxy} from "tests/Proxy.sol";
 
 
 contract ErrorGenerator is Proxy {
-    function doThrow() {
-        doThrow(true);
+    bool public shouldThrow;
+
+    function ErrorGenerator() {
+        shouldThrow = true;
     }
 
-    function doThrow(bool shouldThrow) {
-        if (shouldThrow) {
+    function toggle() {
+        shouldThrow = !shouldThrow;
+    }
+
+    function doThrow() {
+        doThrow(shouldThrow);
+    }
+
+    function doThrow(bool _shouldThrow) {
+        if (_shouldThrow) {
             throw;
         }
     }
 
     function() {
-        throw;
+        if (shouldThrow) {
+            throw;
+        }
     }
 }

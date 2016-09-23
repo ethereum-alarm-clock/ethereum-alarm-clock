@@ -36,10 +36,19 @@ library SafeSendLib {
             throw;
         }
 
-        if (!to.call.value(value).gas(sendGas)()) {
-            SendFailed(to, value);
-            return 0;
+        if (sendGas > 0) {
+            // 0 send gas indicates sending all send gas.
+            if (!to.call.value(value).gas(sendGas)()) {
+                SendFailed(to, value);
+                return 0;
+            }
+        } else {
+            if (!to.call.value(value)()) {
+                SendFailed(to, value);
+                return 0;
+            }
         }
+
 
         return value;
     }

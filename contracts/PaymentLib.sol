@@ -86,7 +86,7 @@ library PaymentLib {
      */
     function getPaymentWithModifier(PaymentData storage self,
                                     uint8 paymentModifier) returns (uint) {
-        return getPayment(self).safeMultiply(100) / paymentModifier;
+        return getPayment(self).safeMultiply(paymentModifier) / 100;
     }
 
     /*

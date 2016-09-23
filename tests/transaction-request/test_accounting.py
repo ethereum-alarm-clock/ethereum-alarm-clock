@@ -36,3 +36,7 @@ def test_txn_request_payments(chain,
     assert payment - expected_payment < 120000 * gas_price
 
     assert after_payment_balance - before_payment_balance == payment - gas_cost
+
+
+def test_txn_request_payments_when_claimed(chain, web3, get_execute_data, RequestData):
+    assert False

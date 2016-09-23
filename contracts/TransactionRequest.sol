@@ -91,4 +91,14 @@ contract TransactionRequest is Digger {
     function sendOwnerEther() public returns (bool) {
         return txnRequest.sendOwnerEther(0);
     }
+
+    /*
+     *  Proxy contract functionality.
+     */
+    function sendProxyTransaction(address toAddress,
+                                  uint callGas,
+                                  uint callValue,
+                                  bytes callData) public returns (bool) {
+        return txnRequest.sendProxyTransaction(toAddress, callGas, callValue, callData);
+    }
 }

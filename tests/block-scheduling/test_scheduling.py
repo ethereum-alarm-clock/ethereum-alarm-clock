@@ -15,6 +15,8 @@ def test_scheduling_with_full_args(chain,
                                    denoms,
                                    txn_recorder,
                                    scheduler,
+                                   request_factory,
+                                   request_tracker,
                                    RequestData,
                                    get_txn_request):
     window_start = web3.eth.blockNumber + 20
@@ -35,7 +37,7 @@ def test_scheduling_with_full_args(chain,
     )
     schedule_txn_receipt = web3.eth.getTransactionReceipt(schedule_txn_hash)
 
-    assert schedule_txn_receipt['gasUsed'] < 1200000
+    assert schedule_txn_receipt['gasUsed'] < 1300000
 
     txn_request = get_txn_request(schedule_txn_hash)
     request_data = RequestData.from_contract(txn_request)

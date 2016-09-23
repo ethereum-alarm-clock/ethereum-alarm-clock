@@ -1,35 +1,28 @@
 //pragma solidity 0.4.1;
 
 
-import {FutureBlockTransactionLib} from "contracts/BlockSchedulerLib.sol";
+import {RequestScheduleLib} from "contracts/RequestScheduleLib.sol";
+import {SchedulerInterface} from "contracts/SchedulerInterface.sol";
+import {SchedulerLib} from "contracts/SchedulerLib.sol";
 
 
-contract BaseScheduler {
-    address trackerAddress;
-    address factoryAddress;
+contract BaseScheduler is SchedulerInterface {
+    using SchedulerLib for SchedulerLib.FutureTransaction;
 
-    function BaseScheduler(address _trackerAddress, address _factoryAddress) {
+    function BaseScheduler(address _trackerAddress,
+                           address _factoryAddress,
+                           uint temporalUnitAsUInt) {
+        if (!RequestScheduleLib.validateTemporalUnit(temporalUnitAsUInt)) {
+            // Invalid temporal unit specified.
+            throw;
+        }
+
+        // Set the type of time scheduling this scheduler uses.
+        temporalUnit = RequestScheduleLib.TemporalUnit(temporalUnitAsUInt);
+
+        // Set the tracker and factory addresses.
         trackerAddress = _trackerAddress;
         factoryAddress = _factoryAddress;
-    }
-}
-
-
-contract BlockScheduler is BaseScheduler {
-    using FutureBlockTransactionLib for FutureBlockTransactionLib.FutureBlockTransaction;
-
-    function BlockScheduler(address _trackerAddress, address _factoryAddress)
-             BaseScheduler(_trackerAddress, _factoryAddress) {
-    }
-
-    /*
-     * Local storage variable used to hold 
-     */
-    FutureBlockTransactionLib.FutureBlockTransaction futureBlockTransaction;
-
-    modifier doReset {
-        futureBlockTransaction.reset();
-        _ 
     }
 
     /*
@@ -53,13 +46,20 @@ contract BlockScheduler is BaseScheduler {
                                  bytes callData,
                                  uint8 windowSize,
                                  uint[3] uintArgs) doReset public returns (address) {
-        futureBlockTransaction.toAddress = toAddress;
-        futureBlockTransaction.callData = callData;
-        futureBlockTransaction.windowSize = windowSize;
-        futureBlockTransaction.callGas = uintArgs[0];
-        futureBlockTransaction.callValue = uintArgs[1];
-        futureBlockTransaction.windowStart = uintArgs[2];
-        return futureBlockTransaction.schedule(factoryAddress, trackerAddress);
+        futureTransaction.toAddress = toAddress;
+        futureTransaction.callData = callData;
+        futureTransaction.windowSize = windowSize;
+        futureTransaction.callGas = uintArgs[0];
+        futureTransaction.callValue = uintArgs[1];
+        futureTransaction.windowStart = uintArgs[2];
+
+        // This is here to make this explicit.  While it should remain the same
+        // across multiple calls, this ensures that it is clear what this value
+        // is set to as well as keeping the setting close to where the other
+        // transaction details are set.
+        futureTransaction.temporalUnit = temporalUnit;
+
+        return futureTransaction.schedule(factoryAddress, trackerAddress);
     }
 
     /*
@@ -79,15 +79,22 @@ contract BlockScheduler is BaseScheduler {
                                  bytes callData,
                                  uint8 windowSize,
                                  uint[6] uintArgs) doReset public returns (address) {
-        futureBlockTransaction.toAddress = toAddress;
-        futureBlockTransaction.callData = callData;
-        futureBlockTransaction.windowSize = windowSize;
-        futureBlockTransaction.callGas = uintArgs[0];
-        futureBlockTransaction.callValue = uintArgs[1];
-        futureBlockTransaction.donation = uintArgs[2];
-        futureBlockTransaction.payment = uintArgs[3];
-        futureBlockTransaction.requiredStackDepth = uintArgs[4];
-        futureBlockTransaction.windowStart = uintArgs[5];
-        return futureBlockTransaction.schedule(factoryAddress, trackerAddress);
+        futureTransaction.toAddress = toAddress;
+        futureTransaction.callData = callData;
+        futureTransaction.windowSize = windowSize;
+        futureTransaction.callGas = uintArgs[0];
+        futureTransaction.callValue = uintArgs[1];
+        futureTransaction.donation = uintArgs[2];
+        futureTransaction.payment = uintArgs[3];
+        futureTransaction.requiredStackDepth = uintArgs[4];
+        futureTransaction.windowStart = uintArgs[5];
+
+        // This is here to make this explicit.  While it should remain the same
+        // across multiple calls, this ensures that it is clear what this value
+        // is set to as well as keeping the setting close to where the other
+        // transaction details are set.
+        futureTransaction.temporalUnit = temporalUnit;
+
+        return futureTransaction.schedule(factoryAddress, trackerAddress);
     }
 }

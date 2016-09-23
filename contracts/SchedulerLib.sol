@@ -3,21 +3,25 @@
 import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
 import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 import {PaymentLib} from "contracts/PaymentLib.sol";
+import {RequestScheduleLib} from "contracts/RequestScheduleLib.sol";
 import {SafeSendLib} from "contracts/SafeSendLib.sol";
+import {MathLib} from "contracts/MathLib.sol";
 
 
-library FutureBlockTransactionLib {
+library SchedulerLib {
     using SafeSendLib for address;
+    using MathLib for uint;
 
     address constant DONATION_BENEFACTOR = 0xd3cda913deb6f67967b99d67acdfa1712c293601;
 
-    struct FutureBlockTransaction {
+    struct FutureTransaction {
         uint donation;
         uint payment;
 
         uint8 windowSize;
-
         uint windowStart;
+        RequestScheduleLib.TemporalUnit temporalUnit;
+
         uint callGas;
         uint callValue;
         bytes callData;
@@ -28,7 +32,7 @@ library FutureBlockTransactionLib {
     /*
      * Set default values.
      */
-    function reset(FutureBlockTransaction storage self) {
+    function resetAsBlock(FutureTransaction storage self) public returns (bool) {
         self.donation = 12345;
         self.payment = 54321;
         self.windowSize = 255;
@@ -37,12 +41,27 @@ library FutureBlockTransactionLib {
         self.callGas = 90000;
         self.callData = "";
         self.requiredStackDepth = 0;
+
+        return true;
+    }
+
+    function resetAsTimestamp(FutureTransaction storage self) public returns (bool) {
+        self.donation = 12345;
+        self.payment = 54321;
+        self.windowSize = 255;
+        self.windowStart = now + 5 minutes;
+        self.toAddress = msg.sender;
+        self.callGas = 90000;
+        self.callData = "";
+        self.requiredStackDepth = 0;
+
+        return true;
     }
 
     /*
      *  The low level interface for creating a transaction request.
      */
-    function schedule(FutureBlockTransaction storage self,
+    function schedule(FutureTransaction storage self,
                       address factoryAddress,
                       address trackerAddress) public returns (address) {
         var factory = RequestFactoryInterface(factoryAddress);
@@ -51,24 +70,24 @@ library FutureBlockTransactionLib {
             self.donation,
             self.callGas,
             self.callValue
-        ))(
+        ).min(this.balance))(
             [
                 msg.sender,           // meta.owner
                 DONATION_BENEFACTOR,  // paymentData.donationBenefactor
                 self.toAddress        // txnData.toAddress
             ],
             [
-                self.donation,           // paymentData.donation
-                self.payment,            // paymentData.payment
-                255,                     // scheduler.claimWindowSize
-                10,                      // scheduler.freezePeriod
-                16,                      // scheduler.reservedWindowSize
-                1,                       // scheduler.temporalUnit (block)
-                self.windowStart,        // scheduler.windowStart
-                255,                     // scheduler.windowSize
-                self.callGas,            // txnData.callGas
-                self.callValue,          // txnData.callValue
-                self.requiredStackDepth  // txnData.requiredStackDepth
+                self.donation,            // paymentData.donation
+                self.payment,             // paymentData.payment
+                255,                      // scheduler.claimWindowSize
+                10,                       // scheduler.freezePeriod
+                16,                       // scheduler.reservedWindowSize
+                uint(self.temporalUnit),  // scheduler.temporalUnit (1: block, 2: timestamp)
+                self.windowStart,         // scheduler.windowStart
+                255,                      // scheduler.windowSize
+                self.callGas,             // txnData.callGas
+                self.callValue,           // txnData.callValue
+                self.requiredStackDepth   // txnData.requiredStackDepth
             ],
             self.callData
         );

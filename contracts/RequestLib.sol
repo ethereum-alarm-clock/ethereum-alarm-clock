@@ -94,7 +94,7 @@ library RequestLib {
         request.schedule.freezePeriod = uintArgs[3];
         request.schedule.reservedWindowSize = uintArgs[4];
         // This must be capped at 1 or it throws an exception.
-        request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintArgs[5].min(1));
+        request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintArgs[5].min(2));
         request.schedule.windowStart = uintArgs[6];
         request.schedule.windowSize = uintArgs[7];
         request.txnData.callGas = uintArgs[8];
@@ -561,7 +561,7 @@ library RequestLib {
      * Refund claimer deposit.
      */
     function refundClaimDeposit(Request storage self) returns (bool) {
-        if (self.meta.isCancelled || self.meta.wasCalled) {
+        if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
             return self.claimData.refundDeposit(0);
         }
         return false;
@@ -571,7 +571,7 @@ library RequestLib {
      * Send donation
      */
     function sendDonation(Request storage self) returns (bool) {
-        if (self.meta.wasCalled) {
+        if (self.schedule.isAfterWindow()) {
             return self.paymentData.sendDonation(0);
         }
         return false;
@@ -581,7 +581,7 @@ library RequestLib {
      * Send payment
      */
     function sendPayment(Request storage self) returns (bool) {
-        if (self.meta.wasCalled) {
+        if (self.schedule.isAfterWindow()) {
             return self.paymentData.sendPayment(0);
         }
         return false;
@@ -595,7 +595,7 @@ library RequestLib {
     }
 
     function sendOwnerEther(Request storage self, uint sendGas) returns (bool) {
-        if (self.meta.isCancelled || self.meta.wasCalled) {
+        if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
             self.meta.owner.safeSend(this.balance.flooredSub(self.claimData.claimDeposit)
                                                  .flooredSub(self.paymentData.paymentOwed)
                                                  .flooredSub(self.paymentData.donationOwed),
@@ -603,5 +603,43 @@ library RequestLib {
             return true;
         }
         return false;
+    }
+
+    /*
+     * Proxy transaction sending.
+     *
+     * Proxy transactions are only allowed *after* the execution window.  This
+     * is to prevent any possibility of re-entrance issues during call
+     * execution.
+     *
+     * The purpose of this interface is to allow the owner of the contract to
+     * perform arbitrary actions from the contract after the window for call
+     * execution has passed.  This enables using these contracts to do things
+     * like purchase crowdsale tokens without requiring that the user put an
+     * additional layer between the TransactionRequest and the crowdsale
+     * contract itself.
+     */
+    function sendProxyTransaction(Request storage self,
+                                  address toAddress,
+                                  uint callGas,
+                                  uint requestedCallValue,
+                                  bytes callData) public returns (bool) {
+        if (msg.sender != self.meta.owner) {
+            return false;
+        } else if (!self.schedule.isAfterWindow()) {
+            return false;
+        }
+
+        // The contract owner cannot have full access to send any amount of
+        // ether because there may be pending payments that are still owed.
+        uint callValue = this.balance.flooredSub(self.claimData.claimDeposit)
+                                     .flooredSub(self.paymentData.paymentOwed)
+                                     .flooredSub(self.paymentData.donationOwed)
+                                     .min(requestedCallValue);
+
+        // Send the requested transaction.
+        return toAddress.call.value(callValue)
+                             .gas(callGas)
+                             (callData);
     }
 }

@@ -56,3 +56,18 @@ their payment.  This means that if the claimer fulfills their commitment to
 execute the request their deposit is returned to them intact.  Otherwise, if
 someone else executes the request then they will receive the deposit as an
 additional reward.
+
+
+Claim Deposit
+-------------
+
+In order to claim a request you must put down a deposit.  This deposit amount
+is equal to twice the ``payment`` amount associated with this request.
+
+The deposit is returned during execution, or when the call is cancelled.
+
+
+How claiming effects payment
+----------------------------
+
+I

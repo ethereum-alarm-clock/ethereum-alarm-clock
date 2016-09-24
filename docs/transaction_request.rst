@@ -35,6 +35,65 @@ The data for the transaction request is split into 5 main sections.
   address owns this request and which address created this request.
 
 
+Retrieving Data
+^^^^^^^^^^^^^^^
+
+The data for a request can be retrieved using two methods.
+
+.. method:: TransactionRequest.requestData()
+
+This function returns the  serialized request data (excluding the ``callData``)
+in a compact format spread across four arrays.  The data is returned
+alphabetical, first by type, and then by section, then by field.
+
+The return value of this function is four arrays.
+
+* ``address[6] addressValues``
+* ``bool[3] boolValues``
+* ``uint256[15] uintValues``
+* ``uint8[1] uint8Values``
+
+These arrays then map to the following data fields on the request.
+
+* Addresses (``address`))
+    * ``addressValues[0] => claimData.claimedBy``
+    * ``addressValues[1] => meta.createdBy``
+    * ``addressValues[2] => meta.owner``
+    * ``addressValues[3] => paymentData.donationBenefactor``
+    * ``addressValues[4] => paymentData.paymentBenefactor``
+    * ``addressValues[5] => txnData.toAddress``
+
+* Booleans (``bool``)
+    * ``boolValues[0] => meta.isCancelled``
+    * ``boolValues[1] => meta.wasCalled``
+    * ``boolValues[2] => meta.wasSuccessful``
+
+* Unsigned 256 bit Integers (``uint``)
+    * ``uintValues[0]  => claimData.claimDeposit``
+    * ``uintValues[1]  => paymentData.anchorGasPrice``
+    * ``uintValues[2]  => paymentData.donation``
+    * ``uintValues[3]  => paymentData.donationOwed``
+    * ``uintValues[4]  => paymentData.payment``
+    * ``uintValues[5]  => paymentData.paymentOwed``
+    * ``uintValues[6]  => schedule.claimWindowSize``
+    * ``uintValues[7]  => schedule.freezePeriod``
+    * ``uintValues[8]  => schedule.reservedWindowSize``
+    * ``uintValues[9]  => schedule.temporalUnit)``
+    * ``uintValues[10] => schedule.windowStart``
+    * ``uintValues[11] => schedule.windowSize``
+    * ``uintValues[12] => txnData.callGas``
+    * ``uintValues[13] => txnData.callValue``
+    * ``uintValues[14] => txnData.requiredStackDepth``
+
+* Unsigned 8 bit Integers (``uint8``)
+    * ``uint8Values[0] => claimData.paymentModifier``
+
+
+.. method:: TransactionRequest.callData()
+
+Returns the ``bytes`` value of the ``callData`` from the request's transaction data.
+
+
 Transaction Data
 ^^^^^^^^^^^^^^^^
 
@@ -270,6 +329,104 @@ execution is paid to the account that triggers cancellation.
 
 
 Claiming
---------
+^^^^^^^^
 
-TODO
+.. method:: TransactionRequest.claim()
+
+Claiming may occur during the ``claimWindowSize`` number of blocks or seconds
+prior to the freeze period.  For example, if a request was configured as
+follows:
+
+* ``windowStart``: block #500
+* ``freezePeriod``: 10 blocks
+* ``claimWindowSize``: 100 blocks
+
+In this case, the call would first be claimable at block 390.  The last block
+in which it could be claimed would be block 489.
+
+See the :doc:`./claiming` section of the documentation for details
+about the claiming process.
+
+
+Execution
+^^^^^^^^^
+
+.. method:: TransactionRequest.execute()
+
+Execution may happen beginning at the block or timestamp denoted by the
+``windowStart`` value all the way through and including the block or timestamp
+denoted by ``windowStart + windowSize``.
+
+See the :doc:`./execution` section of the documentation for details about the
+execution process.
+
+
+Retrieval of Ether
+------------------
+
+All payments are automatically returned as part of normal request execution and
+cancellation.  Since it is possible for these payments to fail, there are
+backup methods that can be called individually to retrieve these different
+payment or deposit values.
+
+All of these functions may be called by anyone.
+
+
+Returning the Claim Deposit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: TransactionRequest.refundClaimDeposit()
+
+This method will return the claim deposit if either of the following conditions
+are met.
+
+* The request was cancelled.
+* The execution window has passed.
+
+
+Retrieving the Payment
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: TransactionRequest.sendPayment()
+
+This function will send the ``paymentOwed`` value to the
+``paymentBenefactor``.  This is only callable after the execution window has
+passed.
+
+
+Retrieving the Donation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: TransactionRequest.sendDonation()
+
+This function will send the ``donationOwed`` value to the
+``donationBenefactor``.  This is only callable after the execution window has
+passed.
+
+
+Return any extra Ether
+^^^^^^^^^^^^^^^^^^^^^^
+
+This function will send any exta ether in the contract that is not owed as a
+donation or payment and that is not part of the claim deposit back to the
+``owner`` of the request.  This is only callable if one of the following
+conditions is met.
+
+* The request was cancelled.
+* The execution window has passed.
+
+
+Proxy Transaction Interface
+---------------------------
+
+.. method:: sendProxyTransaction(address toAddress, uint callGas, uint requestedCallValue, bytes callData)
+
+After the execution window has passed the owner of the contract may use this
+method to send arbitrary transactions from the request contract itself.  This
+is useful for situations where the actions of the requested transaction result
+in the :class:`TransactionRequest` contract itself being the owner or
+authorized address for something.
+
+With this interface, you can do things like schedule the purchase of crowdsale
+tokens and then later transfer ownership of those tokens to your own personal
+address.

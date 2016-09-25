@@ -70,4 +70,26 @@ The deposit is returned during execution, or when the call is cancelled.
 How claiming effects payment
 ----------------------------
 
-I
+A claimed request does not pay the same as an unclaimed request.  The earlier the
+request is claimed, the less it will pay, and conversely, the later the request is
+claimed, the more it pays.
+
+This is a linear transition from getting paid 0% of the total payment if the
+request is claimed at the earliest possible time up to 100% of the total payment
+at the very end of the claim window.  This multiplier is referred to as the
+*payment modifier*.
+
+It is important to note that the *payment modifier* does not apply to gas
+reimbursements which are always paid in full.  No matter when a call is
+claimed, or how it is executed, it will **always** provide a full gas
+reimbursement.  The only case where this may end up not being true is in cases
+where the gas price has changed drastically since the time the request was
+scheduled and the contract's endowment is now sufficiently low that it is not
+longer funded with sufficient ether to cover these costs.
+
+For example, if the request has a ``payment`` of 2000 wei, a
+``claimWindowSize`` of 255 blocks, a ``freezePeriod`` of 10 blocks, and a
+``windowStart`` set at block 500.  In this case, the request would have a
+payment of 0 at block 235.  At block 235 it would provide a payment of 20 wei.
+At block 245 it would pay 220 wei or 11% of the total payment.  At block 489 it
+would pay 2000 wei or 100% of the total payment.

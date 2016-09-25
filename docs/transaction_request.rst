@@ -414,19 +414,3 @@ conditions is met.
 
 * The request was cancelled.
 * The execution window has passed.
-
-
-Proxy Transaction Interface
----------------------------
-
-.. method:: sendProxyTransaction(address toAddress, uint callGas, uint requestedCallValue, bytes callData)
-
-After the execution window has passed the owner of the contract may use this
-method to send arbitrary transactions from the request contract itself.  This
-is useful for situations where the actions of the requested transaction result
-in the :class:`TransactionRequest` contract itself being the owner or
-authorized address for something.
-
-With this interface, you can do things like schedule the purchase of crowdsale
-tokens and then later transfer ownership of those tokens to your own personal
-address.

@@ -162,7 +162,7 @@ library RequestScheduleLib {
      */
     function validateReservedWindowSize(uint reservedWindowSize,
                                         uint windowSize) returns (bool) {
-        return reservedWindowSize < windowSize;
+        return reservedWindowSize <= windowSize.safeAdd(1);
     }
 
     /*

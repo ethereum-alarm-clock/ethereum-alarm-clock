@@ -105,7 +105,7 @@ def test_request_factory_too_large_reserved_window_validation_error(chain,
         freezePeriod=10,
         windowStart=window_start,
         windowSize=255,
-        reservedWindowSize=255 + 1,  # 1 more than the window size.
+        reservedWindowSize=255 + 2,  # 2 more than the window size.
         temporalUnit=1,
         callValue=123456789,
         callGas=1000000,

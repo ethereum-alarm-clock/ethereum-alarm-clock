@@ -178,7 +178,6 @@ library RequestScheduleLib {
      *  Validation: ensure that the temporal unit passed in is constrained to 0 or 1
      */
     function validateTemporalUnit(uint temporalUnitAsUInt) returns (bool) {
-        return true;
         return (temporalUnitAsUInt != uint(TemporalUnit.Null) && (
             temporalUnitAsUInt == uint(TemporalUnit.Blocks) || 
             temporalUnitAsUInt == uint(TemporalUnit.Timestamp)

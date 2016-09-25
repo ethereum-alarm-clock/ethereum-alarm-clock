@@ -148,8 +148,9 @@ def test_request_factory_invalid_temporal_unit_validation_error(chain,
     )
     assert not all(is_valid)
     assert is_valid[2] is False
+    assert is_valid[3] is False  # because it defaults to `seconds` if the temporal unit is too big.
     assert all(is_valid[:2])
-    assert all(is_valid[3:])
+    assert all(is_valid[4:])
 
 
 def test_request_factory_too_soon_execution_window_validation_error(chain,

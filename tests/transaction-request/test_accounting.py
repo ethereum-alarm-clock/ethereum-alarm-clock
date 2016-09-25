@@ -92,7 +92,7 @@ def test_txn_request_payments_when_claimed(chain, web3, get_execute_data, Reques
     expected_payment = claim_deposit + gas_cost + request_data.claimData.paymentModifier * request_data.paymentData.payment // 100
 
     assert payment >= expected_payment
-    assert payment - expected_payment < 150000 * gas_price
+    assert payment - expected_payment < 100000 * gas_price
 
     assert after_payment_balance - before_payment_balance == payment - claim_deposit - gas_cost - claim_gas_cost
 
@@ -134,6 +134,8 @@ def test_accounting_when_everything_throws(chain,
         callData=execute_call_data,
     )
     execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
+
+    chain.wait.for_block(request_data.schedule.windowStart + request_data.schedule.windowSize)
 
     execute_data = get_execute_data(execute_txn_hash)
     request_data.refresh()

@@ -137,7 +137,7 @@ def test_request_factory_invalid_temporal_unit_validation_error(chain,
         windowStart=window_start,
         windowSize=255,
         reservedWindowSize=16,
-        temporalUnit=2,  # Only 0, and 1 are supported.
+        temporalUnit=3,  # Only 1, and 2 are supported.
         callValue=123456789,
         callGas=1000000,
         requiredStackDepth=0

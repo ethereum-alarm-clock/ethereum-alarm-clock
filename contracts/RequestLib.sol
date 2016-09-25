@@ -435,7 +435,7 @@ library RequestLib {
      * The amount of gas needed to complete the execute method after
      * the transaction has been sent.
      */
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 190000;
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 140000;
 
     function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
         return _GAS_TO_COMPLETE_EXECUTION;
@@ -446,7 +446,7 @@ library RequestLib {
      *  The amount of gas used by the portion of the `execute` function
      *  that cannot be accounted for via gas tracking.
      */
-    uint constant _EXECUTE_EXTRA_GAS = 145000;
+    uint constant _EXECUTE_EXTRA_GAS = 90000;
 
     function EXECUTE_EXTRA_GAS() returns (uint) {
         return _EXECUTE_EXTRA_GAS;
@@ -614,43 +614,5 @@ library RequestLib {
             return true;
         }
         return false;
-    }
-
-    /*
-     * Proxy transaction sending.
-     *
-     * Proxy transactions are only allowed *after* the execution window.  This
-     * is to prevent any possibility of re-entrance issues during call
-     * execution.
-     *
-     * The purpose of this interface is to allow the owner of the contract to
-     * perform arbitrary actions from the contract after the window for call
-     * execution has passed.  This enables using these contracts to do things
-     * like purchase crowdsale tokens without requiring that the user put an
-     * additional layer between the TransactionRequest and the crowdsale
-     * contract itself.
-     */
-    function sendProxyTransaction(Request storage self,
-                                  address toAddress,
-                                  uint callGas,
-                                  uint requestedCallValue,
-                                  bytes callData) public returns (bool) {
-        if (msg.sender != self.meta.owner) {
-            return false;
-        } else if (!self.schedule.isAfterWindow()) {
-            return false;
-        }
-
-        // The contract owner cannot have full access to send any amount of
-        // ether because there may be pending payments that are still owed.
-        uint callValue = this.balance.flooredSub(self.claimData.claimDeposit)
-                                     .flooredSub(self.paymentData.paymentOwed)
-                                     .flooredSub(self.paymentData.donationOwed)
-                                     .min(requestedCallValue);
-
-        // Send the requested transaction.
-        return toAddress.call.value(callValue)
-                             .gas(callGas)
-                             (callData);
     }
 }

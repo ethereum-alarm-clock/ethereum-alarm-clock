@@ -70,7 +70,7 @@ timestamps there would never be a valid block for your request to be executed.
 
 
 Reserved Execution Window
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Each request may specify a ``claimWindowSize`` which defines a number of blocks
 or seconds at the beginning of the execution window during which the request
@@ -110,3 +110,102 @@ execute it when the *execution window* comes around.  Conversely, leaving at
 least as much time unreserved ensures that in the event that your request is
 claimed but the claimer fails to execute the request that someone else has
 plenty of of time to fulfill the execution before the *execution window* ends.
+
+
+The Execution Lifecycle
+-----------------------
+
+When the :method:`TransactionRequest.execute()` function is called the contract
+goes through three main sections of logic which are referred to as a whole as
+the *execution lifecycle*.
+
+1. Validation: Handles all of the checks that must be done to ensure that all
+   of the conditions are correct for the requested transaction to be executed.
+2. Execution: The actual sending of the requested transaction.
+3. Accounting: Computing and sending of all payments to the necessary parties.
+
+
+Part 1: Validation
+^^^^^^^^^^^^^^^^^^
+
+During the validation phase all of the following validation checks must pass.
+
+
+Check #1: Not already called
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires the ``wasCalled`` attribute of the transaction request to
+be ``false``.
+
+
+Check #2: Not Cancelled
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires the ``isCancelled`` attribute of the transaction request to
+be ``false``.
+
+
+Check #3: Not before execution window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires ``block.number`` or ``block.timestamp`` to be greater than or equal to
+the ``windowStart`` attribute.
+
+
+Check #4: Not after execution window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires ``block.number`` or ``block.timestamp`` to be less than or equal to
+``windowStart + windowSize``.
+
+
+Check #5 and #6: Within the execution window and authorized
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* If the request is claimed
+    * If the current time is within the *reserved execution window*
+        * Requires that ``msg.sender`` to be the ``claimedBy`` address
+    * Otherwise during the remainder of the *execution window*
+        * Always passes.
+* If the request is not claimed.
+    * Always passes if the current time is within the *execution window*
+
+
+Check #7: Stack Depth Check
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to understand this check you need to understand the problem it solves.
+One of the more subtle attacks that can be executed against a requested
+transaction is to force it to fail by ensuring that it will encounter the EVM
+stack limit.  Without this check the executor of a transaction request could
+force *any* request to fail by arbitrarily increasing the stack depth prior to
+execution such that when the transaction is sent it encounters the maximum
+stack depth and fails.  From the perspective of the :class:`TransactionRequest`
+contract this sort of failure is indistinguishable from any other exception.
+
+In order to prevent this, prior to execution, the :class:`TransactionRequest`
+contract will ensure that the stack can be extended by a number of stack frames
+equal to ``requiredStackDepth``.  This check passes if the stack can be
+extended by this amount.
+
+This check will be skipped if ``msg.sender == tx.origin`` since in this case it
+is not possible for the stack to have been arbitrarily extended prior to
+execution.
+
+
+Check #8: Sufficient Call Gas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires that the current value of ``msg.gas`` be greater than or equal to the
+``callGas`` attribute.
+
+
+Part 2: Execution
+^^^^^^^^^^^^^^^^^
+
+
+
+Part 3: Accounting
+^^^^^^^^^^^^^^^^^^
+
+

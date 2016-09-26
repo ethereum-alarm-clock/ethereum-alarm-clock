@@ -271,7 +271,7 @@ library RequestLib {
          *  Execute the TransactionRequest
          *
          *  +---------------------+
-         *  | Phase 1: Accounting |
+         *  | Phase 1: Validation |
          *  +---------------------+
          *
          *  Must pass all of the following checks:

@@ -42,6 +42,7 @@ Contents:
    execution
    request_factory
    request_tracker
+   scheduler
    changelog
    :maxdepth: 1
 

@@ -2,11 +2,13 @@ import pytest
 
 
 @pytest.fixture()
-def scheduler(chain, request_tracker, request_factory):
+def scheduler(chain, web3, request_tracker, request_factory):
     block_scheduler = chain.get_contract('BlockScheduler', deploy_args=[
         request_tracker.address,
         request_factory.address,
     ])
+    chain_code = web3.eth.getCode(block_scheduler.address)
+    assert len(chain_code) > 10
     return block_scheduler
 
 
@@ -25,13 +27,13 @@ def test_block_scheduling_with_full_args(chain,
     }).scheduleTransaction(
         txn_recorder.address,
         'this-is-the-call-data',
-        255,  # windowSize
         [
             1212121,  # callGas
             123454321,  # callValue
             98765,  # donation
             80008,  # payment
             123,  # requiredStackDepth
+            255,  # windowSize
             window_start,  # windowStart
         ],
     )
@@ -65,10 +67,10 @@ def test_block_scheduling_with_simplified_args(chain,
     }).scheduleTransaction(
         txn_recorder.address,
         'this-is-the-call-data',
-        255,  # windowSize
         [
             1212121,  # callGas
             123454321,  # callValue
+            255,  # windowSize
             window_start,  # windowStart
         ],
     )

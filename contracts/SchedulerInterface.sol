@@ -8,8 +8,8 @@ import {SchedulerLib} from "contracts/SchedulerLib.sol";
 contract SchedulerInterface {
     using SchedulerLib for SchedulerLib.FutureTransaction;
 
-    address trackerAddress;
-    address factoryAddress;
+    address public trackerAddress;
+    address public factoryAddress;
 
     RequestScheduleLib.TemporalUnit public temporalUnit;
 
@@ -42,15 +42,14 @@ contract SchedulerInterface {
      * 
      *  uintArgs[0] callGas
      *  uintArgs[1] callValue
-     *  uintArgs[2] windowStart
-     *  uint8 windowSize;
+     *  uintArgs[2] windowSize
+     *  uintArgs[3] windowStart
      *  bytes callData;
      *  address toAddress;
      */
     function scheduleTransaction(address toAddress,
                                  bytes callData,
-                                 uint8 windowSize,
-                                 uint[3] uintArgs) doReset public returns (address);
+                                 uint[4] uintArgs) doReset public returns (address);
 
     /*
      *  Full scheduling API exposing all fields.
@@ -60,13 +59,12 @@ contract SchedulerInterface {
      *  uintArgs[2] donation
      *  uintArgs[3] payment
      *  uintArgs[4] requiredStackDepth
-     *  uintArgs[5] windowStart
-     *  uint8 windowSize;
+     *  uintArgs[5] windowSize
+     *  uintArgs[6] windowStart
      *  bytes callData;
      *  address toAddress;
      */
     function scheduleTransaction(address toAddress,
                                  bytes callData,
-                                 uint8 windowSize,
-                                 uint[6] uintArgs) doReset public returns (address);
+                                 uint[7] uintArgs) doReset public returns (address);
 }

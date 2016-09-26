@@ -18,7 +18,7 @@ library SchedulerLib {
         uint donation;
         uint payment;
 
-        uint8 windowSize;
+        uint windowSize;
         uint windowStart;
         RequestScheduleLib.TemporalUnit temporalUnit;
 
@@ -27,33 +27,83 @@ library SchedulerLib {
         bytes callData;
         address toAddress;
         uint requiredStackDepth;
+
+        uint reservedWindowSize;
+        uint freezePeriod;
+        uint claimWindowSize;
     }
 
     /*
-     * Set default values.
+     * Set common default values.
+     */
+    function resetCommon(FutureTransaction storage self) public returns (bool) {
+        if (self.payment != 1000000 * tx.gasprice) {
+            self.payment = 1000000 * tx.gasprice;
+        }
+        if (self.donation != self.payment / 100 ) {
+            self.donation = self.payment / 100;
+        }
+        if (self.toAddress != msg.sender) {
+            self.toAddress = msg.sender;
+        }
+        if (self.callGas != 90000) {
+            self.callGas = 90000;
+        }
+        if (self.callData.length != 0) {
+            self.callData = "";
+        }
+        if (self.requiredStackDepth != 10) {
+            self.requiredStackDepth = 10;
+        }
+        return true;
+    }
+
+    /*
+     * Set default values for block based scheduling.
      */
     function resetAsBlock(FutureTransaction storage self) public returns (bool) {
-        self.donation = 12345;
-        self.payment = 54321;
-        self.windowSize = 255;
-        self.windowStart = block.number + 10;
-        self.toAddress = msg.sender;
-        self.callGas = 90000;
-        self.callData = "";
-        self.requiredStackDepth = 0;
+        if (!resetCommon(self)) throw;
+
+        if (self.windowSize != 255) {
+            self.windowSize = 255;
+        }
+        if (self.windowStart != block.number + 10) {
+            self.windowStart = block.number + 10;
+        }
+        if (self.reservedWindowSize != 16) {
+            self.reservedWindowSize = 16;
+        }
+        if (self.freezePeriod != 10) {
+            self.freezePeriod = 10;
+        }
+        if (self.claimWindowSize != 255) {
+            self.claimWindowSize = 255;
+        }
 
         return true;
     }
 
+    /*
+     * Set default values for timestamp based scheduling.
+     */
     function resetAsTimestamp(FutureTransaction storage self) public returns (bool) {
-        self.donation = 12345;
-        self.payment = 54321;
-        self.windowSize = 255;
-        self.windowStart = now + 5 minutes;
-        self.toAddress = msg.sender;
-        self.callGas = 90000;
-        self.callData = "";
-        self.requiredStackDepth = 0;
+        if (!resetCommon(self)) throw;
+
+        if (self.windowSize != 60 minutes) {
+            self.windowSize = 60 minutes;
+        }
+        if (self.windowStart != now + 5 minutes) {
+            self.windowStart = now + 5 minutes;
+        }
+        if (self.reservedWindowSize != 5 minutes) {
+            self.reservedWindowSize = 5 minutes;
+        }
+        if (self.freezePeriod != 3 minutes) {
+            self.freezePeriod = 3 minutes;
+        }
+        if (self.claimWindowSize != 60 minutes) {
+            self.claimWindowSize = 60 minutes;
+        }
 
         return true;
     }
@@ -71,6 +121,7 @@ library SchedulerLib {
             self.callGas,
             self.callValue
         ).min(this.balance);
+
         address newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
                 msg.sender,           // meta.owner
@@ -80,12 +131,12 @@ library SchedulerLib {
             [
                 self.donation,            // paymentData.donation
                 self.payment,             // paymentData.payment
-                255,                      // scheduler.claimWindowSize
-                10,                       // scheduler.freezePeriod
-                16,                       // scheduler.reservedWindowSize
+                self.claimWindowSize,     // scheduler.claimWindowSize
+                self.freezePeriod,        // scheduler.freezePeriod
+                self.reservedWindowSize,  // scheduler.reservedWindowSize
                 uint(self.temporalUnit),  // scheduler.temporalUnit (1: block, 2: timestamp)
                 self.windowStart,         // scheduler.windowStart
-                255,                      // scheduler.windowSize
+                self.windowSize,          // scheduler.windowSize
                 self.callGas,             // txnData.callGas
                 self.callValue,           // txnData.callValue
                 self.requiredStackDepth   // txnData.requiredStackDepth

@@ -12,21 +12,6 @@ contract RequestFactory is RequestFactoryInterface {
     using SafeSendLib for address;
 
     /*
-     *  ValidationError
-     */
-    enum Errors {
-        InsufficientEndowment,
-        ReservedWindowBiggerThanExecutionWindow,
-        InvalidTemporalUnit,
-        ExecutionWindowTooSoon,
-        InvalidRequiredStackDepth,
-        CallGasTooHigh,
-        EmptyToAddress
-    }
-
-    event ValidationError(Errors error);
-
-    /*
      *  The lowest level interface for creating a transaction request.
      *
      *  addressArgs[1] -  meta.owner
@@ -47,7 +32,47 @@ contract RequestFactory is RequestFactoryInterface {
     function createRequest(address[3] addressArgs,
                            uint[11] uintArgs,
                            bytes callData) returns (address) {
-        var is_valid = RequestLib.validate(
+        var request = (new TransactionRequest).value(msg.value)(
+            [
+                msg.sender,
+                addressArgs[0],  // meta.owner
+                addressArgs[1],  // paymentData.donationBenefactor
+                addressArgs[2]   // txnData.toAddress
+            ],
+            uintArgs,
+            callData
+        );
+
+        // Log the creation.
+        RequestCreated(address(request));
+
+        return request;
+    }
+
+    /*
+     *  ValidationError
+     */
+    enum Errors {
+        InsufficientEndowment,
+        ReservedWindowBiggerThanExecutionWindow,
+        InvalidTemporalUnit,
+        ExecutionWindowTooSoon,
+        InvalidRequiredStackDepth,
+        CallGasTooHigh,
+        EmptyToAddress
+    }
+
+    event ValidationError(Errors error);
+
+    /*
+     * Validate the constructor arguments for either `createRequest` or
+     * `createValidatedRequest`
+     */
+    function validateRequestParams(address[3] addressArgs,
+                                   uint[11] uintArgs,
+                                   bytes callData,
+                                   uint endowment) returns (bool[7]) {
+        return RequestLib.validate(
             [
                 msg.sender,      // meta.createdBy
                 addressArgs[0],  // meta.owner
@@ -56,8 +81,23 @@ contract RequestFactory is RequestFactoryInterface {
             ],
             uintArgs,
             callData,
-            msg.value
+            endowment
         );
+    }
+
+    /*
+     *  The same as createRequest except that it requires validation prior to
+     *  creation.
+     *
+     *  Parameters are the same as `createRequest`
+     */
+    function createValidatedRequest(address[3] addressArgs,
+                                    uint[11] uintArgs,
+                                    bytes callData) returns (address) {
+        var is_valid = validateRequestParams(addressArgs,
+                                             uintArgs,
+                                             callData,
+                                             msg.value);
 
         if (!is_valid.all()) {
             if (!is_valid[0]) ValidationError(Errors.InsufficientEndowment);
@@ -76,26 +116,7 @@ contract RequestFactory is RequestFactoryInterface {
             throw;
         }
 
-        var request = (new TransactionRequest).value(msg.value)(
-            [
-                msg.sender,
-                addressArgs[0],  // meta.owner
-                addressArgs[1],  // paymentData.donationBenefactor
-                addressArgs[2]   // txnData.toAddress
-            ],
-            uintArgs,
-            callData
-        );
-
-        // Log the creation.
-        RequestCreated(address(request));
-
-        return request;
-    }
-
-    function receiveExecutionNotification() returns (bool) {
-        // TODO handle this.
-        throw;
+        return createRequest(addressArgs, uintArgs, callData);
     }
 
     mapping (address => bool) requests;

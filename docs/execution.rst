@@ -203,9 +203,153 @@ Requires that the current value of ``msg.gas`` be greater than or equal to the
 Part 2: Execution
 ^^^^^^^^^^^^^^^^^
 
+The execution phase is very minimalistic.  It marks the request as having been
+called and then dispatches the requested transaction, storing the success or
+failure on the ``wasSuccessful`` attribute.
 
 
 Part 3: Accounting
 ^^^^^^^^^^^^^^^^^^
 
+The accounting phase accounts for all of the payments and reimbursements that
+need to be sent.
 
+The *donation* payment is the mechanism through which developers can earn a
+return on their development efforts on the Alarm service.  For the *official*
+scheduler deployed as part of the alarm service this defaults to 1% of the
+default payment.  This value is multiplied by the *gas multiplier* (see
+:ref:`gas-multiplier`) and sent to the ``donationBenefactor`` address.
+
+Next the payment for the actual execution is computed.  The formula for this is
+as follows:
+
+    ``totalPayment = payment * gasMultiplier + gasUsed * tx.gasprice + claimDeposit``
+
+The three components of the ``totalPayment`` are as follows.
+
+* ``payment * gasMultiplier``: The actual payment for execution.
+* ``gasUsed * tx.gasprice``: The reimbursement for the gas costs of execution.
+  This is not going to exactly match the actual gas costs, but it will always
+  err on the side of overpaying slightly for gas consumption.
+* ``claimDeposit``:  If the request is not claimed this will be 0.  Otherwise,
+  the ``claimDeposit`` is always given to the executor of the request.
+
+After these payments have been calculated and sent, the ``Executed`` event is
+logged, and any remaining ether that is not allocated to be paid to any party
+is sent back to the address that scheduled the request.
+
+
+.. _gas-multiplier:
+
+Gas Multiplier
+--------------
+
+To understand the *gas multiplier* you must understand the problem it solves.
+
+Transactions requests always provide a 100% reimbursment of gas costs.  This is
+implemented by requiring the scheduler to provide sufficient funds up-front to
+cover the future gas costs of their transaction.  Ideally we want the sender of
+the transaction that executes the request to be motivated to use a ``gasPrice``
+that is as low as possible while still allowing the transaction to be included
+in a block in a timely manner.
+
+A naive approach would be to specify a *maximum* gas price that the scheduler
+is willing to pay.  This might be possible for requests that will be processed
+a short time in the future, but for transactions that are scheduled
+sufficiently far in the future it isn't feasible to set a gas price that is
+going to reliably reflect the current normal gas prices at that time.
+
+In order to mitigate this issue, we instead provide a financial incentive to
+the party executing the request to provide as low a gas cost as possible while
+still getting their transaction included in a timely manner.
+
+Those executing the request are already sufficiently motivated to provide a gas
+price that is high enough to get the transaction mined in a reasonable time
+since if the price they specify is too low it is likely that someone else will
+execute the request before them, or that their transaction will not be included
+before the *execution window* closes.
+
+So, to provide incentive to keep the gas cost reasonably low, the *gas
+multiplier* concept was introduced.  Simply put, the multiplier produces a
+number between 0 and 2 which is applid to the ``payment`` that will be sent for
+fulfilling the request.
+
+At the time of scheduling, the ``gasPrice`` of the scheduling transaction is
+stored.  We refer to this as the ``anchorGasPrice`` as we can assume with some
+reliability that this value is a *reasonable* gas cost that the scheduler is
+willing to pay.
+
+At the time of execution, the following will occur based on the ``gasPrice``
+used for the executing transaction:
+
+    * If ``gasPrice`` is equal to the ``anchorGasPrice`` then the *gas
+      multiplier* will be 1, meaning that the ``payment`` will be issued as is.
+    * When the ``gasPrice`` is greater than the ``anchorGasPrice``, the *gas
+      multiplier* will approach 0 meaning that the payment will steadily get
+      smaller for higher gas prices.
+    * When the ``gasPrice`` is less than the ``anchorGasPrice``, the *gas
+      multiplier* will approach 2 meaning that the payment will steadily get
+      larger for lower gas prices.
+
+The formula used is the following.
+
+* If the execution ``gasPrice`` is greater than ``anchorGasPrice``:
+  
+    ``gasMultiplier = anchorGasPrice / tx.gasprice``
+
+* Else (if the execution ``gasPrice`` is less than or equal to the
+  ``anchorGasPrice``:
+
+    ``gasMultiplier = 2 - (anchorGasPrice / (2 * anchorGasPrice - tx.gasprice))``
+
+
+For example, if at the time of scheduling the gas price was 100 wei and the
+executing transaction uses a ``gasPrice`` of 200 wei, then the gas multiplier
+would be ``100 / 200 => 0.5``.
+
+Alternatively, if the transaction used a ``gasPrice`` of 75 wei then the gas
+multiplier would be ``2 - (100 / (2 * 100 - 75)) => 1.2``.
+
+
+Sending the Execution Transaction
+---------------------------------
+
+In addition to the pre-execution validation checks, the following things should
+be taken into considuration when sending the executing transaction for a
+request.
+
+
+Gas Reimbursement
+^^^^^^^^^^^^^^^^^
+
+If the ``gasPrice`` of the network has increased significantly since the
+request was scheduled it is possible that it no longer has sufficient ether to
+pay for gas costs.  The following formula can be used to compute the maximum
+amount of gas that a request is capable of paying:
+
+    ``(request.balance - 2 * (payment + donation)) / tx.gasprice``
+
+If you provide a gas value above this amount for the executing transaction then
+you are not guaranteed to be fully reimbursed for gas costs.
+
+
+Minimum ExecutionGas
+^^^^^^^^^^^^^^^^^^^^
+
+When sending the execution transaction, you should use the following rules to
+determine the minimum gas to be sent with the transaction:
+
+* Start with a baseline of the ``callGas`` attribute.
+* Add ``150000`` gas to account for execution overhead.
+* If you are proxying the execution through another contract such that during
+  execution ``msg.sender != tx.origin`` then you need to provide an additional
+  ``700 * requiredStackDepth`` gas for the stack depth checking.
+
+For example, if you are sending the execution transaction directly from a
+private key based address, and the request specified a ``callGas`` value of
+120000 gas then you would need to provide ``120000 + 150000 => 270000`` gas.
+
+If you were executing the same request, except the execution transaction was
+being proxied through a contract, and the request specified a
+``requiredStackDepth`` of 10 then you would need to provide ``120000 + 150000 +
+700 * 10 => 340000`` gas.

@@ -55,7 +55,7 @@ The return value of this function is four arrays.
 
 These arrays then map to the following data fields on the request.
 
-* Addresses (``address`))
+* Addresses (``address``)
     * ``addressValues[0] => claimData.claimedBy``
     * ``addressValues[1] => meta.createdBy``
     * ``addressValues[2] => meta.owner``
@@ -68,7 +68,7 @@ These arrays then map to the following data fields on the request.
     * ``boolValues[1] => meta.wasCalled``
     * ``boolValues[2] => meta.wasSuccessful``
 
-* Unsigned 256 bit Integers (``uint``)
+* Unsigned 256 bit Integers (``uint`` aka ``uint256``)
     * ``uintValues[0]  => claimData.claimDeposit``
     * ``uintValues[1]  => paymentData.anchorGasPrice``
     * ``uintValues[2]  => paymentData.donation``
@@ -91,7 +91,8 @@ These arrays then map to the following data fields on the request.
 
 .. method:: TransactionRequest.callData()
 
-Returns the ``bytes`` value of the ``callData`` from the request's transaction data.
+Returns the ``bytes`` value of the ``callData`` from the request's transaction
+data.
 
 
 Transaction Data
@@ -120,6 +121,7 @@ fields.
 
     The amount of gas that will be sent with the transaction.
 
+
 .. attribute:: uint requiredStackDepth
 
     The number of stack frames required by this transaction.
@@ -136,7 +138,7 @@ Information surrounding the payment and donation for this request.
     The gas price that was used during creation of this request.  This is used
     to incentivise the use of an adequately low gas price during execution.
 
-    TODO: Details on how this works.
+    See :ref:`gas-multiplier` for more information on how this is used.
 
 
 .. attribute:: uint payment

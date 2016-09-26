@@ -7,6 +7,12 @@ contract RequestFactoryInterface {
     function createRequest(address[3] addressArgs,
                            uint[11] uintArgs,
                            bytes callData) returns (address);
-    function receiveExecutionNotification() returns (bool);
+    function validateRequestParams(address[3] addressArgs,
+                                   uint[11] uintArgs,
+                                   bytes callData,
+                                   uint endowment) returns (bool[7]);
+    function createValidatedRequest(address[3] addressArgs,
+                                    uint[11] uintArgs,
+                                    bytes callData) returns (address);
     function isKnownRequest(address _address) returns (bool);
 }

@@ -65,12 +65,13 @@ library SchedulerLib {
                       address factoryAddress,
                       address trackerAddress) public returns (address) {
         var factory = RequestFactoryInterface(factoryAddress);
-        address newRequestAddress = factory.createRequest.value(PaymentLib.computeEndowment(
+        var endowment = PaymentLib.computeEndowment(
             self.payment,
             self.donation,
             self.callGas,
             self.callValue
-        ).min(this.balance))(
+        ).min(this.balance);
+        address newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
                 msg.sender,           // meta.owner
                 DONATION_BENEFACTOR,  // paymentData.donationBenefactor

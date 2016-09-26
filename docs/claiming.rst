@@ -93,3 +93,13 @@ For example, if the request has a ``payment`` of 2000 wei, a
 payment of 0 at block 235.  At block 235 it would provide a payment of 20 wei.
 At block 245 it would pay 220 wei or 11% of the total payment.  At block 489 it
 would pay 2000 wei or 100% of the total payment.
+
+
+Gas Costs
+---------
+
+The gas costs for claim transactions are *not* reimbursed.  They are considered
+the cost of doing business and should be taken into consideration when claiming
+a request.  If the request is claimed sufficiently early in the claim window it
+is possible that the ``payment`` will not fully offset the transaction costs of
+claiming the request.

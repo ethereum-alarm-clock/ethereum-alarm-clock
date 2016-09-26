@@ -118,7 +118,8 @@ library RequestLib {
                                                              request.schedule.freezePeriod,
                                                              request.schedule.windowStart);
         is_valid[4] = ExecutionLib.validateRequiredStackDepth(request.txnData.requiredStackDepth);
-        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas, _EXECUTE_EXTRA_GAS);
+        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas,
+                                                   _GAS_TO_AUTHORIZE_EXECUTION + _GAS_TO_COMPLETE_EXECUTION);
         is_valid[6] = ExecutionLib.validateToAddress(request.txnData.toAddress);
 
         return is_valid;
@@ -417,15 +418,22 @@ library RequestLib {
     }
 
     function requiredExecutionGas(Request storage self) returns (uint) {
-        return self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
-                                   .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
+        var requiredGas = self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
+                                              .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
+        if (msg.sender != tx.origin) {
+            var stackCheckGas = ExecutionLib.GAS_PER_DEPTH()
+                                            .safeMultiply(self.txnData.requiredStackDepth);
+            requiredGas = requiredGas.safeAdd(stackCheckGas);
+        }
+
+        return requiredGas;
     }
 
     /*
      * The amount of gas needed to do all of the pre execution checks.
      */
     // TODO: measure this.
-    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 0;
+    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 10000;
 
     function GAS_TO_AUTHORIZE_EXECUTION() returns (uint) {
         return _GAS_TO_AUTHORIZE_EXECUTION;
@@ -435,7 +443,7 @@ library RequestLib {
      * The amount of gas needed to complete the execute method after
      * the transaction has been sent.
      */
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 140000;
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 130000;
 
     function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
         return _GAS_TO_COMPLETE_EXECUTION;

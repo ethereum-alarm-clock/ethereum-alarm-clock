@@ -20,6 +20,13 @@ transactions for later execution.  The :doc:`./scheduler` API is likely the
 right solution for these use cases.
 
 
+Interface
+---------
+
+.. literalinclude:: ../contracts/RequestFactoryInterface.sol
+    :language: solidity
+
+
 Function Arguments
 ------------------
 
@@ -136,17 +143,25 @@ Creation of Transaction Requests
 --------------------------------
 
 
-.. method:: RequestFactory.createRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData)
+.. method:: RequestFactory.createRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData) returns (address)
 
 This function deploys a new :class:`TransactionRequest` contract.  This
 function does not perform any validation and merely directly deploys the new
 contract.
 
+Upon successful creation the ``RequestCreated`` event will be logged.
 
-.. method:: RequestFactory.createValidatedRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData)
+
+.. method:: RequestFactory.createValidatedRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData) returns (address)
 
 This function first performs validation of the provided arguments and then
 deploys the new :class:`TransactionRequest` contract when validation succeeds.
 
 When validation fails, a ``ValidationError`` event will be logged for each
 validation error that occured.
+
+
+Tracking API
+------------
+
+.. method:: RequestFactory.isKnownRequest(address _address) returns (bool)

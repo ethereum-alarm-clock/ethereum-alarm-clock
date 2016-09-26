@@ -40,19 +40,9 @@ Contents:
    transaction_request
    claiming
    execution
-
-   overview
-   scheduling
-   call_contracts
-   execution
-   reliability
-   client
-   costs
-   abi
-   events
-   terminology
+   request_factory
    changelog
-   :maxdepth: 2
+   :maxdepth: 1
 
 
 .. _github repository: https://github.com/pipermerriam/ethereum-alarm-clock

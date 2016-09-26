@@ -16,9 +16,8 @@ parameters.
 Interface
 ---------
 
-.. code-block:: solidity
-
-    TODO: embed the actual interface contract here.
+.. literalinclude:: ../contracts/TransactionRequestInterface.sol
+    :language: solidity
 
 
 Data Model

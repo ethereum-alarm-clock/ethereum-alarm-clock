@@ -41,6 +41,7 @@ Contents:
    claiming
    execution
    request_factory
+   request_tracker
    changelog
    :maxdepth: 1
 

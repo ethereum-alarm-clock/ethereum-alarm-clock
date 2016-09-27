@@ -9,6 +9,10 @@ def scheduler(chain, web3, request_tracker, request_factory):
     ])
     chain_code = web3.eth.getCode(block_scheduler.address)
     assert len(chain_code) > 10
+
+    assert request_factory.address == block_scheduler.call().factoryAddress()
+    assert request_tracker.address == block_scheduler.call().trackerAddress()
+
     return block_scheduler
 
 

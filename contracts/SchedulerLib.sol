@@ -122,7 +122,7 @@ library SchedulerLib {
             self.callValue
         ).min(this.balance);
 
-        address newRequestAddress = factory.createValidatedRequest.value(msg.value)(
+        address newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
                 msg.sender,           // meta.owner
                 DONATION_BENEFACTOR,  // paymentData.donationBenefactor
@@ -143,7 +143,6 @@ library SchedulerLib {
             ],
             self.callData
         );
-        return 0x0;
 
         if (newRequestAddress == 0x0) {
             // Something went wrong during creation (likely a ValidationError).

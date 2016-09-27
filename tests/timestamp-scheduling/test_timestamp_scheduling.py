@@ -9,6 +9,10 @@ def scheduler(chain, web3, request_tracker, request_factory):
     ])
     chain_code = web3.eth.getCode(timestamp_scheduler.address)
     assert len(chain_code) > 10
+
+    assert request_factory.address == timestamp_scheduler.call().factoryAddress()
+    assert request_tracker.address == timestamp_scheduler.call().trackerAddress()
+
     return timestamp_scheduler
 
 
@@ -26,6 +30,7 @@ def test_timestamp_scheduling_with_full_args(chain,
                                              evm,
                                              set_timestamp,
                                              get_txn_request):
+    print("Now Factory", request_factory.address)
     window_start = web3.eth.getBlock('latest')['timestamp'] + 10 * MINUTE
     schedule_txn_hash = scheduler.transact({
         'value': 10 * denoms.ether,

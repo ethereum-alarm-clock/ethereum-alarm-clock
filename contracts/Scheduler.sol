@@ -9,22 +9,6 @@ import {SchedulerLib} from "contracts/SchedulerLib.sol";
 contract BaseScheduler is SchedulerInterface {
     using SchedulerLib for SchedulerLib.FutureTransaction;
 
-    function BaseScheduler(address _trackerAddress,
-                           address _factoryAddress,
-                           uint temporalUnitAsUInt) {
-        if (!RequestScheduleLib.validateTemporalUnit(temporalUnitAsUInt)) {
-            // Invalid temporal unit specified.
-            throw;
-        }
-
-        // Set the type of time scheduling this scheduler uses.
-        temporalUnit = RequestScheduleLib.TemporalUnit(temporalUnitAsUInt);
-
-        // Set the tracker and factory addresses.
-        trackerAddress = _trackerAddress;
-        factoryAddress = _factoryAddress;
-    }
-
     /*
      * Fallback function to be able to receive ether.  This can occur
      * legidimately when scheduling fails due to a validation error.

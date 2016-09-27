@@ -4,3 +4,4 @@ populus>=1.1.0
 web3>=2.9.0
 eth-testrpc>=0.8.4
 ethereum-tester-client>=1.2.2
+click>=6.6

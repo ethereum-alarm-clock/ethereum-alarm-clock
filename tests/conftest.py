@@ -45,6 +45,16 @@ def RequestLib(request_lib):
 
 
 @pytest.fixture()
+def execution_lib(chain):
+    return chain.get_contract('ExecutionLib')
+
+
+@pytest.fixture()
+def ExecutionLib(execution_lib):
+    return type(execution_lib)
+
+
+@pytest.fixture()
 def TransactionRequest(chain):
     # force lazy deployment of the dependencies for the TransactionRequest
     # contract.
@@ -106,7 +116,7 @@ def RequestData(chain,
                      toAddress=txn_recorder.address,
                      callGas=1000000,
                      callValue=0,
-                     requiredStackDepth=0,
+                     requiredStackDepth=10,
                      # schedule
                      claimWindowSize=None,
                      freezePeriod=None,

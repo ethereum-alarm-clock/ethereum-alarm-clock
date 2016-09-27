@@ -1,4 +1,4 @@
-def test_transaction_parameters(chain, RequestData, txn_recorder):
+def test_transaction_sent_as_specified(chain, RequestData, txn_recorder):
     txn_request = RequestData(
         toAddress=txn_recorder.address,
         callData='this-is-the-call-data',

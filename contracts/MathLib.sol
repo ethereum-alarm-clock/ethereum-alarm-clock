@@ -8,7 +8,7 @@ library MathLib {
      * underflow condition is met.
      */
     function flooredSub(uint a, uint b) returns (uint) {
-        if (b > a) {
+        if (b >= a) {
             return 0;
         } else {
             return a - b;

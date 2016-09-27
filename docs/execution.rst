@@ -341,16 +341,16 @@ When sending the execution transaction, you should use the following rules to
 determine the minimum gas to be sent with the transaction:
 
 * Start with a baseline of the ``callGas`` attribute.
-* Add ``150000`` gas to account for execution overhead.
+* Add ``180000`` gas to account for execution overhead.
 * If you are proxying the execution through another contract such that during
   execution ``msg.sender != tx.origin`` then you need to provide an additional
   ``700 * requiredStackDepth`` gas for the stack depth checking.
 
 For example, if you are sending the execution transaction directly from a
 private key based address, and the request specified a ``callGas`` value of
-120000 gas then you would need to provide ``120000 + 150000 => 270000`` gas.
+120000 gas then you would need to provide ``120000 + 180000 => 300000`` gas.
 
 If you were executing the same request, except the execution transaction was
 being proxied through a contract, and the request specified a
-``requiredStackDepth`` of 10 then you would need to provide ``120000 + 150000 +
-700 * 10 => 340000`` gas.
+``requiredStackDepth`` of 10 then you would need to provide ``120000 + 180000 +
+700 * 10 => 307000`` gas.

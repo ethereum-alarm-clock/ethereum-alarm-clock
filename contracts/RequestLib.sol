@@ -95,8 +95,8 @@ library RequestLib {
         request.schedule.reservedWindowSize = uintArgs[4];
         // This must be capped at 1 or it throws an exception.
         request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintArgs[5].min(2));
-        request.schedule.windowStart = uintArgs[6];
-        request.schedule.windowSize = uintArgs[7];
+        request.schedule.windowSize = uintArgs[6];
+        request.schedule.windowStart = uintArgs[7];
         request.txnData.callGas = uintArgs[8];
         request.txnData.callValue = uintArgs[9];
         request.txnData.requiredStackDepth = uintArgs[10];
@@ -154,8 +154,8 @@ library RequestLib {
             uintArgs[3],     // self.schedule.freezePeriod
             uintArgs[4],     // self.schedule.reservedWindowSize
             uintArgs[5],     // self.schedule.temporalUnit
-            uintArgs[6],     // self.schedule.windowStart
-            uintArgs[7],     // self.schedule.windowSize
+            uintArgs[6],     // self.schedule.windowSize
+            uintArgs[7],     // self.schedule.windowStart
             uintArgs[8],     // self.txnData.callGas
             uintArgs[9],     // self.txnData.callValue
             uintArgs[10]     // self.txnData.requiredStackDepth
@@ -207,8 +207,8 @@ library RequestLib {
         self.serializedValues.uintValues[7] = self.schedule.freezePeriod;
         self.serializedValues.uintValues[8] = self.schedule.reservedWindowSize;
         self.serializedValues.uintValues[9] = uint(self.schedule.temporalUnit);
-        self.serializedValues.uintValues[10] = self.schedule.windowStart;
-        self.serializedValues.uintValues[11] = self.schedule.windowSize;
+        self.serializedValues.uintValues[10] = self.schedule.windowSize;
+        self.serializedValues.uintValues[11] = self.schedule.windowStart;
         self.serializedValues.uintValues[12] = self.txnData.callGas;
         self.serializedValues.uintValues[13] = self.txnData.callValue;
         self.serializedValues.uintValues[14] = self.txnData.requiredStackDepth;
@@ -257,8 +257,8 @@ library RequestLib {
         self.schedule.freezePeriod = uintValues[7];
         self.schedule.reservedWindowSize = uintValues[8];
         self.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintValues[9]);
-        self.schedule.windowStart = uintValues[10];
-        self.schedule.windowSize = uintValues[11];
+        self.schedule.windowSize = uintValues[10];
+        self.schedule.windowStart = uintValues[11];
         self.txnData.callGas = uintValues[12];
         self.txnData.callValue = uintValues[13];
         self.txnData.requiredStackDepth = uintValues[14];

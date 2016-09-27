@@ -23,8 +23,8 @@ contract RequestFactory is RequestFactoryInterface {
      *  uintArgs[3]    -  schedule.freezePeriod
      *  uintArgs[4]    -  schedule.reservedWindowSize
      *  uintArgs[5]    -  schedule.temporalUnit
-     *  uintArgs[6]    -  schedule.windowStart
-     *  uintArgs[7]    -  schedule.windowSize
+     *  uintArgs[6]    -  schedule.windowSize
+     *  uintArgs[7]    -  schedule.windowStart
      *  uintArgs[8]    -  txnData.callGas
      *  uintArgs[9]    -  txnData.callValue
      *  uintArgs[10]   -  txnData.requiredStackDepth
@@ -42,6 +42,9 @@ contract RequestFactory is RequestFactoryInterface {
             uintArgs,
             callData
         );
+
+        // Track the address locally
+        requests[address(request)] = true;
 
         // Log the creation.
         RequestCreated(address(request));

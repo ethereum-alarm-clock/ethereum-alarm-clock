@@ -33,7 +33,7 @@ def test_block_scheduling_with_full_args(chain,
             98765,  # donation
             80008,  # payment
             123,  # requiredStackDepth
-            255,  # windowSize
+            54321,  # windowSize
             window_start,  # windowStart
         ],
     )
@@ -46,7 +46,7 @@ def test_block_scheduling_with_full_args(chain,
 
     assert request_data.txnData.toAddress == txn_recorder.address
     assert request_data.txnData.callData == 'this-is-the-call-data'
-    assert request_data.schedule.windowSize == 255
+    assert request_data.schedule.windowSize == 54321
     assert request_data.txnData.callGas == 1212121
     assert request_data.paymentData.donation == 98765
     assert request_data.paymentData.payment == 80008
@@ -114,6 +114,7 @@ def test_invalid_schedule_returns_ether(chain,
     schedule_txn_receipt = web3.eth.getTransactionReceipt(schedule_txn_hash)
 
     after_balance = web3.eth.getBalance(web3.eth.accounts[1])
+    assert before_balance - after_balance <= denoms.ether
     assert before_balance - after_balance == schedule_txn_receipt['gasUsed'] * web3.eth.gasPrice
 
     with pytest.raises(AssertionError):

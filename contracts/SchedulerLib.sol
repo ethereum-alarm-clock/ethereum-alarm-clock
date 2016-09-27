@@ -122,7 +122,7 @@ library SchedulerLib {
             self.callValue
         ).min(this.balance);
 
-        address newRequestAddress = factory.createValidatedRequest.value(endowment)(
+        address newRequestAddress = factory.createValidatedRequest.value(msg.value)(
             [
                 msg.sender,           // meta.owner
                 DONATION_BENEFACTOR,  // paymentData.donationBenefactor
@@ -135,14 +135,15 @@ library SchedulerLib {
                 self.freezePeriod,        // scheduler.freezePeriod
                 self.reservedWindowSize,  // scheduler.reservedWindowSize
                 uint(self.temporalUnit),  // scheduler.temporalUnit (1: block, 2: timestamp)
-                self.windowStart,         // scheduler.windowStart
                 self.windowSize,          // scheduler.windowSize
+                self.windowStart,         // scheduler.windowStart
                 self.callGas,             // txnData.callGas
                 self.callValue,           // txnData.callValue
                 self.requiredStackDepth   // txnData.requiredStackDepth
             ],
             self.callData
         );
+        return 0x0;
 
         if (newRequestAddress == 0x0) {
             // Something went wrong during creation (likely a ValidationError).

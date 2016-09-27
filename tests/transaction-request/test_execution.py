@@ -16,7 +16,8 @@ def test_transaction_parameters(chain, RequestData, txn_recorder):
     chain.wait.for_block(request_data.schedule.windowStart)
 
     execute_txn_hash = txn_request.transact().execute()
-    chain.wait.for_receipt(execute_txn_hash)
+    receipt = chain.wait.for_receipt(execute_txn_hash)
+    print("Gas Used:", receipt['gasUsed'])
 
     assert txn_recorder.call().wasCalled() is True
     assert txn_recorder.call().lastCaller() == txn_request.address

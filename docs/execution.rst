@@ -1,226 +1,356 @@
-Call Execution
-==============
+Execution
+=========
 
-Call execution is the process through which scheduled calls are executed at
-their desired block number.  After a call has been scheduled, it can be executed
-by account which chooses to initiate the transaction.  In exchange for
-executing the scheduled call, they are paid a small fee of approximately 1% of
-the gas cost used for executing the transaction.
+.. contents:: :local:
 
-
-Executing a call
-----------------
-
-Use the ``execute`` function to execute a scheduled call.  This function is
-present on the call contract itself (as opposed to the scheduling service).
-
-* **Solidity Function Signature:** ``execute() public``
-
-When this function is called, the following things happen.
-
-1. A few checks are done to be sure that all of the necessary pre-conditions
-   pass.  If any fail, the function exits early without executing the scheduled
-   call:
-
-   * the call has not already been called.
-   * the call has not been cancelled.
-   * the transaction has at least ``requiredGas`` in gas.
-   * the stack depth can be extended sufficiently deep for
-     ``requiredStackDepth``
-   * the current block number is within the range this call is allowed to be
-     executed.
-   * the caller is allowed to execute the function (see claiming)
-2. The call is executed
-3. The gas cost and fees are computed and paid.
-4. The call contract sends any remaining funds to the scheduling
-   address.
+.. class:: TransactionRequest
+    :noindex:
 
 
-Payment
-^^^^^^^
+.. warning:: 
 
-Each scheduled call sets its own payment value.  This can be looked up with the
-``basePayment`` accessor function.
-
-The final payment value for executing the scheduled call is the ``basePayment``
-multiplied by a scalar value based on the difference between the gas price of
-the executing transaction and the gas price that was used to schedule the
-transaction.  The formula for this scalar is such that the lower the gas price
-of the executing transaction, the higher the payment.
+    Anyone wishing to write their own execution client should be sure they fully
+    understand all of the intricacies related to the execution of transaction
+    requests.  The guarantees in place for those executing requests are only in
+    place if the executing client is written appropriately.
 
 
-Setting transaction gas and gas price
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Each call contract has a ``requiredGas`` property.  Execution of a call
-requires at least this amount of gas be sent with the transaction.
-
-This gas value should be used in conjuction with the ``basePayment``
-and ``baseFee`` amounts with respect to the ether balance of the call contract.
-The provided gas for the transaction should not exceed ``(balance - 2 *
-(basePayment + baseFee)) / gasPrice`` if you want to guarantee that you will be
-fully reimbursed for gas expenditures.
+Important Windows of Blocks/Time
+--------------------------------
 
 
-Getting your payment
+Freeze Window
+^^^^^^^^^^^^^
+
+Each request may specify a ``freezePeriod``.  This defines a number of blocks
+or seconds prior to the ``windowStart`` during which no actions may be
+performed against the request.  This is primarily in place to provide some
+level of guarantee to those executing the request.  For anyone executing
+requests, once the request enters the ``freezePeriod`` they can know that it
+will not be cancelled and that they can send the executing transaction without
+fear of it being cancelled at the last moment before the execution window
+starts.
+
+
+The Execution Window
 ^^^^^^^^^^^^^^^^^^^^
 
-Payment for executing a call is sent to you as part of the executing
-transaction, as well as being logged by the ``CallExecuted`` event.
+The **execution window** is the range of blocks or timestamps during which the
+request may be executed.  This window is defined as the range of blocks or
+timestamps from ``windowStart`` till ``windowStart + windowSize``.
+
+For example, if a request was scheduled with a ``windowStart`` of block 2100
+and a ``windowSize`` of 255 blocks, the request would be allowed to be executed
+on any block such that ``windowStart <= block.number <= windowStart +
+windowSize``.  
+
+As another example, if a request was scheduled with a ``windowStart`` of block 2100
+and a ``windowSize`` of 0 blocks, the request would only be allowed to be
+executed at block 2100.  
+
+Very short ``windowSize`` configurations likely lower the chances of your
+request being executed at the desired time since it is not possible to force a
+transaction to be included in a specific block and thus the party executing
+your request may either fail to get the transaction included in the correct
+block *or* they may choose to not try for fear that their transaction will not
+be included in the correct block and thus they will not recieve a reimbursment
+for their gas costs.
+
+Similarly, very short ranges of time for timestamp based calls may even make it
+impossible to execute the call.  For example, if you were to specify a
+``windowStart`` at 1480000010 and a ``windowSize`` of 5 seconds then the
+request would only be executable on blocks whose ``block.timestamp`` satisfied
+the conditions ``1480000010 <= block.timestamp <= 1480000015``.  Given that it
+is entirely possible that no blocks are mined within this small range of
+timestamps there would never be a valid block for your request to be executed. 
+
+.. note:: 
+
+    It is worth pointing out that actual size of the execution window will
+    always be ``windowSize + 1`` since the bounds are inclusive.
 
 
-Determining what scheduled calls are next
------------------------------------------
+Reserved Execution Window
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can query the Alarm service for the call key of the next scheduled call on
-or after a specified block number using the ``getNextCall`` function
+Each request may specify a ``claimWindowSize`` which defines a number of blocks
+or seconds at the beginning of the execution window during which the request
+may only be executed by the address which has claimed the request.  Once this
+window has passed the request may be executed by anyone.
 
-* **Solidity Function Signature:** ``getNextCall(uint blockNumber) returns (address)``
+.. note:: 
 
-Since there may be multiple calls on the same block, it is best to also check
-if the call has any *siblings* using the ``getNextCallSibling`` function.  This
-function takes a call contract address and returns the address that is
-scheduled to come next.
+    If the request has not been claimed this window is treated no differently than
+    the remainder of the execution window.
 
-When checking for additional calls in this manner, you should check the target
-block of each subsequent call to be sure it is within a range that you care
-about.
-
-* **Solidity Function Signature:** ``getNextCallSibling(address callAddress) returns (address)``
+For example, if a request specifies a ``windowStart`` of block 2100, a
+``windowSize`` of 100 blocks, and a ``reservedWindowSize`` of 25 blocks then in
+the case that the request was claimed then the request would only be executable
+by the claimer for blocks satisfying the condition ``2100 <= block.number <
+2125``.
 
 .. note::
 
-    10 blocks into the future is a good range to monitor since new calls must
-    always be scheduled at least 10 blocks in the future. 
+    It is worth pointing out that unlike the *execution window* the *reserved
+    execution window* is not inclusive of it's righthand bound.
+
+If the ``reservedWindowSize`` is set to 0, then there will be no window of
+blocks during which the execution rights are exclusive to the claimer.
+Similarly, if the ``reservedWindowSize`` is set to be equal to the full size of
+the *execution window* or ``windowSize + 1`` then there will be not window
+after the *reserved execution window* during which execution can be triggered
+by anyone.
+
+The :class:`RequestFactory` will allow a ``reservedWindowSize`` of any value
+from 0 up to ``windowSize`` + 1, however, it is highly recommended that you
+pick a number around 16 blocks or 270 seconds, leaving at least the same amount
+of time unreserved during the second portion of the *execution window*.  This
+ensures that there is sufficient motivation for your call to be claimed because
+the person claiming the call knows that they will have ample opportunity to
+execute it when the *execution window* comes around.  Conversely, leaving at
+least as much time unreserved ensures that in the event that your request is
+claimed but the claimer fails to execute the request that someone else has
+plenty of of time to fulfill the execution before the *execution window* ends.
 
 
-The Freeze Window
------------------
+The Execution Lifecycle
+-----------------------
 
-The 10 blocks prior to a call's target block are called the **freeze window**.  During this window, nothing about a call can change.  This means that it cannot be cancelled or claimed.
+When the :method:`TransactionRequest.execute()` function is called the contract
+goes through three main sections of logic which are referred to as a whole as
+the *execution lifecycle*.
 
-
-Claiming a call
----------------
-
-Claiming a call is the process through which you as a call executor can
-guarantee the exclusive right to execute the call during the first 16 blocks of
-the call window for the scheduled call.  As part of the claim, you will need to
-put down a deposit, which is returned to you if you when you execute the call.
-Failing to execute the call will forfeit your deposit.
+1. Validation: Handles all of the checks that must be done to ensure that all
+   of the conditions are correct for the requested transaction to be executed.
+2. Execution: The actual sending of the requested transaction.
+3. Accounting: Computing and sending of all payments to the necessary parties.
 
 
-Claim Amount
-^^^^^^^^^^^^
+Part 1: Validation
+^^^^^^^^^^^^^^^^^^
 
-A call can be claimed during the 255 blocks prior to the freeze window.  This
-period is referred to as the claim window.  The amount that you are agreeing to
-be paid for the call is based on whichever block the call is claimed on.  The
-amount can be calculated using the following formula.
-
-* Let ``i`` be the index of the block within the 255 block claim window.
-* Let ``basePayment`` be the payment amount specified by the call contract.
-* If within the first 240 blocks of the window: ``payment = basePayment * i / 240``
-* If within the last 15 blocks of the window: ``payment = basePayment``
-
-This formula results in a linear growth from 0 to the full ``basePayment``
-amount over the course of the first 240 blocks in the claim window.  The last
-15 blocks are all set at the full ``basePayment`` amount.
-
-A claim must be accompainied by a deposit that is at least twice the call's
-``basePayment`` amount.
+During the validation phase all of the following validation checks must pass.
 
 
-Getting your Deposit Back
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Check #1: Not already called
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you claim a call and do not execute it within the first 16 blocks of the
-call window, then you will risk losing your deposit.  Once the first 16 blocks
-have passed, the call can be executed by anyone.  At this point, the first
-person to execute the call will receive the deposit as part of their payment
-(and incentive to pick up claimed calls that have not been called).
+Requires the ``wasCalled`` attribute of the transaction request to
+be ``false``.
 
 
-Claim API
-^^^^^^^^^
+Check #2: Not Cancelled
+~~~~~~~~~~~~~~~~~~~~~~~
 
-To claim a contract
-
-* **Solidity Function Signature:** ``claim()``
-
-To check what the ``claimAmount`` will be for a given block number use the
-``getClaimAmountForBlock`` function.  This will return an amount in wei that
-represents the base payment value for the call if claimed on that block.
-
-* **Solidity Function Signature:** ``getClaimAmountForBlock(uint blockNumber)``
-
-This function also has a shortcut that uses the current block number
-
-* **Solidity Function Signature:** ``getClaimAmountForBlock()``
-
-You can check if a call has already been claimed with the ``claimer`` function.
-This function will return either the empty address ``0x0`` if the call has not
-been claimed, or the address of the claimer if it has.
-
-* **Solidity Function Signature:** ``claimer() returns (address)``
+Requires the ``isCancelled`` attribute of the transaction request to
+be ``false``.
 
 
-Safeguards
-----------
+Check #3: Not before execution window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are a limited set of safeguards that Alarm protects those executing calls
-from.
-
-* Ensures that the call cannot cause the executing transaction to fail due to
-  running out of gas (like an infinite loop).
-* Ensures that the funds to be used for payment are locked during the call
-  execution.
-
-Tips for executing scheduled calls
-----------------------------------
-
-The following tips may be useful if you wish to execute calls.
-
-Look in the next 265 blocks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Calls within this window are likely claimable.
+Requires ``block.number`` or ``block.timestamp`` to be greater than or equal to
+the ``windowStart`` attribute.
 
 
-Calls are frozen during the 10 blocks prior to the target block
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check #4: Not after execution window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once a call enters the freeze window it is immutable until call execution.
-
-
-No cancellation in next 265 blocks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Since calls cannot be cancelled less than 265 blocks in the future, you don't
-need to check cancellation status during the 265 blocks prior to its target
-block.
+Requires ``block.number`` or ``block.timestamp`` to be less than or equal to
+``windowStart + windowSize``.
 
 
-Check that it was not already called
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check #5 and #6: Within the execution window and authorized
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are executing a call after the target block but before the grace period
-has run out, it is good to check that it has not already been called.
+* If the request is claimed
+    * If the current time is within the *reserved execution window*
+        * Requires that ``msg.sender`` to be the ``claimedBy`` address
+    * Otherwise during the remainder of the *execution window*
+        * Always passes.
+* If the request is not claimed.
+    * Always passes if the current time is within the *execution window*
 
 
-Compute how much gas to provide
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check #7: Stack Depth Check
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to guarantee that you will be 100% reimbursed for your gas
-expenditures, then you need to compute how much gas the contract can pay for.
-The *overhead* involved in execution is approximately 140,000 gas.  The
-following formula should be a close approximation to how much gas a contract
-can afford.
+In order to understand this check you need to understand the problem it solves.
+One of the more subtle attacks that can be executed against a requested
+transaction is to force it to fail by ensuring that it will encounter the EVM
+stack limit.  Without this check the executor of a transaction request could
+force *any* request to fail by arbitrarily increasing the stack depth prior to
+execution such that when the transaction is sent it encounters the maximum
+stack depth and fails.  From the perspective of the :class:`TransactionRequest`
+contract this sort of failure is indistinguishable from any other exception.
 
-* let ``gasPrice`` be the gas price for the executing transaction.
-* let ``balance`` be the ether balance of the contract.
-* let ``claimerDeposit`` be the claimer's deposit amount.
-* let ``basePayment`` be the base payment amount for the contract.  This may
-  either be the value specified by the scheduler, or the ``claimAmount`` if the
-  contract has been claimed.
-* ``gas = (balance - 2 * basePayment - claimerDeposit) / gasPrice``
+In order to prevent this, prior to execution, the :class:`TransactionRequest`
+contract will ensure that the stack can be extended by a number of stack frames
+equal to ``requiredStackDepth``.  This check passes if the stack can be
+extended by this amount.
+
+This check will be skipped if ``msg.sender == tx.origin`` since in this case it
+is not possible for the stack to have been arbitrarily extended prior to
+execution.
+
+
+Check #8: Sufficient Call Gas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires that the current value of ``msg.gas`` be greater than or equal to the
+``callGas`` attribute.
+
+
+Part 2: Execution
+^^^^^^^^^^^^^^^^^
+
+The execution phase is very minimalistic.  It marks the request as having been
+called and then dispatches the requested transaction, storing the success or
+failure on the ``wasSuccessful`` attribute.
+
+
+Part 3: Accounting
+^^^^^^^^^^^^^^^^^^
+
+The accounting phase accounts for all of the payments and reimbursements that
+need to be sent.
+
+The *donation* payment is the mechanism through which developers can earn a
+return on their development efforts on the Alarm service.  For the *official*
+scheduler deployed as part of the alarm service this defaults to 1% of the
+default payment.  This value is multiplied by the *gas multiplier* (see
+:ref:`gas-multiplier`) and sent to the ``donationBenefactor`` address.
+
+Next the payment for the actual execution is computed.  The formula for this is
+as follows:
+
+    ``totalPayment = payment * gasMultiplier + gasUsed * tx.gasprice + claimDeposit``
+
+The three components of the ``totalPayment`` are as follows.
+
+* ``payment * gasMultiplier``: The actual payment for execution.
+* ``gasUsed * tx.gasprice``: The reimbursement for the gas costs of execution.
+  This is not going to exactly match the actual gas costs, but it will always
+  err on the side of overpaying slightly for gas consumption.
+* ``claimDeposit``:  If the request is not claimed this will be 0.  Otherwise,
+  the ``claimDeposit`` is always given to the executor of the request.
+
+After these payments have been calculated and sent, the ``Executed`` event is
+logged, and any remaining ether that is not allocated to be paid to any party
+is sent back to the address that scheduled the request.
+
+
+.. _gas-multiplier:
+
+Gas Multiplier
+--------------
+
+To understand the *gas multiplier* you must understand the problem it solves.
+
+Transactions requests always provide a 100% reimbursment of gas costs.  This is
+implemented by requiring the scheduler to provide sufficient funds up-front to
+cover the future gas costs of their transaction.  Ideally we want the sender of
+the transaction that executes the request to be motivated to use a ``gasPrice``
+that is as low as possible while still allowing the transaction to be included
+in a block in a timely manner.
+
+A naive approach would be to specify a *maximum* gas price that the scheduler
+is willing to pay.  This might be possible for requests that will be processed
+a short time in the future, but for transactions that are scheduled
+sufficiently far in the future it isn't feasible to set a gas price that is
+going to reliably reflect the current normal gas prices at that time.
+
+In order to mitigate this issue, we instead provide a financial incentive to
+the party executing the request to provide as low a gas cost as possible while
+still getting their transaction included in a timely manner.
+
+Those executing the request are already sufficiently motivated to provide a gas
+price that is high enough to get the transaction mined in a reasonable time
+since if the price they specify is too low it is likely that someone else will
+execute the request before them, or that their transaction will not be included
+before the *execution window* closes.
+
+So, to provide incentive to keep the gas cost reasonably low, the *gas
+multiplier* concept was introduced.  Simply put, the multiplier produces a
+number between 0 and 2 which is applid to the ``payment`` that will be sent for
+fulfilling the request.
+
+At the time of scheduling, the ``gasPrice`` of the scheduling transaction is
+stored.  We refer to this as the ``anchorGasPrice`` as we can assume with some
+reliability that this value is a *reasonable* gas cost that the scheduler is
+willing to pay.
+
+At the time of execution, the following will occur based on the ``gasPrice``
+used for the executing transaction:
+
+    * If ``gasPrice`` is equal to the ``anchorGasPrice`` then the *gas
+      multiplier* will be 1, meaning that the ``payment`` will be issued as is.
+    * When the ``gasPrice`` is greater than the ``anchorGasPrice``, the *gas
+      multiplier* will approach 0 meaning that the payment will steadily get
+      smaller for higher gas prices.
+    * When the ``gasPrice`` is less than the ``anchorGasPrice``, the *gas
+      multiplier* will approach 2 meaning that the payment will steadily get
+      larger for lower gas prices.
+
+The formula used is the following.
+
+* If the execution ``gasPrice`` is greater than ``anchorGasPrice``:
+  
+    ``gasMultiplier = anchorGasPrice / tx.gasprice``
+
+* Else (if the execution ``gasPrice`` is less than or equal to the
+  ``anchorGasPrice``:
+
+    ``gasMultiplier = 2 - (anchorGasPrice / (2 * anchorGasPrice - tx.gasprice))``
+
+
+For example, if at the time of scheduling the gas price was 100 wei and the
+executing transaction uses a ``gasPrice`` of 200 wei, then the gas multiplier
+would be ``100 / 200 => 0.5``.
+
+Alternatively, if the transaction used a ``gasPrice`` of 75 wei then the gas
+multiplier would be ``2 - (100 / (2 * 100 - 75)) => 1.2``.
+
+
+Sending the Execution Transaction
+---------------------------------
+
+In addition to the pre-execution validation checks, the following things should
+be taken into considuration when sending the executing transaction for a
+request.
+
+
+Gas Reimbursement
+^^^^^^^^^^^^^^^^^
+
+If the ``gasPrice`` of the network has increased significantly since the
+request was scheduled it is possible that it no longer has sufficient ether to
+pay for gas costs.  The following formula can be used to compute the maximum
+amount of gas that a request is capable of paying:
+
+    ``(request.balance - 2 * (payment + donation)) / tx.gasprice``
+
+If you provide a gas value above this amount for the executing transaction then
+you are not guaranteed to be fully reimbursed for gas costs.
+
+
+Minimum ExecutionGas
+^^^^^^^^^^^^^^^^^^^^
+
+When sending the execution transaction, you should use the following rules to
+determine the minimum gas to be sent with the transaction:
+
+* Start with a baseline of the ``callGas`` attribute.
+* Add ``150000`` gas to account for execution overhead.
+* If you are proxying the execution through another contract such that during
+  execution ``msg.sender != tx.origin`` then you need to provide an additional
+  ``700 * requiredStackDepth`` gas for the stack depth checking.
+
+For example, if you are sending the execution transaction directly from a
+private key based address, and the request specified a ``callGas`` value of
+120000 gas then you would need to provide ``120000 + 150000 => 270000`` gas.
+
+If you were executing the same request, except the execution transaction was
+being proxied through a contract, and the request specified a
+``requiredStackDepth`` of 10 then you would need to provide ``120000 + 150000 +
+700 * 10 => 340000`` gas.

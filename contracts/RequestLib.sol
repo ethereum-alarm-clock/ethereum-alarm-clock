@@ -94,9 +94,9 @@ library RequestLib {
         request.schedule.freezePeriod = uintArgs[3];
         request.schedule.reservedWindowSize = uintArgs[4];
         // This must be capped at 1 or it throws an exception.
-        request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintArgs[5].min(1));
-        request.schedule.windowStart = uintArgs[6];
-        request.schedule.windowSize = uintArgs[7];
+        request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintArgs[5].min(2));
+        request.schedule.windowSize = uintArgs[6];
+        request.schedule.windowStart = uintArgs[7];
         request.txnData.callGas = uintArgs[8];
         request.txnData.callValue = uintArgs[9];
         request.txnData.requiredStackDepth = uintArgs[10];
@@ -118,7 +118,8 @@ library RequestLib {
                                                              request.schedule.freezePeriod,
                                                              request.schedule.windowStart);
         is_valid[4] = ExecutionLib.validateRequiredStackDepth(request.txnData.requiredStackDepth);
-        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas, _EXECUTE_EXTRA_GAS);
+        is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas,
+                                                   _GAS_TO_AUTHORIZE_EXECUTION + _GAS_TO_COMPLETE_EXECUTION);
         is_valid[6] = ExecutionLib.validateToAddress(request.txnData.toAddress);
 
         return is_valid;
@@ -153,8 +154,8 @@ library RequestLib {
             uintArgs[3],     // self.schedule.freezePeriod
             uintArgs[4],     // self.schedule.reservedWindowSize
             uintArgs[5],     // self.schedule.temporalUnit
-            uintArgs[6],     // self.schedule.windowStart
-            uintArgs[7],     // self.schedule.windowSize
+            uintArgs[6],     // self.schedule.windowSize
+            uintArgs[7],     // self.schedule.windowStart
             uintArgs[8],     // self.txnData.callGas
             uintArgs[9],     // self.txnData.callValue
             uintArgs[10]     // self.txnData.requiredStackDepth
@@ -206,8 +207,8 @@ library RequestLib {
         self.serializedValues.uintValues[7] = self.schedule.freezePeriod;
         self.serializedValues.uintValues[8] = self.schedule.reservedWindowSize;
         self.serializedValues.uintValues[9] = uint(self.schedule.temporalUnit);
-        self.serializedValues.uintValues[10] = self.schedule.windowStart;
-        self.serializedValues.uintValues[11] = self.schedule.windowSize;
+        self.serializedValues.uintValues[10] = self.schedule.windowSize;
+        self.serializedValues.uintValues[11] = self.schedule.windowStart;
         self.serializedValues.uintValues[12] = self.txnData.callGas;
         self.serializedValues.uintValues[13] = self.txnData.callValue;
         self.serializedValues.uintValues[14] = self.txnData.requiredStackDepth;
@@ -256,8 +257,8 @@ library RequestLib {
         self.schedule.freezePeriod = uintValues[7];
         self.schedule.reservedWindowSize = uintValues[8];
         self.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(uintValues[9]);
-        self.schedule.windowStart = uintValues[10];
-        self.schedule.windowSize = uintValues[11];
+        self.schedule.windowSize = uintValues[10];
+        self.schedule.windowStart = uintValues[11];
         self.txnData.callGas = uintValues[12];
         self.txnData.callValue = uintValues[13];
         self.txnData.requiredStackDepth = uintValues[14];
@@ -271,7 +272,7 @@ library RequestLib {
          *  Execute the TransactionRequest
          *
          *  +---------------------+
-         *  | Phase 1: Accounting |
+         *  | Phase 1: Validation |
          *  +---------------------+
          *
          *  Must pass all of the following checks:
@@ -417,15 +418,22 @@ library RequestLib {
     }
 
     function requiredExecutionGas(Request storage self) returns (uint) {
-        return self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
-                                   .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
+        var requiredGas = self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
+                                              .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
+        if (msg.sender != tx.origin) {
+            var stackCheckGas = ExecutionLib.GAS_PER_DEPTH()
+                                            .safeMultiply(self.txnData.requiredStackDepth);
+            requiredGas = requiredGas.safeAdd(stackCheckGas);
+        }
+
+        return requiredGas;
     }
 
     /*
      * The amount of gas needed to do all of the pre execution checks.
      */
     // TODO: measure this.
-    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 0;
+    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 10000;
 
     function GAS_TO_AUTHORIZE_EXECUTION() returns (uint) {
         return _GAS_TO_AUTHORIZE_EXECUTION;
@@ -435,7 +443,7 @@ library RequestLib {
      * The amount of gas needed to complete the execute method after
      * the transaction has been sent.
      */
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 190000;
+    uint constant _GAS_TO_COMPLETE_EXECUTION = 130000;
 
     function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
         return _GAS_TO_COMPLETE_EXECUTION;
@@ -446,7 +454,7 @@ library RequestLib {
      *  The amount of gas used by the portion of the `execute` function
      *  that cannot be accounted for via gas tracking.
      */
-    uint constant _EXECUTE_EXTRA_GAS = 145000;
+    uint constant _EXECUTE_EXTRA_GAS = 90000;
 
     function EXECUTE_EXTRA_GAS() returns (uint) {
         return _EXECUTE_EXTRA_GAS;
@@ -508,12 +516,23 @@ library RequestLib {
         // guarantees that it is being cancelled after the call window since
         // the `isCancellable()` function checks this.
         if (msg.sender != self.meta.owner) {
-            rewardPayment = self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier()) / 100 / 100;
+            // TODO: using `paymentData.paymentBenefactor` and
+            // `paymentData.paymentOwed` is overloading those values. This
+            // should really be done with `rewardBenefactor` and `rewardOwed`
+            // fields.
+            self.paymentData.paymentBenefactor = msg.sender;
+            self.paymentData.paymentOwed = self.paymentData.paymentOwed.safeAdd(
+                self.paymentData.payment.safeMultiply(self.paymentData.getMultiplier()) / 100 / 100
+            );
             measuredGasConsumption = startGas.flooredSub(msg.gas)
                                              .safeAdd(_CANCEL_EXTRA_GAS);
-            rewardPayment = measuredGasConsumption.safeMultiply(tx.gasprice)
-                                                  .safeAdd(rewardPayment);
-            msg.sender.safeSend(rewardPayment);
+            self.paymentData.paymentOwed = measuredGasConsumption.safeMultiply(tx.gasprice)
+                                                                 .safeAdd(self.paymentData.paymentOwed);
+            // take note of the reward payment so we can log it.
+            rewardPayment = self.paymentData.paymentOwed;
+
+            // send the reward payment.
+            self.paymentData.sendPayment();
         }
 
         // Log the event
@@ -561,7 +580,7 @@ library RequestLib {
      * Refund claimer deposit.
      */
     function refundClaimDeposit(Request storage self) returns (bool) {
-        if (self.meta.isCancelled || self.meta.wasCalled) {
+        if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
             return self.claimData.refundDeposit(0);
         }
         return false;
@@ -571,7 +590,7 @@ library RequestLib {
      * Send donation
      */
     function sendDonation(Request storage self) returns (bool) {
-        if (self.meta.wasCalled) {
+        if (self.schedule.isAfterWindow()) {
             return self.paymentData.sendDonation(0);
         }
         return false;
@@ -581,7 +600,7 @@ library RequestLib {
      * Send payment
      */
     function sendPayment(Request storage self) returns (bool) {
-        if (self.meta.wasCalled) {
+        if (self.schedule.isAfterWindow()) {
             return self.paymentData.sendPayment(0);
         }
         return false;
@@ -595,7 +614,7 @@ library RequestLib {
     }
 
     function sendOwnerEther(Request storage self, uint sendGas) returns (bool) {
-        if (self.meta.isCancelled || self.meta.wasCalled) {
+        if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
             self.meta.owner.safeSend(this.balance.flooredSub(self.claimData.claimDeposit)
                                                  .flooredSub(self.paymentData.paymentOwed)
                                                  .flooredSub(self.paymentData.donationOwed),

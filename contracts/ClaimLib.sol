@@ -15,6 +15,9 @@ library ClaimLib {
         // The deposit amount that was put down by the claimer.
         uint claimDeposit;
 
+        // TODO: add `requiredDeposit` and remove the hard-coding of the `2 *
+        // payment` minimum deposit size.
+
         // An integer constrained between 0-100 that will be applied to the
         // request payment as a percentage.
         uint8 paymentModifier;

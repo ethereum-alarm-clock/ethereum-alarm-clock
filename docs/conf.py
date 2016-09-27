@@ -14,7 +14,6 @@
 
 import sys
 import os
-import shlex
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -95,12 +94,14 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 
 # Custom solidity lexer
-sys.path.append(os.path.dirname(__file__))
-from pygments.lexer import __all__ as pygments_lexers
-from solidity_lexer import SolidityLexer
+def setup(sphinx):
+    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+    from solidity_lexer import SolidityLexer
+    from pygments.lexer import __all__ as pygments_lexers
+    pygments_lexers.append(SolidityLexer)
+    sphinx.add_lexer('solidity', SolidityLexer())
 
 
-pygments_lexers.append(SolidityLexer)
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []

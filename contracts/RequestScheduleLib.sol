@@ -6,9 +6,17 @@ import {MathLib} from "contracts/MathLib.sol";
 library RequestScheduleLib {
     using MathLib for uint;
 
+    /*
+     *  The manner in which this schedule specifies time.
+     *
+     *  Null: present to require this value be explicitely specified
+     *  Blocks: execution schedule determined by block.number
+     *  Timestamp: execution schedule determined by block.timestamp
+     */
     enum TemporalUnit {
-        Seconds,
-        Blocks
+        Null,
+        Blocks,
+        Timestamp
     }
 
     struct ExecutionWindow {
@@ -45,7 +53,7 @@ library RequestScheduleLib {
     }
 
     function getNow(TemporalUnit temporalUnit) internal returns (uint) {
-        if (temporalUnit == TemporalUnit.Seconds) {
+        if (temporalUnit == TemporalUnit.Timestamp) {
             return now;
         } else if (temporalUnit == TemporalUnit.Blocks) {
             return block.number;
@@ -110,7 +118,7 @@ library RequestScheduleLib {
      *  Helper: Returns boolean if we are after the execution window.
      */
     function isAfterWindow(ExecutionWindow storage self) returns (bool) {
-        return getNow(self) >= windowEnd(self);
+        return getNow(self) > windowEnd(self);
     }
 
     /*
@@ -154,7 +162,7 @@ library RequestScheduleLib {
      */
     function validateReservedWindowSize(uint reservedWindowSize,
                                         uint windowSize) returns (bool) {
-        return reservedWindowSize < windowSize;
+        return reservedWindowSize <= windowSize.safeAdd(1);
     }
 
     /*
@@ -170,6 +178,9 @@ library RequestScheduleLib {
      *  Validation: ensure that the temporal unit passed in is constrained to 0 or 1
      */
     function validateTemporalUnit(uint temporalUnitAsUInt) returns (bool) {
-        return temporalUnitAsUInt <= uint(TemporalUnit.Blocks);
+        return (temporalUnitAsUInt != uint(TemporalUnit.Null) && (
+            temporalUnitAsUInt == uint(TemporalUnit.Blocks) || 
+            temporalUnitAsUInt == uint(TemporalUnit.Timestamp)
+        ));
     }
 }

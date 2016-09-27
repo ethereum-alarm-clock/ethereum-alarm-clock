@@ -105,7 +105,7 @@ def test_request_factory_too_large_reserved_window_validation_error(chain,
         freezePeriod=10,
         windowStart=window_start,
         windowSize=255,
-        reservedWindowSize=255 + 1,  # 1 more than the window size.
+        reservedWindowSize=255 + 2,  # 2 more than the window size.
         temporalUnit=1,
         callValue=123456789,
         callGas=1000000,
@@ -137,7 +137,7 @@ def test_request_factory_invalid_temporal_unit_validation_error(chain,
         windowStart=window_start,
         windowSize=255,
         reservedWindowSize=16,
-        temporalUnit=2,  # Only 0, and 1 are supported.
+        temporalUnit=3,  # Only 1, and 2 are supported.
         callValue=123456789,
         callGas=1000000,
         requiredStackDepth=0
@@ -148,8 +148,9 @@ def test_request_factory_invalid_temporal_unit_validation_error(chain,
     )
     assert not all(is_valid)
     assert is_valid[2] is False
+    assert is_valid[3] is False  # because it defaults to `seconds` if the temporal unit is too big.
     assert all(is_valid[:2])
-    assert all(is_valid[3:])
+    assert all(is_valid[4:])
 
 
 def test_request_factory_too_soon_execution_window_validation_error(chain,

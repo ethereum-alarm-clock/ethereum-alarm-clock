@@ -4,6 +4,7 @@ import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
 import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 import {PaymentLib} from "contracts/PaymentLib.sol";
 import {RequestScheduleLib} from "contracts/RequestScheduleLib.sol";
+import {RequestLib} from "contracts/RequestLib.sol";
 import {SafeSendLib} from "contracts/SafeSendLib.sol";
 import {MathLib} from "contracts/MathLib.sol";
 
@@ -119,7 +120,9 @@ library SchedulerLib {
             self.payment,
             self.donation,
             self.callGas,
-            self.callValue
+            self.callValue,
+            self.requiredStackDepth,
+            RequestLib.EXECUTION_GAS_OVERHEAD()
         ).min(this.balance);
 
         address newRequestAddress = factory.createValidatedRequest.value(endowment)(

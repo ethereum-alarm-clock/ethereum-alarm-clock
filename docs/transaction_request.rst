@@ -20,6 +20,48 @@ Interface
     :language: solidity
 
 
+Events
+------
+
+
+.. method:: TransactionRequest.Cancelled(uint rewardPayment, uint measuredGasConsumption)
+
+When a request is cancelled, the ``Cancelled`` event will be logged.  The
+``rewardPayment`` is the amount that was paid to the party that cancelled the
+request.  This will always be 0 when the owner of the request cancels the
+request.
+
+
+.. method:: TransactionRequest.Claimed()
+
+When a request is claimed this event is logged.
+
+
+.. method:: TransactionRequest.Aborted(uint8 reason);
+
+When an attempt is made to execute a request but one of the pre-execution
+checks fails, this event is logged.  The ``reason`` is an error code which maps
+to the following errors.
+
+* ``0 => WasCancelled``
+* ``1 => AlreadyCalled``
+* ``2 => BeforeCallWindow``
+* ``3 => AfterCallWindow``
+* ``4 => ReservedForClaimer``
+* ``5 => StackTooDeep``
+* ``6 => InsufficientGas``
+
+
+.. method:: TransactionRequest.Executed(uint payment, uint donation, uint measuredGasConsumption)
+
+
+When a request is successfully executed this event is logged.  The ``payment``
+is the total payment amount that was awarded for execution.  The ``donation``
+is the amount that was awarded to the ``donationBenefactor``.  The
+``measuredGasConsumption`` is the amount of gas that was reimbursed which
+should always be slightly greater than the actual gas consumption.
+
+
 Data Model
 ----------
 

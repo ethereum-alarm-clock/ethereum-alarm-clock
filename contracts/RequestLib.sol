@@ -110,7 +110,9 @@ library RequestLib {
                                                    request.paymentData.payment,
                                                    request.paymentData.donation,
                                                    request.txnData.callGas,
-                                                   request.txnData.callValue);
+                                                   request.txnData.callValue,
+                                                   request.txnData.requiredStackDepth,
+                                                   _EXECUTION_GAS_OVERHEAD);
         is_valid[1] = RequestScheduleLib.validateReservedWindowSize(request.schedule.reservedWindowSize,
                                                                     request.schedule.windowSize);
         is_valid[2] = RequestScheduleLib.validateTemporalUnit(uintArgs[5]);

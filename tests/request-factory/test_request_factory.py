@@ -89,7 +89,7 @@ def test_request_factory_insufficient_endowment_validation_error(chain,
         requiredStackDepth=0
     )
     is_valid = request_lib.call().validate(
-        endowment=123456789,  # too small of an endowment.
+        endowment=1,  # too small of an endowment.
         **expected_request_data.to_init_kwargs()
     )
     assert not all(is_valid)

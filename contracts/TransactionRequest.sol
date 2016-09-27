@@ -30,6 +30,13 @@ contract TransactionRequest is Digger {
         txnRequest.initialize(addressArgs, uintArgs, callData);
     }
 
+    /*
+     *  Allow receiving ether.  This is needed if there is a large increase in
+     *  network gas prices.
+     */
+    function() {
+    }
+
     RequestLib.Request txnRequest;
 
     /*

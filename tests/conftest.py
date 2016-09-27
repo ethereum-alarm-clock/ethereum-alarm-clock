@@ -68,6 +68,9 @@ def denoms():
     return type('denoms', (object,), int_units)
 
 
+MINUTE = 60
+
+
 @pytest.fixture()
 def RequestData(chain,
                 web3,
@@ -105,7 +108,7 @@ def RequestData(chain,
                      callValue=0,
                      requiredStackDepth=0,
                      # schedule
-                     claimWindowSize=255,
+                     claimWindowSize=None,
                      freezePeriod=None,
                      windowSize=None,
                      windowStart=None,
@@ -113,28 +116,34 @@ def RequestData(chain,
                      temporalUnit=1):
 
             if freezePeriod is None:
-                if temporalUnit == 0:
-                    freezePeriod = 10 * 17
+                if temporalUnit == 2:
+                    freezePeriod = 3 * MINUTE
                 else:
                     freezePeriod = 10
 
             if windowSize is None:
-                if temporalUnit == 0:
-                    windowSize = 255 * 17
+                if temporalUnit == 2:
+                    windowSize = 60 * MINUTE
                 else:
                     windowSize = 255
 
             if windowStart is None:
-                if temporalUnit == 0:
+                if temporalUnit == 2:
                     windowStart = web3.eth.getBlock('latest')['timestamp'] + freezePeriod
                 else:
                     windowStart = web3.eth.blockNumber + freezePeriod
 
             if reservedWindowSize is None:
-                if temporalUnit == 0:
-                    reservedWindowSize = 16 * 17
+                if temporalUnit == 2:
+                    reservedWindowSize = 4 * MINUTE
                 else:
                     reservedWindowSize = 16
+
+            if claimWindowSize is None:
+                if temporalUnit == 2:
+                    claimWindowSize = 60 * MINUTE
+                else:
+                    claimWindowSize = 255
 
             self.claimData = type('claimData', (object,), {
                 'claimedBy': claimedBy,

@@ -15,7 +15,10 @@ def test_txn_request_payments(chain,
 
     chain.wait.for_block(request_data.schedule.windowStart)
 
-    execute_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).execute()
+    execute_txn_hash = txn_request.transact({
+        'from': web3.eth.accounts[1],
+        'gas': 3000000,
+    }).execute()
     execute_txn = web3.eth.getTransaction(execute_txn_hash)
     execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
@@ -74,7 +77,10 @@ def test_txn_request_payments_when_claimed(chain, web3, get_execute_data, Reques
 
     chain.wait.for_block(request_data.schedule.windowStart)
 
-    execute_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).execute()
+    execute_txn_hash = txn_request.transact({
+        'from': web3.eth.accounts[1],
+        'gas': 3000000,
+    }).execute()
     execute_txn = web3.eth.getTransaction(execute_txn_hash)
     execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
@@ -130,7 +136,10 @@ def test_accounting_when_everything_throws(chain,
 
     execute_call_data = decode_hex(txn_request._encode_transaction_data('execute'))
 
-    execute_txn_hash = error_generator.transact({'from': web3.eth.accounts[1]}).__proxy(
+    execute_txn_hash = error_generator.transact({
+        'from': web3.eth.accounts[1],
+        'gas': 3000000,
+    }).__proxy(
         to=txn_request.address,
         callData=execute_call_data,
     )

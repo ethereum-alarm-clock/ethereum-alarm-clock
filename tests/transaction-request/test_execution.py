@@ -15,9 +15,10 @@ def test_transaction_sent_as_specified(chain, RequestData, txn_recorder):
 
     chain.wait.for_block(request_data.schedule.windowStart)
 
-    execute_txn_hash = txn_request.transact().execute()
-    receipt = chain.wait.for_receipt(execute_txn_hash)
-    print("Gas Used:", receipt['gasUsed'])
+    execute_txn_hash = txn_request.transact({
+        'gas': 3000000,
+    }).execute()
+    chain.wait.for_receipt(execute_txn_hash)
 
     assert txn_recorder.call().wasCalled() is True
     assert txn_recorder.call().lastCaller() == txn_request.address

@@ -2,6 +2,7 @@ def test_request_factory_creates_request_with_provided_properties(chain,
                                                                   web3,
                                                                   denoms,
                                                                   txn_recorder,
+                                                                  request_factory,
                                                                   RequestData):
     request_lib = chain.get_contract('RequestLib')
     window_start = web3.eth.blockNumber + 20
@@ -12,7 +13,7 @@ def test_request_factory_creates_request_with_provided_properties(chain,
         payment=54321,
         freezePeriod=10,
         windowStart=window_start,
-        windowSize=255,
+        windowSize=511,
         reservedWindowSize=16,
         temporalUnit=1,
         callValue=123456789,
@@ -49,7 +50,7 @@ def test_request_factory_creates_request_with_provided_properties(chain,
     assert actual_request_data.schedule.claimWindowSize == 255
     assert actual_request_data.schedule.freezePeriod == 10
     assert actual_request_data.schedule.windowStart == window_start
-    assert actual_request_data.schedule.windowSize == 255
+    assert actual_request_data.schedule.windowSize == 511
     assert actual_request_data.schedule.reservedWindowSize == 16
     assert actual_request_data.schedule.temporalUnit == 1
 
@@ -58,6 +59,12 @@ def test_request_factory_creates_request_with_provided_properties(chain,
     assert actual_request_data.txnData.callValue == 123456789
     assert actual_request_data.txnData.callGas == 1000000
     assert actual_request_data.txnData.requiredStackDepth == 0
+
+    # sanity
+    assert request_factory.call().isKnownRequest(web3.eth.coinbase) is False
+
+    # does it track the requests it has created.
+    assert request_factory.call().isKnownRequest(txn_request.address) is True
 
 
 def test_request_factory_insufficient_endowment_validation_error(chain,

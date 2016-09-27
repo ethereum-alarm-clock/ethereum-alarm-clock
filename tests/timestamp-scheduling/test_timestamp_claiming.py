@@ -10,7 +10,10 @@ def test_cannot_claim_before_first_claim_timestamp(chain,
                                                    set_timestamp,
                                                    get_claim_data):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     first_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize
@@ -38,7 +41,10 @@ def test_can_claim_at_first_claim_timestamp(chain,
                                             set_timestamp,
                                             get_claim_data):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     first_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize
@@ -65,7 +71,10 @@ def test_can_claim_at_last_claim_timestamp(chain,
                                            set_timestamp,
                                            RequestData):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     last_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod
@@ -90,7 +99,10 @@ def test_cannot_claim_after_last_claim_timestamp(chain,
                                                  set_timestamp,
                                                  get_claim_data):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     last_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod
@@ -119,7 +131,10 @@ def test_executing_own_claimed_timestamp_based_request(chain,
                                                        set_timestamp,
                                                        get_claim_data):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     first_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize
@@ -144,6 +159,7 @@ def test_executing_own_claimed_timestamp_based_request(chain,
 
     execute_txn_hash = txn_request.transact({
         'from': web3.eth.accounts[1],
+        'gas': 3000000,
     }).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
@@ -160,7 +176,10 @@ def test_executing_other_claimed_call_after_timestamp_reserved_window(chain,
                                                                       get_claim_data,
                                                                       get_execute_data):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     first_claim_timestamp = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize
@@ -185,7 +204,7 @@ def test_executing_other_claimed_call_after_timestamp_reserved_window(chain,
         request_data.schedule.windowStart + request_data.schedule.reservedWindowSize
     )
 
-    execute_txn_hash = txn_request.transact().execute()
+    execute_txn_hash = txn_request.transact({'gas': 3000000}).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
     request_data.refresh()
@@ -199,7 +218,10 @@ def test_claim_timestamp_determines_payment_amount(chain,
                                                    set_timestamp,
                                                    RequestData):
     window_start = web3.eth.getBlock('latest')['timestamp'] + DAY
-    txn_request = RequestData(windowStart=window_start).direct_deploy()
+    txn_request = RequestData(
+        temporalUnit=2,
+        windowStart=window_start,
+    ).direct_deploy()
     request_data = RequestData.from_contract(txn_request)
 
     claim_at = request_data.schedule.windowStart - request_data.schedule.freezePeriod - request_data.schedule.claimWindowSize + request_data.schedule.claimWindowSize * 2 // 3

@@ -18,7 +18,7 @@ def test_execution_rejected_if_cancelled(chain,
     assert request_data.meta.wasCalled is False
     assert request_data.meta.isCancelled is False
 
-    cancel_txn_hash = txn_request.transact({'gas': 3000000}).cancel()
+    cancel_txn_hash = txn_request.transact().cancel()
     chain.wait.for_receipt(cancel_txn_hash)
 
     request_data.refresh()
@@ -26,7 +26,7 @@ def test_execution_rejected_if_cancelled(chain,
 
     chain.wait.for_block(request_data.schedule.windowStart)
 
-    execute_txn_hash = txn_request.transact().execute()
+    execute_txn_hash = txn_request.transact({'gas': 3000000}).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
     request_data.refresh()

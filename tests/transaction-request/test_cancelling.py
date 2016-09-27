@@ -143,7 +143,9 @@ def test_not_cancellable_if_was_called(chain, web3, RequestData):
 
     chain.wait.for_block(execute_at)
 
-    execute_txn_hash = txn_request.transact().execute()
+    execute_txn_hash = txn_request.transact({
+        'gas': 3000000,
+    }).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
     after_execute_request_data = RequestData.from_contract(txn_request)

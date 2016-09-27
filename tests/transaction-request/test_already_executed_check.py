@@ -24,7 +24,7 @@ def test_execution_rejected_if_already_executed(chain,
     request_data.refresh()
     assert request_data.meta.wasCalled is True
 
-    duplicate_execute_txn_hash = txn_request.transact().execute()
+    duplicate_execute_txn_hash = txn_request.transact({'gas': 3000000}).execute()
     chain.wait.for_receipt(duplicate_execute_txn_hash)
 
     with pytest.raises(AssertionError):

@@ -16,7 +16,10 @@ def test_txn_request_for_txn_that_throw_exception(chain,
     request_data = RequestData.from_contract(txn_request)
     chain.wait.for_block(request_data.schedule.windowStart)
 
-    execute_txn_hash = txn_request.transact({'from': web3.eth.accounts[1]}).execute()
+    execute_txn_hash = txn_request.transact({
+        'from': web3.eth.accounts[1],
+        'gas': 3000000,
+    }).execute()
     execute_txn_receipt = chain.wait.for_receipt(execute_txn_hash)
 
     execute_data = get_execute_data(execute_txn_hash)
@@ -50,7 +53,10 @@ def test_txn_request_when_everything_throws(chain,
 
     proxy_call_data = decode_hex(txn_request._encode_transaction_data('execute'))
 
-    execute_txn_hash = error_generator.transact({'from': web3.eth.accounts[1]}).__proxy(
+    execute_txn_hash = error_generator.transact({
+        'from': web3.eth.accounts[1],
+        'gas': 3000000,
+    }).__proxy(
         to=txn_request.address,
         callData=proxy_call_data,
     )

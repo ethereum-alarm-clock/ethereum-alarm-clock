@@ -120,6 +120,7 @@ def test_executing_own_claimed_block_request(chain,
 
     execute_txn_hash = txn_request.transact({
         'from': web3.eth.accounts[1],
+        'gas': 3000000,
     }).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
@@ -157,7 +158,7 @@ def test_executing_claimed_call_after_block_reserved_window(chain,
 
     chain.wait.for_block(request_data.schedule.windowStart + request_data.schedule.reservedWindowSize)
 
-    execute_txn_hash = txn_request.transact().execute()
+    execute_txn_hash = txn_request.transact({'gas': 3000000}).execute()
     chain.wait.for_receipt(execute_txn_hash)
 
     request_data.refresh()

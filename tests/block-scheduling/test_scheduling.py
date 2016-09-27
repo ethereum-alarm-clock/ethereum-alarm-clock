@@ -104,10 +104,10 @@ def test_invalid_schedule_returns_ether(chain,
     }).scheduleTransaction(
         txn_recorder.address,
         'this-is-the-call-data',
-        0,  # windowSize
         [
             latest_block['gasLimit'],  # callGas - too high a value.
             123454321,  # callValue
+            0,  # windowSize
             window_start,  # windowStart
         ],
     )

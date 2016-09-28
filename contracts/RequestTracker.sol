@@ -13,22 +13,22 @@ contract RequestTracker {
     /*
      * Returns the windowStart value for the given request.
      */
-    function getWindowStart(address scheduler, address request) constant returns (uint) {
-        return uint(requestsByAddress[scheduler].getNodeValue(bytes32(request)));
+    function getWindowStart(address factory, address request) constant returns (uint) {
+        return uint(requestsByAddress[factory].getNodeValue(bytes32(request)));
     }
 
     /*
      * Returns the request which comes directly before the given request.
      */
-    function getPreviousRequest(address scheduler, address request) constant returns (address) {
-        return address(requestsByAddress[scheduler].getPreviousNode(bytes32(request)));
+    function getPreviousRequest(address factory, address request) constant returns (address) {
+        return address(requestsByAddress[factory].getPreviousNode(bytes32(request)));
     }
 
     /*
      * Returns the request which comes directly after the given request.
      */
-    function getNextRequest(address scheduler, address request) constant returns (address) {
-        return address(requestsByAddress[scheduler].getNextNode(bytes32(request)));
+    function getNextRequest(address factory, address request) constant returns (address) {
+        return address(requestsByAddress[factory].getNextNode(bytes32(request)));
     }
 
     /*
@@ -49,16 +49,16 @@ contract RequestTracker {
 
     /*
      * Return boolean as to whether the given address is present for the given
-     * scheduler.
+     * factory.
      */
-    function isKnownRequest(address scheduler, address request) constant returns (bool) {
-        return requestsByAddress[scheduler].exists(bytes32(request));
+    function isKnownRequest(address factory, address request) constant returns (bool) {
+        return requestsByAddress[factory].exists(bytes32(request));
     }
 
     /*
-     * Query the index for the given schedule.
+     * Query the index for the given factory.
      */
-    function query(address scheduler, bytes2 operator, uint value) constant returns (address) {
-        return address(requestsByAddress[scheduler].query(operator, value.safeCastSigned()));
+    function query(address factory, bytes2 operator, uint value) constant returns (address) {
+        return address(requestsByAddress[factory].query(operator, value.safeCastSigned()));
     }
 }

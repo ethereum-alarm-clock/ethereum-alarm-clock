@@ -542,9 +542,7 @@ library RequestLib {
         Cancelled(rewardPayment, measuredGasConsumption);
 
         // send the remaining ether to the owner.
-        sendOwnerEther(self);
-
-        return true;
+        return sendOwnerEther(self);
     }
 
     /*
@@ -618,11 +616,11 @@ library RequestLib {
 
     function sendOwnerEther(Request storage self, uint sendGas) returns (bool) {
         if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
-            self.meta.owner.safeSend(this.balance.flooredSub(self.claimData.claimDeposit)
-                                                 .flooredSub(self.paymentData.paymentOwed)
-                                                 .flooredSub(self.paymentData.donationOwed),
-                                     sendGas);
-            return true;
+            var ownerRefund = this.balance.flooredSub(self.claimData.claimDeposit)
+                                          .flooredSub(self.paymentData.paymentOwed)
+                                          .flooredSub(self.paymentData.donationOwed);
+            var amountSent = self.meta.owner.safeSend(ownerRefund, sendGas);
+            return (ownerRefund == 0 || amountSent > 0);
         }
         return false;
     }

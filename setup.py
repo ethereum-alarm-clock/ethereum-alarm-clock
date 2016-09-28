@@ -22,6 +22,7 @@ setup(
     py_modules=['eth_alarm_client'],
     install_requires=[
         "populus>=1.1.0",
+        "pylru>=1.0.9",
     ],
     license="MIT",
     zip_safe=False,

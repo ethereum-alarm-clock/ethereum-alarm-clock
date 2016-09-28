@@ -9,9 +9,9 @@ class SchedulerFactory(Contract):
     pass
 
 
-def get_scheduler(web3, address):
+def get_scheduler(web3, address, abi=SCHEDULER_ABI):
     return web3.eth.contract(
-        abi=SCHEDULER_ABI,
+        abi=abi,
         address=address,
         base_contract_factory_class=SchedulerFactory,
     )

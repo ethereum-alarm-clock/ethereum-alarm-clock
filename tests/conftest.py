@@ -25,8 +25,8 @@ def request_tracker(unmigrated_chain, web3):
 
 
 @pytest.fixture()
-def request_factory(chain, web3):
-    factory = chain.get_contract('RequestFactory')
+def request_factory(chain, web3, request_tracker):
+    factory = chain.get_contract('RequestFactory', deploy_args=[request_tracker.address])
 
     chain_code = web3.eth.getCode(factory.address)
     assert len(chain_code) > 10

@@ -2,16 +2,14 @@ import pytest
 
 
 @pytest.fixture()
-def scheduler(chain, web3, request_tracker, request_factory):
+def scheduler(chain, web3, request_factory):
     block_scheduler = chain.get_contract('BlockScheduler', deploy_args=[
-        request_tracker.address,
         request_factory.address,
     ])
     chain_code = web3.eth.getCode(block_scheduler.address)
     assert len(chain_code) > 10
 
     assert request_factory.address == block_scheduler.call().factoryAddress()
-    assert request_tracker.address == block_scheduler.call().trackerAddress()
 
     return block_scheduler
 

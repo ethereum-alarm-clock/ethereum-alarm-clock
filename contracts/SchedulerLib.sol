@@ -1,7 +1,6 @@
 //pragma solidity 0.4.1;
 
 import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
-import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 import {PaymentLib} from "contracts/PaymentLib.sol";
 import {RequestScheduleLib} from "contracts/RequestScheduleLib.sol";
 import {RequestLib} from "contracts/RequestLib.sol";
@@ -113,8 +112,7 @@ library SchedulerLib {
      *  The low level interface for creating a transaction request.
      */
     function schedule(FutureTransaction storage self,
-                      address factoryAddress,
-                      address trackerAddress) public returns (address) {
+                      address factoryAddress) public returns (address) {
         var factory = RequestFactoryInterface(factoryAddress);
         var endowment = PaymentLib.computeEndowment(
             self.payment,
@@ -156,9 +154,6 @@ library SchedulerLib {
             }
             throw;
         }
-
-        var tracker = RequestTrackerInterface(trackerAddress);
-        tracker.addRequest(newRequestAddress, self.windowStart);
 
         return newRequestAddress;
     }

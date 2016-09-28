@@ -6,13 +6,11 @@ import {BaseScheduler} from "contracts/Scheduler.sol";
 
 
 contract TimestampScheduler is BaseScheduler {
-    function TimestampScheduler(address _trackerAddress,
-                                address _factoryAddress) {
+    function TimestampScheduler(address _factoryAddress) {
         // Set the type of time scheduling to timestamps
         temporalUnit = RequestScheduleLib.TemporalUnit(2);
 
-        // Set the tracker and factory addresses.
-        trackerAddress = _trackerAddress;
+        // Set the factory address.
         factoryAddress = _factoryAddress;
     }
 }

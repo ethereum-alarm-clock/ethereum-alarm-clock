@@ -9,6 +9,7 @@ from web3 import (
 )
 from .db import MemoryDB as DB
 from .config import Config
+from .contracts.recorder import get_recorder
 
 
 def root(latest_block_hash, web3, db, config):
@@ -19,7 +20,7 @@ def find_upcoming_block_scheduled_transaction_requests():
     pass
 
 
-@click.command()
+@click.group()
 @click.option(
     '--tracker-address',
     '-t',
@@ -27,6 +28,10 @@ def find_upcoming_block_scheduled_transaction_requests():
 @click.option(
     '--factory-address',
     '-f',
+)
+@click.option(
+    '--scheduler-address',
+    '-s',
 )
 @click.option(
     '--log-level',
@@ -42,7 +47,14 @@ def find_upcoming_block_scheduled_transaction_requests():
     '--ipc-path',
     '-i',
 )
-def main(tracker_address, factory_address, log_level, provider, ipc_path):
+@click.pass_context()
+def main(ctx,
+         tracker_address,
+         factory_address,
+         scheduler_address,
+         log_level,
+         provider,
+         ipc_path):
     if provider == 'ipc':
         web3 = Web3(IPCProvider(ipc_path=ipc_path))
     else:
@@ -51,6 +63,46 @@ def main(tracker_address, factory_address, log_level, provider, ipc_path):
     db = DB()
     config = Config()
 
+    ctx.web3 = web3
+    ctx.db = db
+    ctx.config = config
+
+
+@click.command()
+@click.option(
+    '--to-address',
+    '-a',
+    default='0x199a239ec2f7c788ce324d28be96fab34f3577f7',
+)
+@click.option(
+    '--call-data',
+    '-d',
+    default='this-is-test-call-data',
+)
+@click.option(
+    '--call-gas',
+    '-g',
+    default=150000,
+)
+@click.option(
+    '--call-value',
+    '-v',
+    default=0,
+)
+@click.option(
+    '--temporal-unit',
+    '-t',
+    type=click.Choice([1, 2]),
+    default=1,
+)
+@click.pass_context()
+def schedule(ctx, to_address, call_data, call_gas, call_value):
+    main_ctx = ctx.parent
+    recorder = get_recorder(main_ctx.web3, to_address)
+
+
+@click.command()
+def client():
     new_block_filter = web3.eth.filter('latest')
 
     click.echo("Starting client")

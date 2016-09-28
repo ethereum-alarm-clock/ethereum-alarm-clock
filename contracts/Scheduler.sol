@@ -42,7 +42,7 @@ contract BaseScheduler is SchedulerInterface {
         // transaction details are set.
         futureTransaction.temporalUnit = temporalUnit;
 
-        return futureTransaction.schedule(factoryAddress, trackerAddress);
+        return futureTransaction.schedule(factoryAddress);
     }
 
     /*
@@ -77,6 +77,6 @@ contract BaseScheduler is SchedulerInterface {
         // transaction details are set.
         futureTransaction.temporalUnit = temporalUnit;
 
-        return futureTransaction.schedule(factoryAddress, trackerAddress);
+        return futureTransaction.schedule(factoryAddress);
     }
 }

@@ -1,5 +1,6 @@
 //pragma solidity 0.4.1;
 
+import {ExecutionLib} from "contracts/ExecutionLib.sol";
 import {SafeSendLib} from "contracts/SafeSendLib.sol";
 import {MathLib} from "contracts/MathLib.sol";
 
@@ -133,17 +134,25 @@ library PaymentLib {
     function computeEndowment(uint payment,
                               uint donation,
                               uint callGas,
-                              uint callValue) returns (uint) {
+                              uint callValue,
+                              uint requiredStackDepth,
+                              uint gasOverhead) returns (uint) {
+        var stackCheckCost = requiredStackDepth.safeMultiply(ExecutionLib.GAS_PER_DEPTH())
+                                               .safeMultiply(tx.gasprice)
+                                               .safeMultiply(2);
         return payment.safeAdd(donation)
                       .safeMultiply(2)
-                      .safeAdd(callGas.safeMultiply(tx.gasprice))
-                      .safeAdd(callValue);
+                      .safeAdd(callGas.safeMultiply(tx.gasprice).safeMultiply(2))
+                      .safeAdd(gasOverhead.safeMultiply(tx.gasprice).safeMultiply(2))
+                      .safeAdd(callValue)
+                      .safeAdd(stackCheckCost);
     }
 
     /*
      * Validation: ensure that the request endowment is sufficient to cover.
      * - payment * maxMultiplier
      * - donation * maxMultiplier
+     * - stack depth checking
      * - gasReimbursment
      * - callValue
      */
@@ -151,10 +160,14 @@ library PaymentLib {
                                uint payment,
                                uint donation,
                                uint callGas,
-                               uint callValue) returns (bool) {
-        return endowment >= payment.safeAdd(donation)
-                                   .safeMultiply(2)
-                                   .safeAdd(callGas.safeMultiply(tx.gasprice))
-                                   .safeAdd(callValue);
+                               uint callValue,
+                               uint requiredStackDepth,
+                               uint gasOverhead) returns (bool) {
+        return endowment >= computeEndowment(payment,
+                                             donation,
+                                             callGas,
+                                             callValue,
+                                             requiredStackDepth,
+                                             gasOverhead);
     }
 }

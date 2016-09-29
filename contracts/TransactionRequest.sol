@@ -1,10 +1,11 @@
 //pragma solidity 0.4.1;
 
 import {RequestLib} from "contracts/RequestLib.sol";
+import {TransactionRequestInterface} from "contracts/TransactionRequestInterface.sol";
 import {Digger} from "contracts/Digger.sol";
 
 
-contract TransactionRequest is Digger {
+contract TransactionRequest is Digger, TransactionRequestInterface {
     using RequestLib for RequestLib.Request;
 
     /*
@@ -28,6 +29,13 @@ contract TransactionRequest is Digger {
                                 uint[11] uintArgs,
                                 bytes callData) {
         txnRequest.initialize(addressArgs, uintArgs, callData);
+    }
+
+    /*
+     *  Allow receiving ether.  This is needed if there is a large increase in
+     *  network gas prices.
+     */
+    function() {
     }
 
     RequestLib.Request txnRequest;

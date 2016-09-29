@@ -8,6 +8,7 @@ env:
     - SOLC_BINARY="$TRAVIS_BUILD_DIR/solc-versions/solc-0.3.6/solc"
   matrix:
     - TEST_DIR=block-scheduling
+    - TEST_DIR=timestamp-scheduling
     - TEST_DIR=request-factory
     - TEST_DIR=request-tracker
     - TEST_DIR=transaction-request

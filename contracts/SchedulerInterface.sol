@@ -8,7 +8,6 @@ import {SchedulerLib} from "contracts/SchedulerLib.sol";
 contract SchedulerInterface {
     using SchedulerLib for SchedulerLib.FutureTransaction;
 
-    address public trackerAddress;
     address public factoryAddress;
 
     RequestScheduleLib.TemporalUnit public temporalUnit;

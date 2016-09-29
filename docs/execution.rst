@@ -197,8 +197,10 @@ execution.
 Check #8: Sufficient Call Gas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Requires that the current value of ``msg.gas`` be greater than or equal to the
-``callGas`` attribute.
+Requires that the current value of ``msg.gas`` be greater than the *minimum
+call gas*.  See :ref:`minimum-call-gas` for details on how to compute this
+value as it includes both the ``callGas`` amount as well as some extra for the
+overhead involved in execution.
 
 
 Part 2: Execution
@@ -334,6 +336,8 @@ If you provide a gas value above this amount for the executing transaction then
 you are not guaranteed to be fully reimbursed for gas costs.
 
 
+.. _minimum-execution-gas:
+
 Minimum ExecutionGas
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -341,16 +345,16 @@ When sending the execution transaction, you should use the following rules to
 determine the minimum gas to be sent with the transaction:
 
 * Start with a baseline of the ``callGas`` attribute.
-* Add ``150000`` gas to account for execution overhead.
+* Add ``180000`` gas to account for execution overhead.
 * If you are proxying the execution through another contract such that during
   execution ``msg.sender != tx.origin`` then you need to provide an additional
   ``700 * requiredStackDepth`` gas for the stack depth checking.
 
 For example, if you are sending the execution transaction directly from a
 private key based address, and the request specified a ``callGas`` value of
-120000 gas then you would need to provide ``120000 + 150000 => 270000`` gas.
+120000 gas then you would need to provide ``120000 + 180000 => 300000`` gas.
 
 If you were executing the same request, except the execution transaction was
 being proxied through a contract, and the request specified a
-``requiredStackDepth`` of 10 then you would need to provide ``120000 + 150000 +
-700 * 10 => 340000`` gas.
+``requiredStackDepth`` of 10 then you would need to provide ``120000 + 180000 +
+700 * 10 => 307000`` gas.

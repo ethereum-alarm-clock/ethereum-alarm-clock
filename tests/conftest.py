@@ -25,8 +25,8 @@ def request_tracker(unmigrated_chain, web3):
 
 
 @pytest.fixture()
-def request_factory(chain, web3):
-    factory = chain.get_contract('RequestFactory')
+def request_factory(chain, web3, request_tracker):
+    factory = chain.get_contract('RequestFactory', deploy_args=[request_tracker.address])
 
     chain_code = web3.eth.getCode(factory.address)
     assert len(chain_code) > 10
@@ -42,6 +42,16 @@ def request_lib(chain):
 @pytest.fixture()
 def RequestLib(request_lib):
     return type(request_lib)
+
+
+@pytest.fixture()
+def execution_lib(chain):
+    return chain.get_contract('ExecutionLib')
+
+
+@pytest.fixture()
+def ExecutionLib(execution_lib):
+    return type(execution_lib)
 
 
 @pytest.fixture()
@@ -106,7 +116,7 @@ def RequestData(chain,
                      toAddress=txn_recorder.address,
                      callGas=1000000,
                      callValue=0,
-                     requiredStackDepth=0,
+                     requiredStackDepth=10,
                      # schedule
                      claimWindowSize=None,
                      freezePeriod=None,

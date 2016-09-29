@@ -27,6 +27,31 @@ Interface
     :language: solidity
 
 
+Events
+------
+
+
+.. method:: RequestFactory.RequestCreated(address request)
+
+The ``RequestCreated`` event will be logged for each newly created
+:class:`TransactionRequest`.
+
+
+.. method:: RequestFactory.ValidationError(uint8 error)
+
+The ``ValidationError`` event will be logged when an attempt is made to create
+a new :class:`TransactionRequest` which fails due to validation errors.  The ``error`` represents an error code that maps to the following errors.
+
+
+* ``0 => InsufficientEndowment``
+* ``0 => ReservedWindowBiggerThanExecutionWindow``
+* ``0 => InvalidTemporalUnit``
+* ``0 => ExecutionWindowTooSoon``
+* ``0 => InvalidRequiredStackDepth``
+* ``0 => CallGasTooHigh``
+* ``0 => EmptyToAddress``
+
+
 Function Arguments
 ------------------
 
@@ -73,6 +98,9 @@ This function returns an array of ``bool`` values.  A ``true`` means that the
 validation check succeeded.  A ``false`` means that the check failed.  The
 ``result`` array's values map to the following validation checks.
 
+
+.. _endowment:
+
 Check #1: Insufficient Endowment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -80,6 +108,18 @@ Check #1: Insufficient Endowment
 
 Checks that the provided ``endowment`` is sufficient to pay for the donation
 and payment as well as gas reimbursment.
+
+The required minimum endowment can be computed as the sum of the following:
+
+* ``callValue`` to provide the ether that will be sent with the transaction.
+* ``2 * payment`` to pay for maximum possible payment
+* ``2 * donation`` to pay for maximum possible donation
+* ``2 * callGas * tx.gasprice`` to pay for ``callGas`` with up to a 2x increase
+  in the network gas price.
+* ``2 * 700 * requiredStackDepth * tx.gasprice`` to pay gas for the stack depth
+  checking with up to a 2x increase in network gas costs.
+* ``2 * 180000 * tx.gasprice`` to pay for the gas overhead involved in
+  transaction execution.
 
 
 Check #2: Invalid Reserved Window
@@ -165,3 +205,6 @@ Tracking API
 ------------
 
 .. method:: RequestFactory.isKnownRequest(address _address) returns (bool)
+
+This method will return ``true`` if the address is a
+:class:`TransactionRequest` that was created from this contract.

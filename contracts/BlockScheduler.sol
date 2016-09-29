@@ -6,13 +6,11 @@ import {BaseScheduler} from "contracts/Scheduler.sol";
 
 
 contract BlockScheduler is BaseScheduler {
-    function BlockScheduler(address _trackerAddress,
-                            address _factoryAddress) {
+    function BlockScheduler(address _factoryAddress) {
         // Set the type of time scheduling to blocks
         temporalUnit = RequestScheduleLib.TemporalUnit(1);
 
-        // Set the tracker and factory addresses.
-        trackerAddress = _trackerAddress;
+        // Set the factory address.
         factoryAddress = _factoryAddress;
     }
 }

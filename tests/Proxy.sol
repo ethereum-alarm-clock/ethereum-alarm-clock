@@ -10,4 +10,7 @@ contract Proxy {
     function __proxy(address to, bytes callData, uint callGas) returns (bool) {
         return to.call.value(msg.value).gas(callGas)(callData);
     }
+
+    function() {
+    }
 }

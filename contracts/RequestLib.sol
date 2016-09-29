@@ -110,7 +110,9 @@ library RequestLib {
                                                    request.paymentData.payment,
                                                    request.paymentData.donation,
                                                    request.txnData.callGas,
-                                                   request.txnData.callValue);
+                                                   request.txnData.callValue,
+                                                   request.txnData.requiredStackDepth,
+                                                   _EXECUTION_GAS_OVERHEAD);
         is_valid[1] = RequestScheduleLib.validateReservedWindowSize(request.schedule.reservedWindowSize,
                                                                     request.schedule.windowSize);
         is_valid[2] = RequestScheduleLib.validateTemporalUnit(uintArgs[5]);
@@ -119,7 +121,7 @@ library RequestLib {
                                                              request.schedule.windowStart);
         is_valid[4] = ExecutionLib.validateRequiredStackDepth(request.txnData.requiredStackDepth);
         is_valid[5] = ExecutionLib.validateCallGas(request.txnData.callGas,
-                                                   _GAS_TO_AUTHORIZE_EXECUTION + _GAS_TO_COMPLETE_EXECUTION);
+                                                   _EXECUTION_GAS_OVERHEAD);
         is_valid[6] = ExecutionLib.validateToAddress(request.txnData.toAddress);
 
         return is_valid;
@@ -316,7 +318,7 @@ library RequestLib {
         // | Begin: Authorization |
         // +----------------------+
 
-        if (msg.gas < requiredExecutionGas(self)) {
+        if (msg.gas < requiredExecutionGas(self).flooredSub(_PRE_EXECUTION_GAS)) {
             Aborted(uint8(AbortReason.InsufficientGas));
             return false;
         } else if (self.meta.wasCalled) {
@@ -417,9 +419,18 @@ library RequestLib {
         return true;
     }
 
+    // This is the amount of gas that it takes to enter from the
+    // `TransactionRequest.execute()` contract into the `RequestLib.execute()`
+    // method at the point where the gas check happens.
+    uint constant _PRE_EXECUTION_GAS = 25000;
+
+    function PRE_EXECUTION_GAS() returns (uint) {
+        return _PRE_EXECUTION_GAS;
+    }
+
     function requiredExecutionGas(Request storage self) returns (uint) {
-        var requiredGas = self.txnData.callGas.safeAdd(_GAS_TO_AUTHORIZE_EXECUTION)
-                                              .safeAdd(_GAS_TO_COMPLETE_EXECUTION);
+        var requiredGas = self.txnData.callGas.safeAdd(_EXECUTION_GAS_OVERHEAD);
+
         if (msg.sender != tx.origin) {
             var stackCheckGas = ExecutionLib.GAS_PER_DEPTH()
                                             .safeMultiply(self.txnData.requiredStackDepth);
@@ -430,23 +441,13 @@ library RequestLib {
     }
 
     /*
-     * The amount of gas needed to do all of the pre execution checks.
-     */
-    // TODO: measure this.
-    uint constant _GAS_TO_AUTHORIZE_EXECUTION = 10000;
-
-    function GAS_TO_AUTHORIZE_EXECUTION() returns (uint) {
-        return _GAS_TO_AUTHORIZE_EXECUTION;
-    }
-
-    /*
      * The amount of gas needed to complete the execute method after
      * the transaction has been sent.
      */
-    uint constant _GAS_TO_COMPLETE_EXECUTION = 130000;
+    uint constant _EXECUTION_GAS_OVERHEAD = 180000;
 
-    function GAS_TO_COMPLETE_EXECUTION() returns (uint) {
-        return _GAS_TO_COMPLETE_EXECUTION;
+    function EXECUTION_GAS_OVERHEAD() returns (uint) {
+        return _EXECUTION_GAS_OVERHEAD;
     }
 
     
@@ -539,9 +540,7 @@ library RequestLib {
         Cancelled(rewardPayment, measuredGasConsumption);
 
         // send the remaining ether to the owner.
-        sendOwnerEther(self);
-
-        return true;
+        return sendOwnerEther(self);
     }
 
     /*
@@ -615,11 +614,11 @@ library RequestLib {
 
     function sendOwnerEther(Request storage self, uint sendGas) returns (bool) {
         if (self.meta.isCancelled || self.schedule.isAfterWindow()) {
-            self.meta.owner.safeSend(this.balance.flooredSub(self.claimData.claimDeposit)
-                                                 .flooredSub(self.paymentData.paymentOwed)
-                                                 .flooredSub(self.paymentData.donationOwed),
-                                     sendGas);
-            return true;
+            var ownerRefund = this.balance.flooredSub(self.claimData.claimDeposit)
+                                          .flooredSub(self.paymentData.paymentOwed)
+                                          .flooredSub(self.paymentData.donationOwed);
+            var amountSent = self.meta.owner.safeSend(ownerRefund, sendGas);
+            return (ownerRefund == 0 || amountSent > 0);
         }
         return false;
     }

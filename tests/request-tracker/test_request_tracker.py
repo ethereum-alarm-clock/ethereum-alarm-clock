@@ -1,5 +1,5 @@
 def test_request_tracker(chain, web3, request_tracker):
-    factory_address = web3.eth.coinbase
+    scheduler_address = web3.eth.coinbase
 
     values = [
         ('0x0000000000000000000000000000000000000001', 2),
@@ -36,14 +36,35 @@ def test_request_tracker(chain, web3, request_tracker):
         add_txn_hash = request_tracker.transact().addRequest(request_address, window_start)
         chain.wait.for_receipt(add_txn_hash)
 
-    assert request_tracker.call().query(factory_address, '>=', 0) == expected_order[0]
-    assert request_tracker.call().query(factory_address, '<=', 20) == expected_order[-1]
+    assert request_tracker.call().query(scheduler_address, '>=', 0) == expected_order[0]
+    assert request_tracker.call().query(scheduler_address, '<=', 20) == expected_order[-1]
 
     for idx, request_address in enumerate(expected_order):
-        assert request_tracker.call().isKnownRequest(factory_address, request_address) is True
-        assert request_tracker.call().getWindowStart(factory_address, request_address) == window_start_lookup[request_address]
+        assert request_tracker.call().isKnownRequest(scheduler_address, request_address) is True
+        assert request_tracker.call().getWindowStart(scheduler_address, request_address) == window_start_lookup[request_address]
 
         if idx > 0:
-            assert request_tracker.call().getPreviousRequest(factory_address, request_address) == expected_order[idx - 1]
+            assert request_tracker.call().getPreviousRequest(scheduler_address, request_address) == expected_order[idx - 1]
+        else:
+            assert request_tracker.call().getPreviousRequest(scheduler_address, request_address) == '0x0000000000000000000000000000000000000000'
+
         if idx < len(expected_order) - 1:
-            assert request_tracker.call().getNextRequest(factory_address, request_address) == expected_order[idx + 1]
+            assert request_tracker.call().getNextRequest(scheduler_address, request_address) == expected_order[idx + 1]
+        else:
+            assert request_tracker.call().getNextRequest(scheduler_address, request_address) == '0x0000000000000000000000000000000000000000'
+
+
+def test_adding_and_removing(chain, web3, request_tracker):
+    scheduler_address = web3.eth.coinbase
+
+    assert request_tracker.call().isKnownRequest(scheduler_address, '0x0000000000000000000000000000000000000001') is False
+
+    add_txn_hash = request_tracker.transact().addRequest('0x0000000000000000000000000000000000000001', 12345)
+    chain.wait.for_receipt(add_txn_hash)
+
+    assert request_tracker.call().isKnownRequest(scheduler_address, '0x0000000000000000000000000000000000000001') is True
+
+    remove_txn_hash = request_tracker.transact().removeRequest('0x0000000000000000000000000000000000000001')
+    chain.wait.for_receipt(remove_txn_hash)
+
+    assert request_tracker.call().isKnownRequest(scheduler_address, '0x0000000000000000000000000000000000000001') is False

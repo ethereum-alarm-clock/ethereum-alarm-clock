@@ -22,13 +22,14 @@ setup(
     py_modules=['eth_alarm_client'],
     install_requires=[
         "populus>=1.1.0",
+        "pylru>=1.0.9",
     ],
     license="MIT",
     zip_safe=False,
     keywords='ethereum',
     packages=find_packages(exclude=["tests", "tests.*"]),
     entry_points={
-        #'console_scripts': ["eth_alarm=eth_alarm_client.cli:main"],
+        'console_scripts': ["eth_alarm=alarm_client.cli:main"],
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

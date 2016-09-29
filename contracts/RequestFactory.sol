@@ -5,11 +5,19 @@ import {TransactionRequest} from "contracts/TransactionRequest.sol";
 import {RequestLib} from "contracts/RequestLib.sol";
 import {SafeSendLib} from "contracts/SafeSendLib.sol";
 import {IterTools} from "contracts/IterTools.sol";
+import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
 
 
 contract RequestFactory is RequestFactoryInterface {
     using IterTools for bool[7];
     using SafeSendLib for address;
+
+    RequestTrackerInterface public requestTracker;
+
+    function RequestFactory(address _trackerAddress) {
+        if (_trackerAddress == 0x0) throw;
+        requestTracker = RequestTrackerInterface(_trackerAddress);
+    }
 
     /*
      *  The lowest level interface for creating a transaction request.
@@ -48,6 +56,9 @@ contract RequestFactory is RequestFactoryInterface {
 
         // Log the creation.
         RequestCreated(address(request));
+
+        // Add the request to the RequestTracker
+        requestTracker.addRequest(address(request), uintArgs[7]);
 
         return request;
     }
@@ -129,4 +140,3 @@ contract RequestFactory is RequestFactoryInterface {
         return requests[_address];
     }
 }
-

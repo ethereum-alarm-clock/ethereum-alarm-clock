@@ -25,6 +25,8 @@ library ExecutionLib {
                                   (self.callData);
     }
 
+    // This is the *average* amount of gas needed to drill down one level in
+    // the stack.
     uint constant _GAS_PER_DEPTH = 700;
 
     function GAS_PER_DEPTH() returns (uint) {

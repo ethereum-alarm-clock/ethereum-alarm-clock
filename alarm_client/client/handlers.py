@@ -212,5 +212,48 @@ def execute_txn_request(config, txn_request):
 @task
 @locked_txn_request
 def cleanup_txn_request(config, txn_request):
-    # TODO
-    assert False
+    web3 = config.web3
+    wait = config.wait
+    logger = config.get_logger(txn_request.address)
+
+    # TODO: handle executing the payment/donation/ownerether methods too.
+    if not txn_request.afterExecutionWindow:
+        logger.debug("Not after window")
+        return
+    elif txn_request.isCancelled:
+        logger.debug("Cancelled")
+        return
+    elif txn_request.wasCalled:
+        logger.debug("Already executed")
+        return
+
+    if web3.eth.getBalance(txn_request.address) == 0:
+        logger.debug("No ether left in contract")
+        return
+
+    if txn_request.owner != web3.eth.defaultAccount:
+        gas_to_cancel = txn_request.estimateGas().cancel()
+        gas_cost_to_cancel = gas_to_cancel * web3.eth.gasPrice
+
+        if gas_cost_to_cancel > web3.eth.getBalance(txn_request.address):
+            logger.debug("Not enough ether to cover cost of cancelling")
+            return
+
+    logger.info("Attempting cancellation.")
+
+    cancel_txn_hash = txn_request.transact().cancel()
+
+    try:
+        logger.info("Waiting for transaction to be mined...")
+        wait.for_receipt(cancel_txn_hash)
+        logger.info("Cancellation transaction mined.")
+    except gevent.Timeout:
+        logger.error(
+            "Timed out waiting for cancellation transaction receipt. Txn Hash: %s",
+            cancel_txn_hash,
+        )
+
+    if txn_request.isCancelled:
+        logger.info("Request is now cancelled")
+    else:
+        logger.error("Request was not cancelled")

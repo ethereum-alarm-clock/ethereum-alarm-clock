@@ -3,13 +3,14 @@ import functools
 import gevent
 
 from ..utils import task
+from ..constants import ABORTED_REASON_MAP
+from ..exceptions import InvariantError
 
 from .scanning import (
     scan_for_block_requests,
     scan_for_timestamp_requests,
     map_scan_results_to_handlers,
 )
-from ..constants import ABORTED_REASON_MAP
 
 
 @task
@@ -58,7 +59,7 @@ def executed_event_callback(config, log_entry):
     if not factory.call().isKnownRequest(log_entry['address']):
         logger.info(
             'Executed event from unknown address: %s',
-            execute_txn['address'],
+            log_entry['address'],
         )
         return
 
@@ -99,7 +100,7 @@ def aborted_event_callback(config, log_entry):
     if not factory.call().isKnownRequest(log_entry['address']):
         logger.info(
             'Aborted event from unknown address: %s',
-            aborted_txn['address'],
+            log_entry['address'],
         )
         return
 
@@ -125,3 +126,101 @@ def aborted_event_callback(config, log_entry):
                 'Unknown Errror',
             ),
         )
+
+
+@task
+def created_event_callback(config, log_entry):
+    logger = config.get_logger('client.created')
+    wait = config.wait
+    factory = config.factory
+
+    create_txn_hash = log_entry['transactionHash']
+    wait.for_receipt(create_txn_hash)
+
+    if not factory.call().isKnownRequest(log_entry['args']['request']):
+        logger.info(
+            'RequestCreated event request is not known by factory: %s',
+            log_entry['args']['request'],
+        )
+        return
+
+    with config.lock(log_entry['address']):
+        txn_request = config.get_transaction_request(log_entry['args']['request'])
+        txn_request_logger = config.get_logger(txn_request.address)
+
+        logger.info(
+            "RequestCreated @ %s\n----------------\n%s",
+            txn_request.address,
+            txn_request.get_props_display()
+        )
+        txn_request_logger.info(
+            "RequestCreated @ %s\n----------------\n%s",
+            txn_request.address,
+            txn_request.get_props_display()
+        )
+
+
+@task
+def cancelled_event_callback(config, log_entry):
+    logger = config.get_logger('client.cancelled')
+    factory = config.factory
+
+    if not factory.call().isKnownRequest(log_entry['address']):
+        logger.info(
+            'Cancelled event from unknown address: %s',
+            log_entry['address'],
+        )
+        return
+
+    with config.lock(log_entry['address']):
+        txn_request = config.get_transaction_request(log_entry['address'])
+        txn_request_logger = config.get_logger(txn_request.address)
+
+        logger.info("Cancelled: Request @ %s", txn_request.address)
+        txn_request_logger.info("Cancelled")
+
+
+@task
+def claimed_event_callback(config, log_entry):
+    logger = config.get_logger('client.claimed')
+    web3 = config.web3
+    wait = config.wait
+    factory = config.factory
+
+    claimed_txn_hash = log_entry['transactionHash']
+    claimed_txn_receipt = wait.for_receipt(claimed_txn_hash)
+
+    if not factory.call().isKnownRequest(log_entry['address']):
+        logger.info(
+            'Claimed event from unknown address: %s',
+            log_entry['address'],
+        )
+        return
+
+    with config.lock(log_entry['address']):
+        txn_request = config.get_transaction_request(log_entry['address'])
+        txn_request_logger = config.get_logger(txn_request.address)
+
+        claimed_at_block = web3.eth.getBlock(claimed_txn_receipt['blockNumber'])
+
+        if txn_request.temporalUnit == 1:
+            claimed_at_now = claimed_at_block['number']
+        elif txn_request.temporalUnit == 2:
+            claimed_at_now = claimed_at_block['timestamp']
+        else:
+            raise InvariantError(
+                "Invalid temporalUnit: {0}".format(txn_request.temporalUnit)
+            )
+
+        claim_index = claimed_at_now - txn_request.claimWindowStart
+
+        logger.info(
+            "Claimed: Request @ %s: ClaimedBy: %s | ClaimedAt %s %s / %s (%s%%)",
+            txn_request.address,
+            txn_request.claimedBy,
+            "block" if txn_request.temporalUnit == 1 else "second",
+            claim_index,
+            txn_request.claimWindowSize,
+            txn_request.paymentModifier,
+        )
+        txn_request_logger.info("Claimed: ClaimedBy: %s", txn_request.claimedBy)

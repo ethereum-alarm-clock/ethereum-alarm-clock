@@ -81,6 +81,42 @@ def cached_once_not_eq_txn_request_attr(attr_name, default_value):
 
 
 class TransactionRequestFactory(Contract):
+    def __str__(self):
+        return "Transaction Request:\n{0}".format(self.get_props_display())
+
+    def __repr__(self):
+        return str(self)
+
+    def get_props_display(self):
+        return '\n'.join((
+            "- claimedBy: {s.claimedBy}",
+            "- createdBy: {s.createdBy}",
+            "- owner: {s.owner}",
+            "- donationBenefactor: {s.donationBenefactor}",
+            "- paymentBenefactor: {s.paymentBenefactor}",
+            "- toAddress: {s.toAddress}",
+            "- wasCalled: {s.wasCalled}",
+            "- wasSuccessful: {s.wasSuccessful}",
+            "- isCancelled: {s.isCancelled}",
+            "- paymentModifier: {s.paymentModifier}",
+            "- claimDeposit: {s.claimDeposit}",
+            "- anchorGasPrice: {s.anchorGasPrice}",
+            "- donation: {s.donation}",
+            "- donationOwed: {s.donationOwed}",
+            "- payment: {s.payment}",
+            "- paymentOwed: {s.paymentOwed}",
+            "- claimWindowSize: {s.claimWindowSize}",
+            "- freezePeriod: {s.freezePeriod}",
+            "- reservedWindowSize: {s.reservedWindowSize}",
+            "- temporalUnit: {s.temporalUnit}",
+            "- windowSize: {s.windowSize}",
+            "- windowStart: {s.windowStart}",
+            "- callGas: {s.callGas}",
+            "- callValue: {s.callValue}",
+            "- requiredStackDepth: {s.requiredStackDepth}",
+            "- callData: {s.callData}",
+        )).format(s=self)
+
     @property
     @block_cached
     def request_data(self):

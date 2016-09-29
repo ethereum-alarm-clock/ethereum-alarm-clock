@@ -13,6 +13,9 @@ from .client.main import (
     new_block_callback,
     executed_event_callback,
     aborted_event_callback,
+    created_event_callback,
+    cancelled_event_callback,
+    claimed_event_callback,
 )
 
 
@@ -143,6 +146,10 @@ VALIDATION_ERRORS = (
     '--confirm/--no-confirm',
     default=True,
 )
+@click.option(
+    '--deploy-from',
+    '-f',
+)
 @click.pass_context
 def request_create(ctx,
                    to_address,
@@ -153,9 +160,32 @@ def request_create(ctx,
                    window_start,
                    window_size,
                    endowment,
-                   confirm):
+                   confirm,
+                   deploy_from):
     main_ctx = ctx.parent
     config = main_ctx.config
+    wait = config.wait
+    web3 = config.web3
+
+    if deploy_from is not None:
+        web3.eth.defaultAccount = deploy_from
+
+    while True:
+        try:
+            click.echo(
+                "Waiting for unlock on account: {0}".format(web3.eth.defaultAccount)
+            )
+            wait.for_unlock()
+            break
+        except gevent.Timeout:
+            if confirm:
+                wait_longer_for_unlock_msg = (
+                    "Timed out waiting for {0} to be unlocked.  Would you like "
+                    "to wait longer?"
+                )
+                if click.confirm(wait_longer_for_unlock_msg, default=True):
+                    continue
+            raise
 
     factory = config.factory
     request_lib = config.request_lib
@@ -233,11 +263,11 @@ def request_create(ctx,
             break
         except gevent.Timeout:
             if confirm:
-                wait_longer_msg = (
+                wait_longer_for_receipt_msg = (
                     "\n\nTimed out waiting for transaction receipt.  Would you like "
                     "to continue waiting?"
                 )
-                if click.confirm(wait_longer_msg, default=True):
+                if click.confirm(wait_longer_for_receipt_msg, default=True):
                     continue
             raise click.ClickException(
                 "Timed out waiting for transaction to be mined"
@@ -277,23 +307,30 @@ def request_create(ctx,
     click.echo(success_message)
 
 
-@main.command()
+@main.command('client:run')
 @click.pass_context
-def client(ctx):
+def client_run(ctx):
     main_ctx = ctx.parent
     web3 = main_ctx.web3
     config = main_ctx.config
+    factory = config.factory
     TransactionRequestFactory = config.get_transaction_request(None)
 
     new_block_filter = web3.eth.filter('latest')
     executed_event_filter = TransactionRequestFactory.on('Executed')
     aborted_event_filter = TransactionRequestFactory.on('Aborted')
+    cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
+    claimed_event_filter = TransactionRequestFactory.on('Claimed')
+    created_event_filter = factory.on('RequestCreated')
 
     click.echo("Starting client")
 
     new_block_filter.watch(functools.partial(new_block_callback, config))
     executed_event_filter.watch(functools.partial(executed_event_callback, config))
     aborted_event_filter.watch(functools.partial(aborted_event_callback, config))
+    created_event_filter.watch(functools.partial(created_event_callback, config))
+    claimed_event_filter.watch(functools.partial(claimed_event_callback, config))
+    cancelled_event_filter.watch(functools.partial(cancelled_event_callback, config))
 
     try:
         while True:
@@ -302,6 +339,9 @@ def client(ctx):
                 new_block_filter.running,
                 executed_event_filter.running,
                 aborted_event_filter.running,
+                cancelled_event_filter.running,
+                created_event_filter.running,
+                claimed_event_filter.running,
             ))
             if not all_still_running:
                 break
@@ -315,6 +355,67 @@ def client(ctx):
         if aborted_event_filter.running:
             click.echo("Stopping Aborted Event Filter")
             aborted_event_filter.stop_watching()
+        if cancelled_event_filter.running:
+            click.echo("Stopping Cancelled Event Filter")
+            cancelled_event_filter.stop_watching()
+        if claimed_event_filter.running:
+            click.echo("Stopping Cancelled Event Filter")
+            claimed_event_filter.stop_watching()
+        if created_event_filter.running:
+            click.echo("Stopping RequestCreated Filter")
+            created_event_filter.stop_watching()
+
+
+@main.command('client:monitor')
+@click.pass_context
+def client_monitor(ctx):
+    main_ctx = ctx.parent
+    config = main_ctx.config
+    TransactionRequestFactory = config.get_transaction_request(None)
+    factory = config.factory
+
+    executed_event_filter = TransactionRequestFactory.on('Executed')
+    aborted_event_filter = TransactionRequestFactory.on('Aborted')
+    cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
+    claimed_event_filter = TransactionRequestFactory.on('Claimed')
+    created_event_filter = factory.on('RequestCreated')
+
+    click.echo("Watching for events")
+
+    executed_event_filter.watch(functools.partial(executed_event_callback, config))
+    aborted_event_filter.watch(functools.partial(aborted_event_callback, config))
+    created_event_filter.watch(functools.partial(created_event_callback, config))
+    claimed_event_filter.watch(functools.partial(claimed_event_callback, config))
+    cancelled_event_filter.watch(functools.partial(cancelled_event_callback, config))
+
+    try:
+        while True:
+            gevent.sleep(1)
+            all_still_running = all((
+                executed_event_filter.running,
+                aborted_event_filter.running,
+                cancelled_event_filter.running,
+                created_event_filter.running,
+                claimed_event_filter.running,
+            ))
+            if not all_still_running:
+                break
+    finally:
+        if executed_event_filter.running:
+            click.echo("Stopping Executed Event Filter")
+            executed_event_filter.stop_watching()
+        if aborted_event_filter.running:
+            click.echo("Stopping Aborted Event Filter")
+            aborted_event_filter.stop_watching()
+        if cancelled_event_filter.running:
+            click.echo("Stopping Cancelled Event Filter")
+            cancelled_event_filter.stop_watching()
+        if claimed_event_filter.running:
+            click.echo("Stopping Cancelled Event Filter")
+            claimed_event_filter.stop_watching()
+        if created_event_filter.running:
+            click.echo("Stopping RequestCreated Filter")
+            created_event_filter.stop_watching()
 
 
 @main.command()

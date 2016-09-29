@@ -116,6 +116,7 @@ def task(fn):
             logger.warning(
                 "long runtime for task: %s | timed: %s | id: %s",
                 fn.__name__,
+                elapsed,
                 exec_id,
             )
         else:

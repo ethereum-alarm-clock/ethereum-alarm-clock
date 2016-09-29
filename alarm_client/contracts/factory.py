@@ -1,8 +1,4 @@
-import json
 from web3.contract import Contract
-
-
-FACTORY_ABI = json.loads('[{"constant":true,"inputs":[],"name":"requestTracker","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"addressArgs","type":"address[3]"},{"name":"uintArgs","type":"uint256[11]"},{"name":"callData","type":"bytes"},{"name":"endowment","type":"uint256"}],"name":"validateRequestParams","outputs":[{"name":"","type":"bool[7]"}],"type":"function"},{"constant":false,"inputs":[{"name":"addressArgs","type":"address[3]"},{"name":"uintArgs","type":"uint256[11]"},{"name":"callData","type":"bytes"}],"name":"createValidatedRequest","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"addressArgs","type":"address[3]"},{"name":"uintArgs","type":"uint256[11]"},{"name":"callData","type":"bytes"}],"name":"createRequest","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_address","type":"address"}],"name":"isKnownRequest","outputs":[{"name":"","type":"bool"}],"type":"function"},{"inputs":[{"name":"_trackerAddress","type":"address"}],"type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"name":"error","type":"RequestFactory.Errors"}],"name":"ValidationError","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"request","type":"address"}],"name":"RequestCreated","type":"event"}]')  # noqa
 
 
 MINUTE = 60
@@ -188,7 +184,7 @@ class RequestFactoryFactory(Contract):
             )
 
 
-def get_factory(web3, address, abi=FACTORY_ABI):
+def get_factory(web3, address, abi):
     return web3.eth.contract(
         abi=abi,
         address=address,

@@ -1,32 +1,15 @@
-import json
 import functools
 from web3.contract import Contract
-from web3.utils.abi import (
-    filter_by_type,
-)
 
 import pylru
 
-from .request_lib import REQUEST_LIB_ABI
 from ..utils import (
     find_block_left_of_timestamp,
     find_block_right_of_timestamp,
     cached_property,
     cache_if_not_eq,
 )
-
-
-NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
-
-
-BASE_TRANSACTION_REQUEST_ABI = json.loads('[{"constant":true,"inputs":[],"name":"callData","outputs":[{"name":"","type":"bytes"}],"type":"function"},{"constant":false,"inputs":[],"name":"claim","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"requestData","outputs":[{"name":"","type":"address[6]"},{"name":"","type":"bool[3]"},{"name":"","type":"uint256[15]"},{"name":"","type":"uint8[1]"}],"type":"function"},{"constant":false,"inputs":[],"name":"execute","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"sendPayment","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"sendOwnerEther","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"sendDonation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"refundClaimDeposit","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"cancel","outputs":[{"name":"","type":"bool"}],"type":"function"}]')  # noqa
-
-
-# Add all of the events from the RequestLib into the ABI
-TRANSACTION_REQUEST_ABI = (
-    BASE_TRANSACTION_REQUEST_ABI +
-    filter_by_type('event', REQUEST_LIB_ABI)
-)
+from ..constants import NULL_ADDRESS
 
 
 class BlockCache(object):
@@ -294,7 +277,7 @@ class TransactionRequestFactory(Contract):
 _txn_request_cache = pylru.lrucache(256)
 
 
-def get_transaction_request(web3, address, abi=TRANSACTION_REQUEST_ABI):
+def get_transaction_request(web3, address, abi):
     try:
         return _txn_request_cache[address]
     except KeyError:

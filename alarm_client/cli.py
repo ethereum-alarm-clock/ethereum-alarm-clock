@@ -1,6 +1,6 @@
 import click
 import functools
-import random
+import logging
 import gevent
 
 from web3 import (
@@ -9,7 +9,11 @@ from web3 import (
 )
 
 from .config import Config
-from .client.main import new_block_callback
+from .client.main import (
+    new_block_callback,
+    executed_event_callback,
+    aborted_event_callback,
+)
 
 
 @click.group()
@@ -22,12 +26,23 @@ from .client.main import new_block_callback
     '-f',
 )
 @click.option(
-    '--scheduler-address',
-    '-s',
+    '--payment-lib-address',
+)
+@click.option(
+    '--request-lib-address',
+    '-r',
 )
 @click.option(
     '--log-level',
     '-l',
+    type=click.Choice([
+        logging.CRITICAL,
+        logging.ERROR,
+        logging.WARNING,
+        logging.INFO,
+        logging.DEBUG,
+    ]),
+    default=logging.INFO,
 )
 @click.option(
     '--provider',
@@ -41,20 +56,36 @@ from .client.main import new_block_callback
     # TODO: remove this
     default='/Users/piper/sites/ethereum-alarm-clock/chains/local/geth.ipc',
 )
+@click.option(
+    '--compiled-assets-path',
+    '-a',
+    type=click.Path(dir_okay=False),
+    default='./build/contracts.json',
+)
 @click.pass_context
 def main(ctx,
          tracker_address,
          factory_address,
-         scheduler_address,
+         payment_lib_address,
+         request_lib_address,
          log_level,
          provider,
-         ipc_path):
+         ipc_path,
+         compiled_assets_path):
     if provider == 'ipc':
         web3 = Web3(IPCProvider(ipc_path=ipc_path))
     else:
         raise click.ClickException("This shouldn't be possible")
 
-    config = Config(web3)
+    config = Config(
+        web3,
+        compiled_assets_path=compiled_assets_path,
+        log_level=log_level,
+        tracker_address=tracker_address,
+        factory_address=factory_address,
+        payment_lib_address=payment_lib_address,
+        request_lib_address=request_lib_address,
+    )
 
     ctx.web3 = web3
     ctx.config = config
@@ -258,30 +289,47 @@ def client(ctx):
     main_ctx = ctx.parent
     web3 = main_ctx.web3
     config = main_ctx.config
+    TransactionRequestFactory = config.get_transaction_request(None)
 
     new_block_filter = web3.eth.filter('latest')
+    executed_event_filter = TransactionRequestFactory.on('Executed')
+    aborted_event_filter = TransactionRequestFactory.on('Aborted')
 
     click.echo("Starting client")
 
-    callback = functools.partial(new_block_callback, config=config)
-
-    new_block_filter.watch(callback)
-
-    # give it a moment to spin up.
-    gevent.sleep(1)
+    new_block_filter.watch(functools.partial(new_block_callback, config))
+    executed_event_filter.watch(functools.partial(executed_event_callback, config))
+    aborted_event_filter.watch(functools.partial(aborted_event_callback, config))
 
     try:
-        while new_block_filter.running is True:
-            gevent.sleep(random.random())
+        while True:
+            gevent.sleep(1)
+            all_still_running = all((
+                new_block_filter.running,
+                executed_event_filter.running,
+                aborted_event_filter.running,
+            ))
+            if not all_still_running:
+                break
     finally:
         if new_block_filter.running:
-            click.echo("Stopping Client")
+            click.echo("Stopping Block Filter")
             new_block_filter.stop_watching()
+        if executed_event_filter.running:
+            click.echo("Stopping Executed Event Filter")
+            executed_event_filter.stop_watching()
+        if aborted_event_filter.running:
+            click.echo("Stopping Aborted Event Filter")
+            aborted_event_filter.stop_watching()
 
 
 @main.command()
 @click.pass_context
 def repl(ctx):
+    """
+    Drop into a debugger shell with most of what you might want available in
+    the local context.
+    """
     main_ctx = ctx.parent
     web3 = main_ctx.web3  # noqa
     config = main_ctx.config

@@ -1,3 +1,7 @@
+import time
+import functools
+
+
 def _bisect_blocks(web3, timestamp, use_left_bound=True):
     """
     Perform a binary search on the blockchain for the block that matches the
@@ -95,3 +99,16 @@ def cache_if_not_eq(default_value):
         (_cache_if_not_eq,),
         {'default_value': default_value},
     )
+
+
+def task(fn):
+    @functools.wraps(fn)
+    def inner(config, *args, **kwargs):
+        logger = config.get_logger("app")
+        logger.debug("enter: %s", fn.__name__)
+        start_at = time.time()
+        return_value = fn(config, *args, **kwargs)
+        elapsed = time.time() - start_at
+        logger.debug("exit: %s | timed: %s", fn.__name__, elapsed)
+        return return_value
+    return inner

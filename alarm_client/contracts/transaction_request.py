@@ -8,6 +8,12 @@ from web3.utils.abi import (
 import pylru
 
 from .request_lib import REQUEST_LIB_ABI
+from ..utils import (
+    find_block_left_of_timestamp,
+    find_block_right_of_timestamp,
+    cached_property,
+    cache_if_not_eq,
+)
 
 
 NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -24,7 +30,12 @@ TRANSACTION_REQUEST_ABI = (
 
 
 class BlockCache(object):
-    def __init__(self, size=128):
+    """
+    A global cache used to prevent duplicate lookups during a single block.  If
+    the block number has not changed then any function decorated with this will
+    return the previous value that was computed on that block.
+    """
+    def __init__(self, size=256):
         self.cache = pylru.lrucache(size)
 
     def __call__(self, method):
@@ -50,11 +61,40 @@ block_cached = BlockCache()
 
 
 def txn_request_attr(attr_name):
+    """
+    Sets a `property` on the class that looks up the attr_name off of the
+    request_data.
+    """
     def inner(self):
         return self.request_data[attr_name]
 
     inner.__name__ = attr_name
     return property(inner)
+
+
+def immutable_txn_request_attr(attr_name):
+    """
+    Sets a `property` on the class that looks up the attr_name off of the
+    request_data and caches the return value since it cannot be changed.
+    """
+    def inner(self):
+        return self.request_data[attr_name]
+
+    inner.__name__ = attr_name
+    return cached_property(inner)
+
+
+def cached_once_not_eq_txn_request_attr(attr_name, default_value):
+    """
+    Sets a `property` on the class that looks up the attr_name off of the
+    request_data and caches the return value once it deviates from the
+    `default_value` since it cannot change after this.
+    """
+    def inner(self):
+        return self.request_data[attr_name]
+
+    inner.__name__ = attr_name
+    return cache_if_not_eq(default_value)(inner)
 
 
 class TransactionRequestFactory(Contract):
@@ -108,34 +148,38 @@ class TransactionRequestFactory(Contract):
             },
         )()
 
-    claimedBy = txn_request_attr('claimedBy')
-    createdBy = txn_request_attr('createdBy')
-    owner = txn_request_attr('owner')
-    donationBenefactor = txn_request_attr('donationBenefactor')
-    paymentBenefactor = txn_request_attr('paymentBenefactor')
-    toAddress = txn_request_attr('toAddress')
-    wasCalled = txn_request_attr('wasCalled')
-    wasSuccessful = txn_request_attr('wasSuccessful')
-    isCancelled = txn_request_attr('isCancelled')
-    paymentModifier = txn_request_attr('paymentModifier')
+    claimedBy = cached_once_not_eq_txn_request_attr('claimedBy', NULL_ADDRESS)
+    createdBy = immutable_txn_request_attr('createdBy')
+    owner = immutable_txn_request_attr('owner')
+    donationBenefactor = immutable_txn_request_attr('donationBenefactor')
+    paymentBenefactor = cached_once_not_eq_txn_request_attr(
+        'paymentBenefactor',
+        NULL_ADDRESS,
+    )
+    toAddress = immutable_txn_request_attr('toAddress')
+    wasCalled = cached_once_not_eq_txn_request_attr('wasCalled', False)
+    wasSuccessful = cached_once_not_eq_txn_request_attr('wasSuccessful', False)
+    isCancelled = cached_once_not_eq_txn_request_attr('isCancelled', False)
+    paymentModifier = cached_once_not_eq_txn_request_attr('paymentModifier', 0)
     claimDeposit = txn_request_attr('claimDeposit')
-    anchorGasPrice = txn_request_attr('anchorGasPrice')
-    donation = txn_request_attr('donation')
+    anchorGasPrice = immutable_txn_request_attr('anchorGasPrice')
+    donation = immutable_txn_request_attr('donation')
     donationOwed = txn_request_attr('donationOwed')
-    payment = txn_request_attr('payment')
+    payment = immutable_txn_request_attr('payment')
     paymentOwed = txn_request_attr('paymentOwed')
-    claimWindowSize = txn_request_attr('claimWindowSize')
-    freezePeriod = txn_request_attr('freezePeriod')
-    reservedWindowSize = txn_request_attr('reservedWindowSize')
-    temporalUnit = txn_request_attr('temporalUnit')
-    windowSize = txn_request_attr('windowSize')
-    windowStart = txn_request_attr('windowStart')
-    callGas = txn_request_attr('callGas')
-    callValue = txn_request_attr('callValue')
-    requiredStackDepth = txn_request_attr('requiredStackDepth')
-    callData = txn_request_attr('callData')
+    claimWindowSize = immutable_txn_request_attr('claimWindowSize')
+    freezePeriod = immutable_txn_request_attr('freezePeriod')
+    reservedWindowSize = immutable_txn_request_attr('reservedWindowSize')
+    temporalUnit = immutable_txn_request_attr('temporalUnit')
+    windowSize = immutable_txn_request_attr('windowSize')
+    windowStart = immutable_txn_request_attr('windowStart')
+    callGas = immutable_txn_request_attr('callGas')
+    callValue = immutable_txn_request_attr('callValue')
+    requiredStackDepth = immutable_txn_request_attr('requiredStackDepth')
+    callData = immutable_txn_request_attr('callData')
 
     @property
+    @block_cached
     def now(self):
         if self.temporalUnit == 1:
             return self.web3.eth.blockNumber
@@ -151,21 +195,22 @@ class TransactionRequestFactory(Contract):
             )
             raise ValueError(invalid_temporal_unit_msg)
 
-    @property
+    @cached_property
     def claimWindowStart(self):
         return self.windowStart - self.freezePeriod - self.claimWindowSize
 
-    @property
+    @cached_property
     def claimWindowEnd(self):
         return self.windowStart - self.freezePeriod
 
     @property
+    @block_cached
     def claimPaymentModifier(self):
         return 100 * (
             self.now - self.claimWindowStart
         ) // self.claimWindowSize
 
-    @property
+    @cache_if_not_eq(False)
     def isClaimed(self):
         return self.claimedBy != NULL_ADDRESS
 
@@ -173,46 +218,68 @@ class TransactionRequestFactory(Contract):
         return self.claimedBy == address
 
     @property
+    @block_cached
     def inClaimWindow(self):
         return self.claimWindowStart <= self.now < self.claimWindowEnd
 
     @property
+    @block_cached
     def beforeClaimWindow(self):
         return self.now < self.claimWindowStart
 
     @property
+    @block_cached
     def isClaimable(self):
         return not self.isClaimed and self.inClaimWindow
 
-    @property
+    @cached_property
     def freezeWindowStart(self):
         return self.windowStart - self.freezePeriod
 
     @property
+    @block_cached
     def inFreezePeriod(self):
         return self.freezeWindowStart <= self.now < self.windowStart
 
-    @property
+    @cached_property
     def executionWindowEnd(self):
         return self.windowStart + self.windowSize
 
-    @property
+    @cache_if_not_eq('latest')
+    def executionWindowStartBlock(self):
+        if self.temporalUnit == 1:
+            return self.windowStart
+        else:
+            return find_block_right_of_timestamp(self.web3, self.windowStart)
+
+    @cache_if_not_eq('latest')
+    def executionWindowEndBlock(self):
+        if self.temporalUnit == 1:
+            return self.executionWindowEnd
+        else:
+            return find_block_left_of_timestamp(self.web3, self.executionWindowEnd)
+
+    @cached_property
     def reservedExecutionWindowEnd(self):
         return self.windowStart + self.reservedWindowSize
 
     @property
+    @block_cached
     def inExecutionWindow(self):
         return self.windowStart <= self.now <= self.executionWindowEnd
 
     @property
+    @block_cached
     def inReservedWindow(self):
         return self.windowStart <= self.now < self.reservedExecutionWindowEnd
 
     @property
+    @block_cached
     def afterExecutionWindow(self):
         return self.now > self.executionWindowEnd
 
     @property
+    @block_cached
     def paymentModifier(self):
         if self.web3.eth.gasPrice > self.anchorGasPrice:
             return self.anchorGasPrice * 100 // self.web3.eth.gasPrice

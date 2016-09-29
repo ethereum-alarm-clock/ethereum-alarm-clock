@@ -197,8 +197,10 @@ execution.
 Check #8: Sufficient Call Gas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Requires that the current value of ``msg.gas`` be greater than or equal to the
-``callGas`` attribute.
+Requires that the current value of ``msg.gas`` be greater than the *minimum
+call gas*.  See :ref:`minimum-call-gas` for details on how to compute this
+value as it includes both the ``callGas`` amount as well as some extra for the
+overhead involved in execution.
 
 
 Part 2: Execution
@@ -333,6 +335,8 @@ amount of gas that a request is capable of paying:
 If you provide a gas value above this amount for the executing transaction then
 you are not guaranteed to be fully reimbursed for gas costs.
 
+
+.. _minimum-execution-gas:
 
 Minimum ExecutionGas
 ^^^^^^^^^^^^^^^^^^^^

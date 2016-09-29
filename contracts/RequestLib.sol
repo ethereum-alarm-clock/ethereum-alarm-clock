@@ -318,7 +318,7 @@ library RequestLib {
         // | Begin: Authorization |
         // +----------------------+
 
-        if (msg.gas < requiredExecutionGas(self)) {
+        if (msg.gas < requiredExecutionGas(self).flooredSub(_PRE_EXECUTION_GAS)) {
             Aborted(uint8(AbortReason.InsufficientGas));
             return false;
         } else if (self.meta.wasCalled) {
@@ -436,8 +436,6 @@ library RequestLib {
                                             .safeMultiply(self.txnData.requiredStackDepth);
             requiredGas = requiredGas.safeAdd(stackCheckGas);
         }
-
-        requiredGas = requiredGas.flooredSub(_PRE_EXECUTION_GAS);
 
         return requiredGas;
     }

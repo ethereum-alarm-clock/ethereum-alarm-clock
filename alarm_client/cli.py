@@ -35,13 +35,7 @@ from .client.main import (
 @click.option(
     '--log-level',
     '-l',
-    type=click.Choice([
-        logging.CRITICAL,
-        logging.ERROR,
-        logging.WARNING,
-        logging.INFO,
-        logging.DEBUG,
-    ]),
+    type=int,
     default=logging.INFO,
 )
 @click.option(

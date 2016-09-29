@@ -63,7 +63,7 @@ def executed_event_callback(config, log_entry):
         return
 
     with config.lock(log_entry['address']):
-        txn_request = config.get_transaction_request(execute_txn['address'])
+        txn_request = config.get_transaction_request(log_entry['address'])
         txn_request_logger = config.get_logger(txn_request.address)
 
         logger.info(
@@ -104,7 +104,7 @@ def aborted_event_callback(config, log_entry):
         return
 
     with config.lock(log_entry['address']):
-        txn_request = config.get_transaction_request(aborted_txn['address'])
+        txn_request = config.get_transaction_request(log_entry['address'])
         txn_request_logger = config.get_logger(txn_request.address)
 
         logger.info(

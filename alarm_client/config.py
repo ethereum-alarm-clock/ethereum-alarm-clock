@@ -89,6 +89,7 @@ class Config(object):
 
     def get_logger(self, name):
         logger = logging.getLogger(name)
+        logger.setLevel(self.log_level)
         has_stream_handler = any(
             isinstance(handler, logging.StreamHandler) for handler in logger.handlers
         )

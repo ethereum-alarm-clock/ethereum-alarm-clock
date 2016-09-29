@@ -33,6 +33,7 @@ class BlockCache(object):
             cache_key = (
                 method.__name__,
                 inner_self.web3.eth.blockNumber,
+                inner_self.address,
                 args,
                 tuple(sorted(kwargs.items())),
             )
@@ -135,14 +136,6 @@ class TransactionRequestFactory(Contract):
     callData = txn_request_attr('callData')
 
     @property
-    def firstClaimAt(self):
-        return self.windowStart - self.freezePeriod - self.claimWindowSize
-
-    @property
-    def endClaimWindow(self):
-        return self.windowStart - self.freezePeriod
-
-    @property
     def now(self):
         if self.temporalUnit == 1:
             return self.web3.eth.blockNumber
@@ -159,50 +152,79 @@ class TransactionRequestFactory(Contract):
             raise ValueError(invalid_temporal_unit_msg)
 
     @property
+    def claimWindowStart(self):
+        return self.windowStart - self.freezePeriod - self.claimWindowSize
+
+    @property
+    def claimWindowEnd(self):
+        return self.windowStart - self.freezePeriod
+
+    @property
+    def claimPaymentModifier(self):
+        return 100 * (
+            self.now - self.claimWindowStart
+        ) // self.claimWindowSize
+
+    @property
     def isClaimed(self):
-        return self.claimedBy == NULL_ADDRESS
+        return self.claimedBy != NULL_ADDRESS
 
     def isClaimedBy(self, address):
         return self.claimedBy == address
 
     @property
     def inClaimWindow(self):
-        return self.firstClaimAt <= self.now < self.endClaimWindow
+        return self.claimWindowStart <= self.now < self.claimWindowEnd
 
     @property
     def beforeClaimWindow(self):
-        return self.now < self.firstClaimBlock
+        return self.now < self.claimWindowStart
 
     @property
     def isClaimable(self):
         return not self.isClaimed and self.inClaimWindow
 
     @property
-    def beginFreezeWindow(self):
+    def freezeWindowStart(self):
         return self.windowStart - self.freezePeriod
 
     @property
-    def isFrozen(self):
-        return self.beginFreezeWindow <= self.now < self.windowStart
+    def inFreezePeriod(self):
+        return self.freezeWindowStart <= self.now < self.windowStart
 
     @property
-    def endExecutionWindow(self):
+    def executionWindowEnd(self):
         return self.windowStart + self.windowSize
 
     @property
-    def endReservedExecutionWindow(self):
+    def reservedExecutionWindowEnd(self):
         return self.windowStart + self.reservedWindowSize
 
     @property
     def inExecutionWindow(self):
-        return self.windowStart <= self.now <= self.endExecutionWindow
+        return self.windowStart <= self.now <= self.executionWindowEnd
 
     @property
     def inReservedWindow(self):
-        return self.windowStart <= self.now < self.endReservedExecutionWindow
+        return self.windowStart <= self.now < self.reservedExecutionWindowEnd
+
+    @property
+    def afterExecutionWindow(self):
+        return self.now > self.executionWindowEnd
+
+    @property
+    def paymentModifier(self):
+        if self.web3.eth.gasPrice > self.anchorGasPrice:
+            return self.anchorGasPrice * 100 // self.web3.eth.gasPrice
+        else:
+            return 200 - (
+                self.anchorGasPrice * 100 // (
+                    2 * self.anchorGasPrice - self.web3.eth.gasPrice
+                )
+            )
 
 
-_txn_request_cache = pylru.lrucache(100)
+_txn_request_cache = pylru.lrucache(256)
 
 
 def get_transaction_request(web3, address, abi=TRANSACTION_REQUEST_ABI):

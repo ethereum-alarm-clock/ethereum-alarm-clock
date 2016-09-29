@@ -1,5 +1,12 @@
 import logging
 
+import pylru
+
+from gevent.lock import BoundedSemaphore
+
+from populus.utils.wait import (
+    Wait,
+)
 
 from .contracts.tracker import get_tracker
 from .contracts.factory import get_factory
@@ -10,6 +17,20 @@ from .contracts.transaction_request import get_transaction_request
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('eth_alarm.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 
 MINUTE = 60
@@ -71,6 +92,19 @@ class Config(object):
         self._timestamp_scheduler_address = timestamp_scheduler_address
         self._payment_lib_address = payment_lib_address
         self._request_lib_address = request_lib_address
+        self._locks = pylru.lrucache(2048)
+
+    @property
+    def wait(self):
+        return Wait(self.web3)
+
+    def lock(self, key):
+        try:
+            sem = self._locks[key]
+        except KeyError:
+            sem = BoundedSemaphore()
+            self._locks[key] = sem
+        return sem
 
     @property
     def chain_context(self):

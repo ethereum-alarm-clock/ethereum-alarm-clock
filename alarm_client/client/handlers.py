@@ -124,7 +124,7 @@ def claim_txn_request(config, txn_request):
     claim_txn_hash = txn_request.transact({'value': claim_deposit}).claim()
     logger.info("Sent claim transaction.  Txn Hash: %s", claim_txn_hash)
     try:
-        wait.for_receipt(claim_txn_hash)
+        wait.for_receipt(claim_txn_hash, poll_interval=5)
     except gevent.Timeout:
         logger.error(
             "Timed out waiting for claim transaction receipt. Txn Hash: %s",
@@ -195,7 +195,7 @@ def execute_txn_request(config, txn_request):
 
     try:
         logger.info("Waiting for transaction to be mined...")
-        wait.for_receipt(execute_txn_hash)
+        wait.for_receipt(execute_txn_hash, poll_interval=5)
         logger.info("Execution transaction mined.")
     except gevent.Timeout:
         logger.error(
@@ -245,7 +245,7 @@ def cleanup_txn_request(config, txn_request):
 
     try:
         logger.info("Waiting for transaction to be mined...")
-        wait.for_receipt(cancel_txn_hash)
+        wait.for_receipt(cancel_txn_hash, poll_interval=5)
         logger.info("Cancellation transaction mined.")
     except gevent.Timeout:
         logger.error(

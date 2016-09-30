@@ -53,6 +53,18 @@ KNOWN_CHAINS = {
 }
 
 
+def is_rollbar_available():
+    try:
+        import rollbar  # noqa
+    except ImportError:
+        return False
+    else:
+        return (
+            'ROLLBAR_SECRET' in os.environ and
+            'ROLLBAR_ENVIRONMENT' in os.environ
+        )
+
+
 class Config(object):
     web3 = None
 
@@ -90,8 +102,10 @@ class Config(object):
     def get_logger(self, name):
         logger = logging.getLogger(name)
         logger.setLevel(self.log_level)
+
         has_stream_handler = any(
-            isinstance(handler, logging.StreamHandler) for handler in logger.handlers
+            isinstance(handler, logging.StreamHandler)
+            for handler in logger.handlers
         )
         if not has_stream_handler:
             stream_handler = logging.StreamHandler()
@@ -112,8 +126,24 @@ class Config(object):
                                                         backupCount=20,
                                                         maxBytes=10000000)
             file_handler.setLevel(logging.DEBUG)
-            file_handler.setFormatter(logging.Formatter('%(levelname)s: %(asctime)s %(message)s'))
+            file_handler.setFormatter(logging.Formatter(
+                '%(levelname)s: %(asctime)s %(message)s'
+            ))
             logger.addHandler(file_handler)
+
+        if is_rollbar_available():
+            from rollbar.logger import RollbarHandler
+            has_rollbar_handler = any(
+                isinstance(handler, RollbarHandler)
+                for handler in logger.handlers
+            )
+            if not has_rollbar_handler:
+                rb_handler = RollbarHandler(
+                    os.environ['ROLLBAR_SECRET'],
+                    os.environ['ROLLBAR_ENVIRONMENT'],
+                )
+                rb_handler.setLevel(self.log_level)
+                logger.addHandler(rb_handler)
         return logger
 
     @cached_property

@@ -13,12 +13,6 @@ Testing for Alarm is done with [populus](https://github.com/pipermerriam/populus
 $ pip install populus
 ```
 
-You must first compile the Alarm contracts prior to running tests.
-
-```shell
-$ populus compile --optimize
-```
-
 Then you can run the test suite using `pytest` which is installed along with
 populus.
 

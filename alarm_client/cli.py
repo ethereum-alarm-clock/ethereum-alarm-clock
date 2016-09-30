@@ -256,7 +256,7 @@ def request_create(ctx,
     while True:
         try:
             click.echo("Waiting for transaction to be mined...", nl=False)
-            create_txn_receipt = config.wait.for_receipt(create_txn_hash)
+            create_txn_receipt = config.wait.for_receipt(create_txn_hash, poll_interval=3)
             click.echo("MINED via block #{0}".format(
                 create_txn_receipt['blockNumber']
             ))
@@ -323,6 +323,13 @@ def client_run(ctx):
     claimed_event_filter = TransactionRequestFactory.on('Claimed')
     created_event_filter = factory.on('RequestCreated')
 
+    new_block_filter.poll_interval = 2
+    executed_event_filter.poll_interval = 17
+    aborted_event_filter.poll_interval = 17
+    cancelled_event_filter.poll_interval = 17
+    claimed_event_filter.poll_interval = 17
+    created_event_filter.poll_interval = 17
+
     click.echo("Starting client")
 
     new_block_filter.watch(functools.partial(new_block_callback, config))
@@ -379,6 +386,12 @@ def client_monitor(ctx):
     cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
     claimed_event_filter = TransactionRequestFactory.on('Claimed')
     created_event_filter = factory.on('RequestCreated')
+
+    executed_event_filter.poll_interval = 17
+    aborted_event_filter.poll_interval = 17
+    cancelled_event_filter.poll_interval = 17
+    claimed_event_filter.poll_interval = 17
+    created_event_filter.poll_interval = 17
 
     click.echo("Watching for events")
 

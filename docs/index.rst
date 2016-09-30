@@ -43,6 +43,7 @@ Contents:
    request_factory
    request_tracker
    scheduler
+   cli
    changelog
    :maxdepth: 1
 

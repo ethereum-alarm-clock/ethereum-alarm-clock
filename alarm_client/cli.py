@@ -72,7 +72,7 @@ BASE_DIR = os.path.dirname(__file__)
     '--compiled-assets-path',
     '-a',
     type=click.Path(dir_okay=False),
-    default=os.path.join(BASE_DIR, 'assets', 'v8.0.0.json'),
+    default=os.path.join(BASE_DIR, 'assets', 'v0.8.0.json'),
     envvar='COMPILED_ASSETS_PATH',
     help='Path to JSON file which contains the compiled contract assets',
 )
@@ -129,7 +129,7 @@ VALIDATION_ERRORS = (
 @click.option(
     '--call-data',
     '-d',
-    default='this-is-test-call-data',
+    default='',
     help="The `callData` to be used",
 )
 @click.option(
@@ -178,7 +178,13 @@ VALIDATION_ERRORS = (
 @click.option(
     '--deploy-from',
     '-f',
-    help="Sets the `from` address for the scheduling transaction.",
+    help="Sets the `from` address for the scheduling transaction.  Defaults to the coinbase account if not provided.",
+)
+@click.option(
+    '--no-wait',
+    is_flag=True,
+    default=False,
+    help="Use --no-wait to skip waiting for the transaction to be mined",
 )
 @click.pass_context
 def request_create(ctx,
@@ -191,7 +197,8 @@ def request_create(ctx,
                    window_size,
                    endowment,
                    confirm,
-                   deploy_from):
+                   deploy_from,
+                   no_wait):
     main_ctx = ctx.parent
     config = main_ctx.config
     wait = config.wait
@@ -283,6 +290,8 @@ def request_create(ctx,
     ).format(factory=factory, txn_hash=create_txn_hash)
     click.echo(transaction_sent_message)
 
+    if no_wait:
+        return
     while True:
         try:
             click.echo("Waiting for transaction to be mined...", nl=False)

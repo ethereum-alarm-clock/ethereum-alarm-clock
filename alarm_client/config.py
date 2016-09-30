@@ -144,16 +144,19 @@ class Config(object):
             logger.addHandler(file_handler)
 
         if is_rollbar_available():
+            import rollbar
             from rollbar.logger import RollbarHandler
             has_rollbar_handler = any(
                 isinstance(handler, RollbarHandler)
                 for handler in logger.handlers
             )
             if not has_rollbar_handler:
-                rb_handler = RollbarHandler(
-                    os.environ['ROLLBAR_SECRET'],
-                    os.environ['ROLLBAR_ENVIRONMENT'],
-                )
+                rb_secret = os.environ['ROLLBAR_SECRET']
+                rb_environment = os.environ['ROLLBAR_ENVIRONMENT']
+                if not rollbar._initialized:
+                    rollbar.init(rb_secret, rb_environment)
+
+                rb_handler = RollbarHandler()
                 rb_handler.setLevel(self.log_level)
                 logger.addHandler(rb_handler)
         return logger

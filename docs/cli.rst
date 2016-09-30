@@ -123,8 +123,9 @@ will persist through restarts.
 Run ``sudo mount -a``  If you don't get any errors then you haven't borked your
 ``etc/fstab``
 
-4. Install Geth
-^^^^^^^^^^^^^^^
+
+4. Install Geth or Parity
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Install the go-ethereum client.
 
@@ -133,14 +134,22 @@ Install the go-ethereum client.
 * ``sudo apt-get update``
 * ``sudo apt-get install -y ethereum``
 
+
+Install the parity client.
+
+* ``curl https://sh.rustup.rs -sSf | sh``
+* ``cargo install --git https://github.com/ethcore/parity.git parity``
+
+
 5. Install the Alarm Client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Install the Alarm client.
 
-* ``mkdir -p ~/alarm-0.6.0``
-* ``cd ~/alarm-0.6.0``
-* ``virtualenv env && source env/bin/activate``
+* ``mkdir -p ~/alarm-0.8.0``
+* ``cd ~/alarm-0.8.0``
+* ``virtualenv -p /usr/bin/python3.4 env && source env/bin/activate``
+* ``pip install setuptools --upgrade``
 * ``pip install ethereum-alarm-clock-client``
 
 6. Configure Supervisord
@@ -148,7 +157,7 @@ Install the Alarm client.
 
 Supervisord will be used to manage both ``geth`` and ``eth_alarm``.
 
-Put the following in ``/etc/supervisord/conf.d/geth.conf``
+If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth.conf``
 
 .. code-block:: shell
 
@@ -159,17 +168,28 @@ Put the following in ``/etc/supervisord/conf.d/geth.conf``
     stderr_logfile=/var/log/supervisor/geth-stderr.log
 
 
-Put the following in ``/etc/supervisord/conf.d/scheduler-v6.conf``
+If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/parity.conf``
 
 .. code-block:: shell
 
-    [program:scheduler-v6]
+    [program:parity]
+    command=parity TODO
     user=ubuntu
-    command=/home/ubuntu/alarm-0.6.0/env/bin/eth_alarm scheduler --client rpc --address 0xe109ecb193841af9da3110c80fdd365d1c23be2a
-    directory=/home/ubuntu/alarm-0.6.0/
-    environment=PATH="/home/ubuntu/alarm-0.6.0/env/bin"
-    stdout_logfile=/var/log/supervisor/scheduler-v6-stdout.log
-    stderr_logfile=/var/log/supervisor/scheduler-v6-stderr.log
+    stdout_logfile=/var/log/supervisor/geth-stdout.log
+    stderr_logfile=/var/log/supervisor/geth-stderr.log
+
+
+Put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+
+.. code-block:: shell
+
+    [program:scheduler-v8]
+    user=ubuntu
+    command=/home/ubuntu/alarm-0.8.0/env/bin/eth_alarm --ipc-path /data/ethereum/geth.ipc client:run
+    directory=/home/ubuntu/alarm-0.8.0/
+    environment=PATH="/home/ubuntu/alarm-0.8.0/env/bin"
+    stdout_logfile=/var/log/supervisor/scheduler-v8-stdout.log
+    stderr_logfile=/var/log/supervisor/scheduler-v8-stderr.log
     autorestart=true
     autostart=false
 
@@ -212,3 +232,15 @@ You can monitor these two processes with ``tail``
 .. _pip: https://pip.pypa.io/en/stable/
 .. _issue 1: https://github.com/pipermerriam/ethereum-alarm-client/issues/1
 .. _AWS Documentation: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html
+
+
+10. Cron
+^^^^^^^^
+
+You might want to add the following line to your crontab.  This keeps your
+system clock up to date.  I've had issues with my servers *drifting*.
+
+
+.. code-block:: shell
+
+    0 0 * * * /usr/sbin/ntpdate ntp.ubuntu.com

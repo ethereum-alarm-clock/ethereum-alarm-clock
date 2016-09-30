@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.0 (unreleased)
+0.8.0 (unreleased)
 -----
 
 - Full rewrite of all contracts.

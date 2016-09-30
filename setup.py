@@ -8,10 +8,10 @@ from setuptools import setup, find_packages
 DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-version = '7.0.0'
+version = '8.0.0'
 
 setup(
-    name='ethereum-alarm-clock',
+    name='ethereum-alarm-clock-client',
     version=version,
     description="""Ethereum Alarm Clock""",
     long_description="Ethereum Alarm Clock service",
@@ -21,7 +21,8 @@ setup(
     include_package_data=True,
     py_modules=['eth_alarm_client'],
     install_requires=[
-        "populus>=1.1.0",
+        "populus>=1.2.0",
+        "web3>=3.0.0",
         "pylru>=1.0.9",
     ],
     license="MIT",

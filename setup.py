@@ -24,6 +24,7 @@ setup(
         "populus>=1.2.0",
         "web3>=3.0.0",
         "pylru>=1.0.9",
+        "python-dotenv>=0.6.0",
     ],
     license="MIT",
     zip_safe=False,

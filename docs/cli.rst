@@ -65,6 +65,12 @@ Setting up an
 .. _pyethereum documentation: https://github.com/ethereum/pyethereum/wiki/Developer-Notes
 
 
+Rollbar Integration
+-------------------
+
+TODO
+
+
 Running a server
 ----------------
 
@@ -90,7 +96,7 @@ steps should get an EC2 instance provisioned with the scheduler running.
 
 * ``sudo apt-get update --fix-missing``
 * ``sudo apt-get install -y supervisor``
-* ``sudo apt-get install -y python-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv``
+* ``sudo apt-get install -y python3-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv``
 
 3. Mount the extra volume
 ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -68,7 +68,18 @@ Setting up an
 Rollbar Integration
 -------------------
 
-TODO
+Monitoring these sorts of things can be difficult.  I am a big fan of the
+`rollbar`_ service which provides what I feel is a very solid monitoring and
+log management solution.
+
+To enable rollbar logging with the ``eth_alarm`` client you'll need to do the
+following.
+
+1. Install the python rollbar package.
+   * ``$ pip install rollbar``
+2. Run ``eth_alarm`` with the following environment variables set.
+   * ``ROLLBAR_SECRET`` set to the *server side* token that rollbar provides.
+   * ``ROLLBAR_ENVIRONMENT`` set to a string such as `'production'` or `'ec2-instance-abcdefg'``.
 
 
 Running a server
@@ -96,7 +107,7 @@ steps should get an EC2 instance provisioned with the scheduler running.
 
 * ``sudo apt-get update --fix-missing``
 * ``sudo apt-get install -y supervisor``
-* ``sudo apt-get install -y python3-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv``
+* ``sudo apt-get install -y python3-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv libffi-dev``
 
 3. Mount the extra volume
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,6 +163,7 @@ Install the Alarm client.
 * ``pip install setuptools --upgrade``
 * ``pip install ethereum-alarm-clock-client``
 
+
 6. Configure Supervisord
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -162,10 +174,12 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth
 .. code-block:: shell
 
     [program:geth]
-    command=geth --datadir /data/ethereum --unlock 0 --password /home/ubuntu/geth_password --rpc --fast
+    command=geth --datadir /data/ethereum --unlock 0 --password /home/ubuntu/scheduler_password --fast
     user=ubuntu
     stdout_logfile=/var/log/supervisor/geth-stdout.log
     stderr_logfile=/var/log/supervisor/geth-stderr.log
+    autorestart=true
+    autostart=false
 
 
 If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/parity.conf``
@@ -173,13 +187,15 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/pari
 .. code-block:: shell
 
     [program:parity]
-    command=parity TODO
+    command=parity --db-path /data/ethereum --unlock <your-account-address> --password /home/ubuntu/scheduler_password
     user=ubuntu
-    stdout_logfile=/var/log/supervisor/geth-stdout.log
-    stderr_logfile=/var/log/supervisor/geth-stderr.log
+    stdout_logfile=/var/log/supervisor/parity-stdout.log
+    stderr_logfile=/var/log/supervisor/parity-stderr.log
+    autorestart=true
+    autostart=false
 
 
-Put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 
@@ -194,19 +210,37 @@ Put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
     autostart=false
 
 
-7. Generate geth account
-^^^^^^^^^^^^^^^^^^^^^^^^
+If you are using Parity put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
-Use the following command to generate an account.  The ``--datadir`` argument
-is important, otherwise the generated account won't be found by our geth
-process being run by supervisord.
+.. code-block:: shell
+
+    [program:scheduler-v8]
+    user=ubuntu
+    command=/home/ubuntu/alarm-0.8.0/env/bin/eth_alarm --ipc-path /home/ubuntu/.parity/jsonrpc.ipc client:run
+    directory=/home/ubuntu/alarm-0.8.0/
+    environment=PATH="/home/ubuntu/alarm-0.8.0/env/bin"
+    stdout_logfile=/var/log/supervisor/scheduler-v8-stdout.log
+    stderr_logfile=/var/log/supervisor/scheduler-v8-stderr.log
+    autorestart=true
+    autostart=false
+
+
+7. Generate an account
+^^^^^^^^^^^^^^^^^^^^^^
+
+For Go-Ethereum
 
 * ``$ geth --datadir /data/ethereum account new``
 
-Place the password for that account in ``/home/ubuntu/geth_password``.
+For parity
 
-You will also need to send this account a few ether.  Twice the maximum
-transaction cost should be sufficient.
+* ``$ parity account new``
+
+Place the password for that account in ``/home/ubuntu/scheduler_password``.
+
+You will also need to send this account a few ether.  A few times the maximum
+transaction cost should be sufficient as this account should always trend
+upwards as it executes requests and receives payment for them.
 
 8. Turn it on
 ^^^^^^^^^^^^^
@@ -215,23 +249,17 @@ Reload supervisord so that it finds the two new config files.
 
 * ``sudo supervisord reload``
 
-You'll want to wait for ``geth`` to fully sync with the network before you
-start the ``scheduler-v6`` process.
+You'll want to wait for Go-Ethereum or Parity to fully sync with the network
+before you start the ``scheduler-v8`` process.
 
 9. Monitoring
 ^^^^^^^^^^^^^
 
-You can monitor these two processes with ``tail``
+You can monitor these processes with ``tail``
 
 * ``tail -f /var/log/supervisor/geth*.log``
+* ``tail -f /var/log/supervisor/parity*.log``
 * ``tail -f /var/log/supervisor/scheduler-v6*.log``
-
-
-
-.. _Ethereum Alarm Clock Client: https://github.com/pipermerriam/ethereum-alarm-client
-.. _pip: https://pip.pypa.io/en/stable/
-.. _issue 1: https://github.com/pipermerriam/ethereum-alarm-client/issues/1
-.. _AWS Documentation: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html
 
 
 10. Cron
@@ -244,3 +272,10 @@ system clock up to date.  I've had issues with my servers *drifting*.
 .. code-block:: shell
 
     0 0 * * * /usr/sbin/ntpdate ntp.ubuntu.com
+
+
+
+.. _Ethereum Alarm Clock Client: https://github.com/pipermerriam/ethereum-alarm-client
+.. _pip: https://pip.pypa.io/en/stable/
+.. _rollbar: https://rollbar.com/
+.. _AWS Documentation: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html

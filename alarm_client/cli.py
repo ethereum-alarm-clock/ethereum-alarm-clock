@@ -1,3 +1,4 @@
+import os
 import click
 import functools
 import logging
@@ -19,45 +20,61 @@ from .client.main import (
 )
 
 
+BASE_DIR = os.path.dirname(__file__)
+
+
 @click.group()
 @click.option(
     '--tracker-address',
     '-t',
+    envvar='TRACKER_ADDRESS',
+    help='The address of the RequestTracker contract that should be used.',
 )
 @click.option(
     '--factory-address',
     '-f',
+    help='The address of the RequestFactory contract that should be used.',
 )
 @click.option(
     '--payment-lib-address',
+    envvar='PAYMENT_LIB_ADDRESS',
+    help='The address of the PaymentLib contract that should be used.',
 )
 @click.option(
     '--request-lib-address',
     '-r',
+    envvar='REQUEST_LIB_ADDRESS',
+    help='The address of the RequestLib contract that should be used.',
 )
 @click.option(
     '--log-level',
     '-l',
     type=int,
     default=logging.INFO,
+    envvar='LOG_LEVEL',
+    help='Integer logging level - 10:DEBUG 20:INFO 30:WARNING 40:ERROR',
 )
 @click.option(
     '--provider',
     '-p',
     type=click.Choice(['ipc']),
     default='ipc',
+    envvar='PROVIDER',
+    help='Web3.py provider type to use to connect to the chain.',
 )
 @click.option(
     '--ipc-path',
     '-i',
-    # TODO: remove this
-    default='/Users/piper/sites/ethereum-alarm-clock/chains/local/geth.ipc',
+    envvar='IPC_PATH',
+    help='Path to the IPC socket that the IPCProvider will connect to.',
 )
 @click.option(
     '--compiled-assets-path',
     '-a',
     type=click.Path(dir_okay=False),
-    default='./build/contracts.json',
+    default=os.path.join(BASE_DIR, 'assets', 'v8.0.0.json'),
+    envvar='COMPILED_ASSETS_PATH',
+    help='Path to JSON file which contains the compiled contract assets',
 )
 @click.pass_context
 def main(ctx,
@@ -99,56 +116,69 @@ VALIDATION_ERRORS = (
 )
 
 
-@main.command('request:create')
+@main.command(
+    'request:create',
+    help="Schedule a transaction to be executed at a later time or block",
+)
 @click.option(
     '--to-address',
     '-a',
     default='0x199a239ec2f7c788ce324d28be96fab34f3577f7',
+    help="The `toAddress` to be used",
 )
 @click.option(
     '--call-data',
     '-d',
     default='this-is-test-call-data',
+    help="The `callData` to be used",
 )
 @click.option(
     '--call-gas',
     '-g',
     default=150000,
+    help="The `callGas` value to be used",
 )
 @click.option(
     '--call-value',
     '-v',
     default=0,
+    help="The `callValue` value to be used",
 )
 @click.option(
     '--temporal-unit',
     '-t',
     type=click.Choice([1, 2]),
     default=1,
+    help="The `temporalUnit` value to be used. 1:Blocks 2:Timestamp",
 )
 @click.option(
     '--window-start',
     '-w',
     type=click.IntRange(min=0),
+    help="The `windowStart` value to be used",
 )
 @click.option(
     '--window-size',
     '-w',
     type=click.IntRange(min=0),
     default=255,
+    help="The `windowSize` value to be used",
 )
 @click.option(
     '--endowment',
     '-e',
     type=click.IntRange(min=0),
+    help="Manually control the endowment to be sent to the contract.",
 )
 @click.option(
     '--confirm/--no-confirm',
     default=True,
+    help="Use --no-confirm to skip confirmation prompts.",
 )
 @click.option(
     '--deploy-from',
     '-f',
+    help="Sets the `from` address for the scheduling transaction.",
 )
 @click.pass_context
 def request_create(ctx,

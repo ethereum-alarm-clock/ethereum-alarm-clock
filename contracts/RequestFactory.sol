@@ -140,3 +140,7 @@ contract RequestFactory is RequestFactoryInterface {
         return requests[_address];
     }
 }
+
+
+contract TestnetRequestFactory is RequestFactory(0x8e67d439713b2022cac2ff4ebca21e173ccba4a0) {
+}

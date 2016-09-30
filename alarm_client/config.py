@@ -49,7 +49,7 @@ KNOWN_CHAINS = {
     '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303': {
         'contracts': {
             'tracker': '0x8e67d439713b2022cac2ff4ebca21e173ccba4a0',
-            'factory': '0x0bfb0230edb8de7377afccd6389ea2fad8eac67f',
+            'factory': '0x6005cb5aa9c4774c9f1f46ef3323c1337809cdb0',
             'payment_lib': '0xad4b2a1ec5b2ca6db05152cd099ff1f620e24469',
             'request_lib': '0xa941e3f9ed33fe66e0e71e1524f0508018ed7a9a',
             # not used yet but here for tracking purposes.

@@ -107,7 +107,7 @@ steps should get an EC2 instance provisioned with the scheduler running.
 
 * ``sudo apt-get update --fix-missing``
 * ``sudo apt-get install -y supervisor``
-* ``sudo apt-get install -y python3-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv libffi-dev``
+* ``sudo apt-get install -y python3-dev python build-essential libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev python-virtualenv libffi-dev autoconf``
 
 3. Mount the extra volume
 ^^^^^^^^^^^^^^^^^^^^^^^^^

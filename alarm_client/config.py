@@ -27,6 +27,12 @@ from .contracts.request_lib import get_request_lib
 from .contracts.transaction_request import get_transaction_request
 
 
+from gevent import monkey
+
+
+monkey.patch_all()
+
+
 MINUTE = 60
 
 
@@ -157,7 +163,7 @@ class Config(object):
                     rollbar.init(rb_secret, rb_environment)
 
                 rb_handler = RollbarHandler()
-                rb_handler.setLevel(self.log_level)
+                rb_handler.setLevel(logging.WARNING)
                 logger.addHandler(rb_handler)
         return logger
 

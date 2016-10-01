@@ -10,3 +10,14 @@ ABORTED_REASON_MAP = {
     5: "StackTooDeep",
     6: "InsufficientGas",
 }
+
+
+VALIDATION_ERRORS = (
+    'InsufficientEndowment',
+    'ReservedWindowBiggerThanExecutionWindow',
+    'InvalidTemporalUnit',
+    'ExecutionWindowTooSoon',
+    'InvalidRequiredStackDepth',
+    'CallGasTooHigh',
+    'EmptyToAddress',
+)

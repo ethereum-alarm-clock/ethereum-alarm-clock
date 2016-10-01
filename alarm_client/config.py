@@ -48,6 +48,18 @@ KNOWN_CHAINS = {
     # testnet
     '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303': {
         'contracts': {
+            'tracker': '0x8e67d439713b2022cac2ff4ebca21e173ccba4a0',
+            'factory': '0x6005cb5aa9c4774c9f1f46ef3323c1337809cdb0',
+            'payment_lib': '0xad4b2a1ec5b2ca6db05152cd099ff1f620e24469',
+            'request_lib': '0xa941e3f9ed33fe66e0e71e1524f0508018ed7a9a',
+            # not used yet but here for tracking purposes.
+            'grove_lib': '0x1a0592f14999594357a6acc0842cf7aa2aaa17a1',
+            'math_lib': '0x6ef5a43c15991e0c9d888819163de26a22d06a00',
+            'execution_lib': '0x3336852437a0f2a81d8e3e45081b17fe6a7b5599',
+            'itertools': '0x4b898f3ce9cf8ee05e9e800eb97267cc6fe56a78',
+            'request_schedule_lib': '0x032635c4bac159d1b3b138f58e23f6a80d94717a',
+            'safe_send_lib': '0xccb71bdec31b8d0f21f140940616b2d09334851b',
+            'claim_lib': '0x1c868b2a0ecd8fd2bf2e893e18fb368d38cddd1f',
         }
     },
 }
@@ -132,16 +144,19 @@ class Config(object):
             logger.addHandler(file_handler)
 
         if is_rollbar_available():
+            import rollbar
             from rollbar.logger import RollbarHandler
             has_rollbar_handler = any(
                 isinstance(handler, RollbarHandler)
                 for handler in logger.handlers
             )
             if not has_rollbar_handler:
-                rb_handler = RollbarHandler(
-                    os.environ['ROLLBAR_SECRET'],
-                    os.environ['ROLLBAR_ENVIRONMENT'],
-                )
+                rb_secret = os.environ['ROLLBAR_SECRET']
+                rb_environment = os.environ['ROLLBAR_ENVIRONMENT']
+                if not rollbar._initialized:
+                    rollbar.init(rb_secret, rb_environment)
+
+                rb_handler = RollbarHandler()
                 rb_handler.setLevel(self.log_level)
                 logger.addHandler(rb_handler)
         return logger

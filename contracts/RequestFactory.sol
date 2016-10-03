@@ -76,7 +76,7 @@ contract RequestFactory is RequestFactoryInterface {
         EmptyToAddress
     }
 
-    event ValidationError(Errors error);
+    event ValidationError(uint8 error);
 
     /*
      * Validate the constructor arguments for either `createRequest` or
@@ -114,13 +114,13 @@ contract RequestFactory is RequestFactoryInterface {
                                              msg.value);
 
         if (!is_valid.all()) {
-            if (!is_valid[0]) ValidationError(Errors.InsufficientEndowment);
-            if (!is_valid[1]) ValidationError(Errors.ReservedWindowBiggerThanExecutionWindow);
-            if (!is_valid[2]) ValidationError(Errors.InvalidTemporalUnit);
-            if (!is_valid[3]) ValidationError(Errors.ExecutionWindowTooSoon);
-            if (!is_valid[4]) ValidationError(Errors.InvalidRequiredStackDepth);
-            if (!is_valid[5]) ValidationError(Errors.CallGasTooHigh);
-            if (!is_valid[6]) ValidationError(Errors.EmptyToAddress);
+            if (!is_valid[0]) ValidationError(uint8(Errors.InsufficientEndowment));
+            if (!is_valid[1]) ValidationError(uint8(Errors.ReservedWindowBiggerThanExecutionWindow));
+            if (!is_valid[2]) ValidationError(uint8(Errors.InvalidTemporalUnit));
+            if (!is_valid[3]) ValidationError(uint8(Errors.ExecutionWindowTooSoon));
+            if (!is_valid[4]) ValidationError(uint8(Errors.InvalidRequiredStackDepth));
+            if (!is_valid[5]) ValidationError(uint8(Errors.CallGasTooHigh));
+            if (!is_valid[6]) ValidationError(uint8(Errors.EmptyToAddress));
 
             // Try to return the ether sent with the message.  If this failed
             // then throw to force it to be returned.

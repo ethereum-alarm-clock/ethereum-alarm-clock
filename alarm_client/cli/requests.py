@@ -187,6 +187,7 @@ def request_create(ctx,
         try:
             click.echo("Waiting for transaction to be mined...", nl=False)
             create_txn_receipt = config.wait.for_receipt(create_txn_hash, poll_interval=3)
+
             click.echo("MINED via block #{0}".format(
                 create_txn_receipt['blockNumber']
             ))

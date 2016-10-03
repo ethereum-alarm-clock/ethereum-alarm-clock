@@ -1,4 +1,5 @@
 import functools
+import itertools
 
 import gevent
 
@@ -11,131 +12,231 @@ from alarm_client.tasks.main import (
     new_block_callback,
     executed_event_callback,
     aborted_event_callback,
-    created_event_callback,
     cancelled_event_callback,
     claimed_event_callback,
+    created_event_callback,
+    validation_error_event_callback,
 )
 
 
+def setup_request_filters(config,
+                          executed=True,
+                          aborted=True,
+                          cancelled=True,
+                          claimed=True):
+    TransactionRequestFactory = config.get_transaction_request(None)
+    filters = []
+
+    if executed:
+        executed_event_filter = TransactionRequestFactory.on('Executed')
+        executed_event_filter.watch(
+            functools.partial(executed_event_callback, config)
+        )
+        filters.append(executed_event_filter)
+
+    if aborted:
+        aborted_event_filter = TransactionRequestFactory.on('Aborted')
+        aborted_event_filter.watch(
+            functools.partial(aborted_event_callback, config)
+        )
+        filters.append(aborted_event_filter)
+
+    if cancelled:
+        cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
+        cancelled_event_filter.watch(
+            functools.partial(cancelled_event_callback, config)
+        )
+        filters.append(cancelled_event_filter)
+
+    if claimed:
+        claimed_event_filter = TransactionRequestFactory.on('Claimed')
+        claimed_event_filter.watch(
+            functools.partial(claimed_event_callback, config)
+        )
+        filters.append(claimed_event_filter)
+
+    return filters
+
+
+def setup_factory_filters(config,
+                          created=True,
+                          validation_error=True):
+    factory = config.factory
+
+    filters = []
+
+    if created:
+        created_event_filter = factory.on('RequestCreated')
+        created_event_filter.watch(
+            functools.partial(created_event_callback, config)
+        )
+        filters.append(created_event_filter)
+
+    if validation_error:
+        validation_error_event_filter = factory.on('ValidationError')
+        validation_error_event_filter.watch(
+            functools.partial(validation_error_event_callback, config)
+        )
+        filters.append(validation_error_event_filter)
+
+    return filters
+
+
 @main.command('client:run')
+@click.option(
+    '--executed/--no-executed',
+    default=True,
+    help="Enables/Disables monitoring of the Executed event",
+)
+@click.option(
+    '--aborted/--no-aborted',
+    default=True,
+    help="Enables/Disables monitoring of the Aborted event",
+)
+@click.option(
+    '--cancelled/--no-cancelled',
+    default=True,
+    help="Enables/Disables monitoring of the Cancelled event",
+)
+@click.option(
+    '--claimed/--no-claimed',
+    default=True,
+    help="Enables/Disables monitoring of the Claimed event",
+)
+@click.option(
+    '--created/--no-created',
+    default=True,
+    help="Enables/Disables monitoring of the Created event",
+)
+@click.option(
+    '--validation-error/--no-validation-error',
+    default=True,
+    help="Enables/Disables monitoring of the ValidationError event",
+)
 @click.pass_context
-def client_run(ctx):
+def client_run(ctx,
+               executed,
+               aborted,
+               cancelled,
+               claimed,
+               created,
+               validation_error):
     main_ctx = ctx.parent
     web3 = main_ctx.web3
     config = main_ctx.config
-    factory = config.factory
-    TransactionRequestFactory = config.get_transaction_request(None)
-
-    new_block_filter = web3.eth.filter('latest')
-    executed_event_filter = TransactionRequestFactory.on('Executed')
-    aborted_event_filter = TransactionRequestFactory.on('Aborted')
-    cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
-    claimed_event_filter = TransactionRequestFactory.on('Claimed')
-    created_event_filter = factory.on('RequestCreated')
-
-    new_block_filter.poll_interval = 2
-    executed_event_filter.poll_interval = 17
-    aborted_event_filter.poll_interval = 17
-    cancelled_event_filter.poll_interval = 17
-    claimed_event_filter.poll_interval = 17
-    created_event_filter.poll_interval = 17
 
     click.echo("Starting client")
 
+    new_block_filter = web3.eth.filter('latest')
+    new_block_filter.poll_interval = 2
     new_block_filter.watch(functools.partial(new_block_callback, config))
-    executed_event_filter.watch(functools.partial(executed_event_callback, config))
-    aborted_event_filter.watch(functools.partial(aborted_event_callback, config))
-    created_event_filter.watch(functools.partial(created_event_callback, config))
-    claimed_event_filter.watch(functools.partial(claimed_event_callback, config))
-    cancelled_event_filter.watch(functools.partial(cancelled_event_callback, config))
+
+    filters = tuple(itertools.chain(
+        [new_block_filter],
+        setup_request_filters(
+            config,
+            executed=executed,
+            aborted=aborted,
+            cancelled=cancelled,
+            claimed=claimed,
+        ),
+        setup_factory_filters(
+            config,
+            created=created,
+            validation_error=validation_error,
+        )
+    ))
+    for filter in filters[1:]:
+        filter.poll_interval = 25
 
     try:
         while True:
             gevent.sleep(1)
             all_still_running = all((
-                new_block_filter.running,
-                executed_event_filter.running,
-                aborted_event_filter.running,
-                cancelled_event_filter.running,
-                created_event_filter.running,
-                claimed_event_filter.running,
+                filter.running for filter in filters
             ))
             if not all_still_running:
                 break
     finally:
-        if new_block_filter.running:
-            click.echo("Stopping Block Filter")
-            new_block_filter.stop_watching()
-        if executed_event_filter.running:
-            click.echo("Stopping Executed Event Filter")
-            executed_event_filter.stop_watching()
-        if aborted_event_filter.running:
-            click.echo("Stopping Aborted Event Filter")
-            aborted_event_filter.stop_watching()
-        if cancelled_event_filter.running:
-            click.echo("Stopping Cancelled Event Filter")
-            cancelled_event_filter.stop_watching()
-        if claimed_event_filter.running:
-            click.echo("Stopping Cancelled Event Filter")
-            claimed_event_filter.stop_watching()
-        if created_event_filter.running:
-            click.echo("Stopping RequestCreated Filter")
-            created_event_filter.stop_watching()
+        click.echo("Stopping client")
+        for filter in filters:
+            if filter.running:
+                filter.stop_watching()
+        click.echo("Fin")
 
 
 @main.command('client:monitor')
+@click.option(
+    '--executed/--no-executed',
+    default=True,
+    help="Enables/Disables monitoring of the Executed event",
+)
+@click.option(
+    '--aborted/--no-aborted',
+    default=True,
+    help="Enables/Disables monitoring of the Aborted event",
+)
+@click.option(
+    '--cancelled/--no-cancelled',
+    default=True,
+    help="Enables/Disables monitoring of the Cancelled event",
+)
+@click.option(
+    '--claimed/--no-claimed',
+    default=True,
+    help="Enables/Disables monitoring of the Claimed event",
+)
+@click.option(
+    '--created/--no-created',
+    default=True,
+    help="Enables/Disables monitoring of the Created event",
+)
+@click.option(
+    '--validation-error/--no-validation-error',
+    default=True,
+    help="Enables/Disables monitoring of the ValidationError event",
+)
 @click.pass_context
-def client_monitor(ctx):
+def client_monitor(ctx,
+                   executed,
+                   aborted,
+                   cancelled,
+                   claimed,
+                   created,
+                   validation_error):
     main_ctx = ctx.parent
     config = main_ctx.config
-    TransactionRequestFactory = config.get_transaction_request(None)
-    factory = config.factory
-
-    executed_event_filter = TransactionRequestFactory.on('Executed')
-    aborted_event_filter = TransactionRequestFactory.on('Aborted')
-    cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
-    claimed_event_filter = TransactionRequestFactory.on('Claimed')
-    created_event_filter = factory.on('RequestCreated')
-
-    executed_event_filter.poll_interval = 17
-    aborted_event_filter.poll_interval = 17
-    cancelled_event_filter.poll_interval = 17
-    claimed_event_filter.poll_interval = 17
-    created_event_filter.poll_interval = 17
 
     click.echo("Watching for events")
 
-    executed_event_filter.watch(functools.partial(executed_event_callback, config))
-    aborted_event_filter.watch(functools.partial(aborted_event_callback, config))
-    created_event_filter.watch(functools.partial(created_event_callback, config))
-    claimed_event_filter.watch(functools.partial(claimed_event_callback, config))
-    cancelled_event_filter.watch(functools.partial(cancelled_event_callback, config))
+    filters = tuple(itertools.chain(
+        setup_request_filters(
+            config,
+            executed=executed,
+            aborted=aborted,
+            cancelled=cancelled,
+            claimed=claimed,
+        ),
+        setup_factory_filters(
+            config,
+            created=created,
+            validation_error=validation_error,
+        )
+    ))
+    for filter in filters[1:]:
+        filter.poll_interval = 20
 
     try:
         while True:
             gevent.sleep(1)
             all_still_running = all((
-                executed_event_filter.running,
-                aborted_event_filter.running,
-                cancelled_event_filter.running,
-                created_event_filter.running,
-                claimed_event_filter.running,
+                filter.running for filter in filters
             ))
             if not all_still_running:
                 break
     finally:
-        if executed_event_filter.running:
-            click.echo("Stopping Executed Event Filter")
-            executed_event_filter.stop_watching()
-        if aborted_event_filter.running:
-            click.echo("Stopping Aborted Event Filter")
-            aborted_event_filter.stop_watching()
-        if cancelled_event_filter.running:
-            click.echo("Stopping Cancelled Event Filter")
-            cancelled_event_filter.stop_watching()
-        if claimed_event_filter.running:
-            click.echo("Stopping Cancelled Event Filter")
-            claimed_event_filter.stop_watching()
-        if created_event_filter.running:
-            click.echo("Stopping RequestCreated Filter")
-            created_event_filter.stop_watching()
+        click.echo("Stopping client")
+        for filter in filters:
+            if filter.running:
+                filter.stop_watching()
+        click.echo("Fin")

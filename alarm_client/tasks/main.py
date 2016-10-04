@@ -3,7 +3,10 @@ import functools
 import gevent
 
 from ..utils import task
-from ..constants import ABORTED_REASON_MAP
+from ..constants import (
+    ABORTED_REASON_MAP,
+    VALIDATION_ERRORS,
+)
 from ..exceptions import InvariantError
 
 from .scanning import (
@@ -47,7 +50,7 @@ def new_block_callback(config, latest_block_hash):
 
 @task
 def executed_event_callback(config, log_entry):
-    logger = config.get_logger('client.executed')
+    logger = config.get_logger('client.request.executed')
     web3 = config.web3
     wait = config.wait
     factory = config.factory
@@ -90,7 +93,7 @@ def executed_event_callback(config, log_entry):
 
 @task
 def aborted_event_callback(config, log_entry):
-    logger = config.get_logger('client.aborted')
+    logger = config.get_logger('client.request.aborted')
     web3 = config.web3
     factory = config.factory
 
@@ -129,40 +132,8 @@ def aborted_event_callback(config, log_entry):
 
 
 @task
-def created_event_callback(config, log_entry):
-    logger = config.get_logger('client.created')
-    wait = config.wait
-    factory = config.factory
-
-    create_txn_hash = log_entry['transactionHash']
-    wait.for_receipt(create_txn_hash)
-
-    if not factory.call().isKnownRequest(log_entry['args']['request']):
-        logger.info(
-            'RequestCreated event request is not known by factory: %s',
-            log_entry['args']['request'],
-        )
-        return
-
-    with config.lock(log_entry['address']):
-        txn_request = config.get_transaction_request(log_entry['args']['request'])
-        txn_request_logger = config.get_logger(txn_request.address)
-
-        logger.info(
-            "RequestCreated @ %s\n----------------\n%s",
-            txn_request.address,
-            txn_request.get_props_display()
-        )
-        txn_request_logger.info(
-            "RequestCreated @ %s\n----------------\n%s",
-            txn_request.address,
-            txn_request.get_props_display()
-        )
-
-
-@task
 def cancelled_event_callback(config, log_entry):
-    logger = config.get_logger('client.cancelled')
+    logger = config.get_logger('client.request.cancelled')
     factory = config.factory
 
     if not factory.call().isKnownRequest(log_entry['address']):
@@ -182,7 +153,7 @@ def cancelled_event_callback(config, log_entry):
 
 @task
 def claimed_event_callback(config, log_entry):
-    logger = config.get_logger('client.claimed')
+    logger = config.get_logger('client.request.claimed')
     web3 = config.web3
     wait = config.wait
     factory = config.factory
@@ -224,3 +195,58 @@ def claimed_event_callback(config, log_entry):
             txn_request.paymentModifier,
         )
         txn_request_logger.info("Claimed: ClaimedBy: %s", txn_request.claimedBy)
+
+
+@task
+def created_event_callback(config, log_entry):
+    logger = config.get_logger('client.factory.created')
+    wait = config.wait
+    factory = config.factory
+
+    create_txn_hash = log_entry['transactionHash']
+    wait.for_receipt(create_txn_hash)
+
+    if not factory.call().isKnownRequest(log_entry['args']['request']):
+        logger.error(
+            'RequestCreated event request is not known by factory: %s',
+            log_entry['args']['request'],
+        )
+        raise InvariantError(
+            'RequestCreated event logged by factory @ {0} for request @ {1} but '
+            'request is not known by factory'.format(
+                log_entry['address'],
+                log_entry['args']['request'],
+            )
+        )
+
+    txn_request = config.get_transaction_request(log_entry['args']['request'])
+    txn_request_logger = config.get_logger(txn_request.address)
+
+    logger.info(
+        "RequestCreated @ %s\n----------------\n%s",
+        txn_request.address,
+        txn_request.get_props_display()
+    )
+    txn_request_logger.info(
+        "RequestCreated @ %s\n----------------\n%s",
+        txn_request.address,
+        txn_request.get_props_display()
+    )
+
+
+@task
+def validation_error_event_callback(config, log_entry):
+    logger = config.get_logger('client.factory.validation_error')
+    wait = config.wait
+
+    create_txn_hash = log_entry['transactionHash']
+    wait.for_receipt(create_txn_hash)
+
+    logger.info(
+        "ValidationError from factory @ %s\n----------------\nReason: %s",
+        log_entry['address'],
+        VALIDATION_ERRORS.get(
+            log_entry['args']['error'],
+            'Unknown Error Code: {0}'.format(log_entry['args']['error'])
+        )
+    )

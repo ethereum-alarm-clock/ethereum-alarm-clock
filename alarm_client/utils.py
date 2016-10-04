@@ -1,6 +1,30 @@
 import time
 import functools
 import uuid
+from importlib import import_module
+
+
+def import_string(dotted_path):
+    """
+    Source: django.utils.module_loading
+
+    Import a dotted module path and return the attribute/class designated by the
+    last name in the path. Raise ImportError if the import failed.
+    """
+    try:
+        module_path, class_name = dotted_path.rsplit('.', 1)
+    except ValueError:
+        msg = "%s doesn't look like a module path" % dotted_path
+        raise ImportError(msg)
+
+    module = import_module(module_path)
+
+    try:
+        return getattr(module, class_name)
+    except AttributeError:
+        msg = 'Module "%s" does not define a "%s" attribute/class' % (
+            module_path, class_name)
+        raise ImportError(msg)
 
 
 def _bisect_blocks(web3, timestamp, use_left_bound=True):
@@ -14,10 +38,10 @@ def _bisect_blocks(web3, timestamp, use_left_bound=True):
     right_bound = web3.eth.blockNumber
 
     left_block = web3.eth.getBlock(left_bound)
-    if left_block['timestamp'] > timestamp:
+    if left_block['timestamp'] >= timestamp:
         return 'earliest'
     right_block = web3.eth.getBlock(right_bound)
-    if right_block['timestamp'] < timestamp:
+    if right_block['timestamp'] <= timestamp:
         return 'latest'
 
     while left_bound < right_bound - 1:

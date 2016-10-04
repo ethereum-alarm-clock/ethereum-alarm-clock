@@ -1,5 +1,4 @@
 import functools
-import itertools
 
 import gevent
 
@@ -19,100 +18,101 @@ from alarm_client.tasks.main import (
 )
 
 
-def setup_request_filters(config,
-                          executed=True,
-                          aborted=True,
-                          cancelled=True,
-                          claimed=True):
-    TransactionRequestFactory = config.get_transaction_request(None)
-    filters = []
-
-    if executed:
-        executed_event_filter = TransactionRequestFactory.on('Executed')
-        executed_event_filter.watch(
-            functools.partial(executed_event_callback, config)
-        )
-        filters.append(executed_event_filter)
-
-    if aborted:
-        aborted_event_filter = TransactionRequestFactory.on('Aborted')
-        aborted_event_filter.watch(
-            functools.partial(aborted_event_callback, config)
-        )
-        filters.append(aborted_event_filter)
-
-    if cancelled:
-        cancelled_event_filter = TransactionRequestFactory.on('Cancelled')
-        cancelled_event_filter.watch(
-            functools.partial(cancelled_event_callback, config)
-        )
-        filters.append(cancelled_event_filter)
-
-    if claimed:
-        claimed_event_filter = TransactionRequestFactory.on('Claimed')
-        claimed_event_filter.watch(
-            functools.partial(claimed_event_callback, config)
-        )
-        filters.append(claimed_event_filter)
-
-    return filters
+FILTER_CALLBACK_MAP = {
+    'Executed': executed_event_callback,
+    'Aborted': aborted_event_callback,
+    'Cancelled': cancelled_event_callback,
+    'Claimed': claimed_event_callback,
+    'RequestCreated': created_event_callback,
+    'ValidationError': validation_error_event_callback,
+}
 
 
-def setup_factory_filters(config,
-                          created=True,
-                          validation_error=True):
-    factory = config.factory
-
-    filters = []
-
-    if created:
-        created_event_filter = factory.on('RequestCreated')
-        created_event_filter.watch(
-            functools.partial(created_event_callback, config)
-        )
-        filters.append(created_event_filter)
-
-    if validation_error:
-        validation_error_event_filter = factory.on('ValidationError')
-        validation_error_event_filter.watch(
-            functools.partial(validation_error_event_callback, config)
-        )
-        filters.append(validation_error_event_filter)
-
-    return filters
+FACTORY_EVENTS = {'RequestCreated', 'ValidationError'}
+TRANSACTION_REQUEST_EVENTS = {'Executed', 'Aborted', 'Cancelled', 'Claimed'}
 
 
-@main.command('client:run')
-@click.option(
+def setup_on_filter(config, event_name, poll_interval=20):
+    if event_name in FACTORY_EVENTS:
+        contract_factory = config.factory
+    elif event_name in TRANSACTION_REQUEST_EVENTS:
+        contract_factory = config.get_transaction_request(None)
+    else:
+        raise ValueError("Unknown Event: '{0}'".format(event_name))
+
+    filter = contract_factory.on(event_name)
+    filter.poll_interval = poll_interval
+    callback = FILTER_CALLBACK_MAP[event_name]
+    filter.watch(functools.partial(callback, config))
+    return filter
+
+
+def setup_pastEvents_filter(config,
+                            event_name,
+                            from_block,
+                            to_block,
+                            poll_interval=2):
+
+    if event_name in FACTORY_EVENTS:
+        contract_factory = config.factory
+    elif event_name in TRANSACTION_REQUEST_EVENTS:
+        contract_factory = config.get_transaction_request(None)
+    else:
+        raise ValueError("Unknown Event: '{0}'".format(event_name))
+
+    filter_params = {}
+
+    if from_block is not None:
+        filter_params['fromBlock'] = from_block
+    if to_block is not None:
+        filter_params['toBlock'] = to_block
+
+    filter = contract_factory.pastEvents(event_name, filter_params)
+    filter.poll_interval = poll_interval
+    callback = FILTER_CALLBACK_MAP[event_name]
+    filter.watch(functools.partial(callback, config))
+    return filter
+
+
+execute_option = click.option(
     '--executed/--no-executed',
     default=True,
     help="Enables/Disables monitoring of the Executed event",
 )
-@click.option(
+abort_option = click.option(
     '--aborted/--no-aborted',
     default=True,
     help="Enables/Disables monitoring of the Aborted event",
 )
-@click.option(
+cancelled_option = click.option(
     '--cancelled/--no-cancelled',
     default=True,
     help="Enables/Disables monitoring of the Cancelled event",
 )
-@click.option(
+claimed_option = click.option(
     '--claimed/--no-claimed',
     default=True,
     help="Enables/Disables monitoring of the Claimed event",
 )
-@click.option(
+created_option = click.option(
     '--created/--no-created',
     default=True,
     help="Enables/Disables monitoring of the Created event",
 )
-@click.option(
+validation_error_option = click.option(
     '--validation-error/--no-validation-error',
     default=True,
     help="Enables/Disables monitoring of the ValidationError event",
 )
+
+
+@main.command('client:run')
+@execute_option
+@abort_option
+@cancelled_option
+@claimed_option
+@created_option
+@validation_error_option
 @click.pass_context
 def client_run(ctx,
                executed,
@@ -131,23 +131,20 @@ def client_run(ctx,
     new_block_filter.poll_interval = 2
     new_block_filter.watch(functools.partial(new_block_callback, config))
 
-    filters = tuple(itertools.chain(
-        [new_block_filter],
-        setup_request_filters(
-            config,
-            executed=executed,
-            aborted=aborted,
-            cancelled=cancelled,
-            claimed=claimed,
-        ),
-        setup_factory_filters(
-            config,
-            created=created,
-            validation_error=validation_error,
-        )
-    ))
-    for filter in filters[1:]:
-        filter.poll_interval = 25
+    filters = [new_block_filter]
+
+    if executed:
+        filters.append(setup_on_filter(config, 'Executed'))
+    if aborted:
+        filters.append(setup_on_filter(config, 'Aborted'))
+    if cancelled:
+        filters.append(setup_on_filter(config, 'Cancelled'))
+    if claimed:
+        filters.append(setup_on_filter(config, 'Claimed'))
+    if created:
+        filters.append(setup_on_filter(config, 'RequestCreated'))
+    if validation_error:
+        filters.append(setup_on_filter(config, 'ValidationError'))
 
     try:
         while True:
@@ -166,35 +163,19 @@ def client_run(ctx,
 
 
 @main.command('client:monitor')
+@execute_option
+@abort_option
+@cancelled_option
+@claimed_option
+@created_option
+@validation_error_option
 @click.option(
-    '--executed/--no-executed',
-    default=True,
-    help="Enables/Disables monitoring of the Executed event",
+    '--from-block',
+    type=int,
 )
 @click.option(
-    '--aborted/--no-aborted',
-    default=True,
-    help="Enables/Disables monitoring of the Aborted event",
-)
-@click.option(
-    '--cancelled/--no-cancelled',
-    default=True,
-    help="Enables/Disables monitoring of the Cancelled event",
-)
-@click.option(
-    '--claimed/--no-claimed',
-    default=True,
-    help="Enables/Disables monitoring of the Claimed event",
-)
-@click.option(
-    '--created/--no-created',
-    default=True,
-    help="Enables/Disables monitoring of the Created event",
-)
-@click.option(
-    '--validation-error/--no-validation-error',
-    default=True,
-    help="Enables/Disables monitoring of the ValidationError event",
+    '--to-block',
+    type=int,
 )
 @click.pass_context
 def client_monitor(ctx,
@@ -203,28 +184,42 @@ def client_monitor(ctx,
                    cancelled,
                    claimed,
                    created,
-                   validation_error):
+                   validation_error,
+                   from_block,
+                   to_block):
+    """
+    Scan the blockchain for events from the alarm service.  If --from-block or
+    --to-block are specified this will find all past events between those block
+    numbers.
+    """
     main_ctx = ctx.parent
     config = main_ctx.config
 
-    click.echo("Watching for events")
-
-    filters = tuple(itertools.chain(
-        setup_request_filters(
-            config,
-            executed=executed,
-            aborted=aborted,
-            cancelled=cancelled,
-            claimed=claimed,
-        ),
-        setup_factory_filters(
-            config,
-            created=created,
-            validation_error=validation_error,
+    if to_block is not None or from_block is not None:
+        setup_fn = functools.partial(
+            setup_pastEvents_filter,
+            from_block=from_block,
+            to_block=to_block,
         )
-    ))
-    for filter in filters[1:]:
-        filter.poll_interval = 20
+    else:
+        setup_fn = setup_on_filter
+
+    filters = []
+
+    if executed:
+        filters.append(setup_fn(config, 'Executed'))
+    if aborted:
+        filters.append(setup_fn(config, 'Aborted'))
+    if cancelled:
+        filters.append(setup_fn(config, 'Cancelled'))
+    if claimed:
+        filters.append(setup_fn(config, 'Claimed'))
+    if created:
+        filters.append(setup_fn(config, 'RequestCreated'))
+    if validation_error:
+        filters.append(setup_fn(config, 'ValidationError'))
+
+    click.echo('starting')
 
     try:
         while True:
@@ -235,7 +230,7 @@ def client_monitor(ctx,
             if not all_still_running:
                 break
     finally:
-        click.echo("Stopping client")
+        click.echo("Exiting client")
         for filter in filters:
             if filter.running:
                 filter.stop_watching()

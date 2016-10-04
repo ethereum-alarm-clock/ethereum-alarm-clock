@@ -86,11 +86,11 @@ def is_rollbar_available():
 class Config(object):
     web3 = None
 
-    forward_scan_blocks = 512
-    back_scan_blocks = 512
+    forward_scan_blocks = None
+    back_scan_blocks = None
 
-    forward_scan_seconds = 120 * MINUTE
-    back_scan_seconds = 120 * MINUTE
+    forward_scan_seconds = None
+    back_scan_seconds = None
 
     _tracker_address = None
     _factory_address = None
@@ -106,7 +106,9 @@ class Config(object):
                  tracker_address=None,
                  factory_address=None,
                  payment_lib_address=None,
-                 request_lib_address=None):
+                 request_lib_address=None,
+                 scan_timestamp_range=(120 * MINUTE, 70 * MINUTE),
+                 scan_blocks_range=(512, 300)):
         self.web3 = web3
         self.compiled_assets_path = compiled_assets_path
         self.log_level = log_level
@@ -116,6 +118,8 @@ class Config(object):
         self._payment_lib_address = payment_lib_address
         self._request_lib_address = request_lib_address
         self._locks = pylru.lrucache(2048)
+        self.back_scan_seconds, self.forward_scan_seconds = scan_timestamp_range
+        self.back_scan_blocks, self.forward_scan_blocks = scan_blocks_range
 
     def get_logger(self, name):
         logger = logging.getLogger(name)

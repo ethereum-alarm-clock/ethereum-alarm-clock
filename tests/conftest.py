@@ -11,6 +11,8 @@ from web3.utils.encoding import (
     decode_hex,
 )
 
+from alarm_client.contracts.transaction_request import TransactionRequestFactory
+
 from testrpc import testrpc
 
 
@@ -55,12 +57,26 @@ def ExecutionLib(execution_lib):
 
 
 @pytest.fixture()
+def payment_lib(chain):
+    return chain.get_contract('PaymentLib')
+
+
+@pytest.fixture()
+def PaymentLib(payment_lib):
+    return type(payment_lib)
+
+
+@pytest.fixture()
 def TransactionRequest(chain):
     # force lazy deployment of the dependencies for the TransactionRequest
     # contract.
     chain.get_contract('RequestLib')
-    TransactionRequest = chain.get_contract_factory('TransactionRequest')
-    return TransactionRequest
+    BaseTransactionRequest = chain.get_contract_factory('TransactionRequest')
+    return type(
+        'TransactionRequest',
+        (BaseTransactionRequest, TransactionRequestFactory),
+        {},
+    )
 
 
 @pytest.fixture()

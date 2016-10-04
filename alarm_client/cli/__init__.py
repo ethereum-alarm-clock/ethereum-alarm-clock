@@ -19,10 +19,10 @@ def repl(ctx):
     """
     main_ctx = ctx.parent
     web3 = main_ctx.web3  # noqa
-    config = main_ctx.config
+    #config = main_ctx.config
 
-    tracker = config.tracker  # noqa
-    factory = config.factory  # noqa
+    #tracker = config.tracker  # noqa
+    #factory = config.factory  # noqa
 
     import pdb
     pdb.set_trace()  # noqa

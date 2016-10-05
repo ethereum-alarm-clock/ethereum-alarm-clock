@@ -53,16 +53,51 @@ available on your command line.
 
 .. code-block:: bash
 
-    TODO: `help` output from the main command
+    $ eth_alarm
+    Usage: eth_alarm [OPTIONS] COMMAND [ARGS]...
+
+    Options:
+      -t, --tracker-address TEXT      The address of the RequestTracker contract
+                                      that should be used.
+      -f, --factory-address TEXT      The address of the RequestFactory contract
+                                      that should be used.
+      --payment-lib-address TEXT      The address of the PaymentLib contract that
+                                      should be used.
+      -r, --request-lib-address TEXT  The address of the RequestLib contract that
+                                      should be used.
+      -l, --log-level INTEGER         Integer logging level - 10:DEBUG 20:INFO
+                                      30:WARNING 40:ERROR
+      -p, --provider TEXT             Web3.py provider type to use to connect to
+                                      the chain.  Supported values are 'rpc',
+                                      'ipc', or any dot-separated python path to a
+                                      web3 provider class
+      --ipc-path TEXT                 Path to the IPC socket that the IPCProvider
+                                      will connect to.
+      --rpc-host TEXT                 Hostname or IP address of the RPC server
+      --rpc-port INTEGER              The port to use when connecting to the RPC
+                                      server
+      -a, --compiled-assets-path PATH
+                                      Path to JSON file which contains the
+                                      compiled contract assets
+      --back-scan-seconds INTEGER     Number of seconds to scan into the past for
+                                      timestamp based calls
+      --forward-scan-seconds INTEGER  Number of seconds to scan into the future
+                                      for timestamp based calls
+      --back-scan-blocks INTEGER      Number of blocks to scan into the past for
+                                      block based calls
+      --forward-scan-blocks INTEGER   Number of blocks to scan into the future for
+                                      block based calls
+      --help                          Show this message and exit.
+
+    Commands:
+      client:monitor  Scan the blockchain for events from the alarm...
+      client:run
+      repl            Drop into a debugger shell with most of what...
+      request:create  Schedule a transaction to be executed at a...
 
 
-Setting up an 
 
 
-
-
-
-.. _pyethereum documentation: https://github.com/ethereum/pyethereum/wiki/Developer-Notes
 
 
 Rollbar Integration
@@ -85,9 +120,7 @@ following.
 Running a server
 ----------------
 
-TODO: update this.
-
-The scheduler runs nicely on the smallest AWS EC2 instance size.  The following
+The scheduler runs nicely on the *small* AWS EC2 instance size.  The following
 steps should get an EC2 instance provisioned with the scheduler running.
 
 1. Setup an EC2 Instance
@@ -146,10 +179,9 @@ Install the go-ethereum client.
 * ``sudo apt-get install -y ethereum``
 
 
-Install the parity client.
+or install the parity client.
 
-* ``curl https://sh.rustup.rs -sSf | sh``
-* ``cargo install --git https://github.com/ethcore/parity.git parity``
+* ``bash <(curl https://get.parity.io -Lk)``
 
 
 5. Install the Alarm Client
@@ -161,7 +193,7 @@ Install the Alarm client.
 * ``cd ~/alarm-0.8.0``
 * ``virtualenv -p /usr/bin/python3.4 env && source env/bin/activate``
 * ``pip install setuptools --upgrade``
-* ``pip install ethereum-alarm-clock-client``
+* ``pip install ethereum-alarm-clock-client==8.0.0b1``
 
 
 6. Configure Supervisord
@@ -262,8 +294,8 @@ You can monitor these processes with ``tail``
 * ``tail -f /var/log/supervisor/scheduler-v6*.log``
 
 
-10. Cron
-^^^^^^^^
+10. System Clock
+^^^^^^^^^^^^^^^^
 
 You might want to add the following line to your crontab.  This keeps your
 system clock up to date.  I've had issues with my servers *drifting*.
@@ -275,7 +307,7 @@ system clock up to date.  I've had issues with my servers *drifting*.
 
 
 
-.. _Ethereum Alarm Clock Client: https://github.com/pipermerriam/ethereum-alarm-client
 .. _pip: https://pip.pypa.io/en/stable/
 .. _rollbar: https://rollbar.com/
 .. _AWS Documentation: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html
+.. _pyethereum documentation: https://github.com/ethereum/pyethereum/wiki/Developer-Notes

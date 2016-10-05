@@ -130,25 +130,19 @@ def task(fn):
     @functools.wraps(fn)
     def inner(config, *args, **kwargs):
         exec_id = uuid.uuid4()
+
         logger = config.get_logger("client.timer")
         logger.debug("enter: %s | id: %s", fn.__name__, exec_id)
+
         start_at = time.time()
         return_value = fn(config, *args, **kwargs)
-        elapsed = time.time() - start_at
 
-        if elapsed > 10:
-            logger.warning(
-                "long runtime for task: %s | timed: %s | id: %s",
-                fn.__name__,
-                elapsed,
-                exec_id,
-            )
-        else:
-            logger.debug(
-                "exit: %s | timed: %s | id: %s",
-                fn.__name__,
-                elapsed,
-                exec_id,
-            )
+        logger.debug(
+            "exit: %s | timed: %s | id: %s",
+            fn.__name__,
+            time.time() - start_at,
+            exec_id,
+        )
+
         return return_value
     return inner

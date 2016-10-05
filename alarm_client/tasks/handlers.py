@@ -1,5 +1,6 @@
 import functools
 import random
+import itertools
 
 import gevent
 
@@ -25,16 +26,40 @@ def locked_txn_request(fn):
     return inner
 
 
+def has_pending_transaction(txn_request):
+    web3 = txn_request.web3
+
+    pending_transactions = web3.txpool.content['pending'].get(
+        web3.eth.defaultAccount, {},
+    ).values()
+    queued_transactions = web3.txpool.content['queued'].get(
+        web3.eth.defaultAccount, {},
+    ).values()
+    all_transactions = itertools.chain(
+        itertools.chain.from_iterable(pending_transactions),
+        itertools.chain.from_iterable(queued_transactions),
+    )
+    for txn in all_transactions:
+        if txn['to'] == txn_request.address:
+            return True
+    else:
+        return False
+
+
 @task
 @locked_txn_request
 def handle_transaction_request(config, txn_request):
     logger = config.get_logger(txn_request.address)
 
     # Early exit conditions
+    # - pending transaction
     # - cancelled
     # - before claim window
     # - in freeze window
-    if txn_request.isCancelled:
+    if has_pending_transaction(txn_request):
+        logger.debug("Ignoring Request with pending transaction.")
+        return
+    elif txn_request.isCancelled:
         logger.debug("Ignoring Cancelled Request")
         return
     elif txn_request.beforeClaimWindow:
@@ -45,10 +70,7 @@ def handle_transaction_request(config, txn_request):
         )
         return
     elif txn_request.inClaimWindow:
-        logger.debug(
-            "Spawning `claim_txn_request`",
-            txn_request.address,
-        )
+        logger.debug("Spawning `claim_txn_request`")
         gevent.spawn(claim_txn_request, config, txn_request)
     elif txn_request.inFreezePeriod:
         logger.debug(
@@ -71,7 +93,6 @@ def claim_txn_request(config, txn_request):
     logger = config.get_logger(txn_request.address)
 
     web3 = config.web3
-    wait = config.wait
 
     if txn_request.isCancelled:
         logger.debug("Not Claiming Cancelled Request")
@@ -123,31 +144,12 @@ def claim_txn_request(config, txn_request):
     )
     claim_txn_hash = txn_request.transact({'value': claim_deposit}).claim()
     logger.info("Sent claim transaction.  Txn Hash: %s", claim_txn_hash)
-    try:
-        wait.for_receipt(claim_txn_hash, poll_interval=5)
-    except gevent.Timeout:
-        logger.error(
-            "Timed out waiting for claim transaction receipt. Txn Hash: %s",
-            claim_txn_hash,
-        )
-        return
-
-    if not txn_request.isClaimed:
-        logger.error(
-            "Request unexpectedly not unclaimed.  Was claimed via txn: %s",
-            claim_txn_hash,
-        )
-    elif not txn_request.isClaimedBy(web3.eth.defaultAccount):
-        logger.error("Got beaten to claim by %s", txn_request.claimedBy)
-    else:
-        logger.info("Successfully claimed")
 
 
 @task
 @locked_txn_request
 def execute_txn_request(config, txn_request):
     web3 = config.web3
-    wait = config.wait
     request_lib = config.request_lib
     logger = config.get_logger(txn_request.address)
 
@@ -192,28 +194,13 @@ def execute_txn_request(config, txn_request):
     )
 
     execute_txn_hash = txn_request.transact({'gas': execute_gas}).execute()
-
-    try:
-        logger.info("Waiting for transaction to be mined...")
-        wait.for_receipt(execute_txn_hash, poll_interval=5)
-        logger.info("Execution transaction mined.")
-    except gevent.Timeout:
-        logger.error(
-            "Timed out waiting for execution transaction receipt. Txn Hash: %s",
-            execute_txn_hash,
-        )
-
-    if txn_request.wasCalled:
-        logger.info("Request is now Executed")
-    else:
-        logger.error("Request was not Executed")
+    logger.info("Sent execute transaction.  Txn Hash: %s", execute_txn_hash)
 
 
 @task
 @locked_txn_request
 def cleanup_txn_request(config, txn_request):
     web3 = config.web3
-    wait = config.wait
     logger = config.get_logger(txn_request.address)
 
     # TODO: handle executing the payment/donation/ownerether methods too.
@@ -242,18 +229,4 @@ def cleanup_txn_request(config, txn_request):
     logger.info("Attempting cancellation.")
 
     cancel_txn_hash = txn_request.transact().cancel()
-
-    try:
-        logger.info("Waiting for transaction to be mined...")
-        wait.for_receipt(cancel_txn_hash, poll_interval=5)
-        logger.info("Cancellation transaction mined.")
-    except gevent.Timeout:
-        logger.error(
-            "Timed out waiting for cancellation transaction receipt. Txn Hash: %s",
-            cancel_txn_hash,
-        )
-
-    if txn_request.isCancelled:
-        logger.info("Request is now cancelled")
-    else:
-        logger.error("Request was not cancelled")
+    logger.info("Sent cancellation transaction.  Txn Hash: %s", cancel_txn_hash)

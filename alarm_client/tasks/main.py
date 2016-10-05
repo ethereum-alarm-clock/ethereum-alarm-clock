@@ -47,6 +47,84 @@ def new_block_callback(config, latest_block_hash):
     )
     timestamp_scanner.link(scan_result_handler)
 
+    for txn_hash in block['transactions']:
+        gevent.spawn(
+            mined_transaction_report,
+            config=config,
+            txn_hash=txn_hash,
+        )
+
+
+@task
+def mined_transaction_report(config, txn_hash):
+    web3 = config.web3
+    factory = config.factory
+
+    txn = web3.eth.getTransaction(txn_hash)
+
+    if txn['from'] != web3.eth.defaultAccount:
+        config.get_logger('client.txn_mined').debug(
+            'Ignoring transaction.  Not sent by this client'
+        )
+        return
+    if not factory.call().isKnownRequest(txn['to']):
+        config.get_logger('client.txn_mined').debug(
+            'Ignoring transaction.  Not to a known TransactionRequest contract'
+        )
+        return
+
+    txn_request = config.get_transaction_request(txn['to'])
+    txn_data = txn['input']
+
+    logger = config.get_logger(txn_request.address)
+
+    if txn_data.startswith(txn_request.claim_selector):
+        if txn_request.isClaimedBy(web3.eth.defaultAccount):
+            logger.info(
+                "Successfully claimed request. PaymentModifier: %s",
+                txn_request.paymentModifier,
+            )
+        elif txn_request.isClaimed:
+            logger.error(
+                "Request got claimed by other: %s",
+                txn_request.claimedBy,
+            )
+        else:
+            logger.error(
+                "Request should be claimed but isn't.  Tried claiming "
+                "via txn: %s",
+                txn_hash,
+            )
+    elif txn_data.startswith(txn_request.execute_selector):
+        if txn_request.wasCalled:
+            if txn_request.paymentBenefactor == web3.eth.defaultAccount:
+                logger.info("Request successfully executed")
+            else:
+                logger.error(
+                    "Request got executed by other: %s",
+                    txn_request.paymentBenefactor,
+                )
+        else:
+            logger.error(
+                "Request should have been executed but was not.  Tried "
+                "execution via txn: %s",
+                txn_hash,
+            )
+    elif txn_data.startswith(txn_request.cancel_selector):
+        if txn_request.isCancelled:
+            logger.info("Request was cancelled")
+        else:
+            logger.error(
+                "Request should have been cancelled but was not.  Tried "
+                "cancelling via txn: %s",
+                txn_hash,
+            )
+    else:
+        logger.warning(
+            "Unrecognized transaction found.  Txn Hash: %s",
+            txn_hash,
+        )
+
 
 @task
 def executed_event_callback(config, log_entry):

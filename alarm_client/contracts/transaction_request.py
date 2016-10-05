@@ -309,6 +309,21 @@ class TransactionRequestFactory(Contract):
                 )
             )
 
+    @cached_property
+    def claim_selector(self):
+        _, claim_selector, _ = self._get_function_info('claim')
+        return claim_selector
+
+    @cached_property
+    def execute_selector(self):
+        _, execute_selector, _ = self._get_function_info('execute')
+        return execute_selector
+
+    @cached_property
+    def cancel_selector(self):
+        _, cancel_selector, _ = self._get_function_info('cancel')
+        return cancel_selector
+
 
 _txn_request_cache = pylru.lrucache(256)
 

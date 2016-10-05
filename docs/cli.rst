@@ -101,7 +101,7 @@ available on your command line.
 
 
 Rollbar Integration
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 Monitoring these sorts of things can be difficult.  I am a big fan of the
 `rollbar`_ service which provides what I feel is a very solid monitoring and

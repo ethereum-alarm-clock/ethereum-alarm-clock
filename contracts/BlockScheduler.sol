@@ -14,3 +14,7 @@ contract BlockScheduler is BaseScheduler {
         factoryAddress = _factoryAddress;
     }
 }
+
+
+contract TestnetBlockScheduler is BlockScheduler(0x6005cb5aa9c4774c9f1f46ef3323c1337809cdb0) {
+}

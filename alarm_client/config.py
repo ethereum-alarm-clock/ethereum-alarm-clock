@@ -66,6 +66,9 @@ KNOWN_CHAINS = {
             'request_schedule_lib': '0x032635c4bac159d1b3b138f58e23f6a80d94717a',
             'safe_send_lib': '0xccb71bdec31b8d0f21f140940616b2d09334851b',
             'claim_lib': '0x1c868b2a0ecd8fd2bf2e893e18fb368d38cddd1f',
+            'scheduler_lib': '0x102901670aa3997f63280d744b88aa174df57324',
+            'block_scheduler': '0xbc5186e8aeacb8752454c3f62576f96209fc2395',
+            'timestamp_scheduler': '0x3d919bb1e5c58a2dd99ea463d52045b112eb4330',
         }
     },
 }

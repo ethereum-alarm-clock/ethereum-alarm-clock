@@ -5,7 +5,6 @@ help:
 	@echo "clean-pyc - remove Python file artifacts"
 	@echo "lint - check style with flake8"
 	@echo "test - run tests quickly with the default Python"
-	@echo "testall - run tests on every Python version with tox"
 	@echo "coverage - check code coverage quickly with the default Python"
 	@echo "docs - generate Sphinx HTML documentation, including API docs"
 	@echo "release - package and upload a release"
@@ -23,10 +22,26 @@ clean-pyc:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 
+lint:
+	flake8 alarm_client
+
 test:
 	py.test tests
+
+coverage:
+	coverage run --source populus
+	coverage report -m
+	coverage html
+	open htmlcov/index.html
 
 docs:
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	open docs/_build/html/index.html
+
+release: clean
+	python setup.py sdist bdist_wheel upload
+
+sdist: clean
+	python setup.py sdist bdist_wheel
+	ls -l dist

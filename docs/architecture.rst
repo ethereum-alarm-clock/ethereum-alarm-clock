@@ -52,6 +52,8 @@ The :class:`RequestFactory` contract is designed to be a low-level interface
 for developers who need fine-grained control over all of the various
 parameters that the :class:`TransactionRequest` can be configured with.
 
+Parameter validation is available, but not mandatory.
+
 It provides an API for creating new :class:`TransactionRequest` contracts.
 
 
@@ -61,11 +63,14 @@ It provides an API for creating new :class:`TransactionRequest` contracts.
 BlockScheduler and TimestampScheduler
 -------------------------------------
 
-The :class:`BlockScheduler` and :class:`TimestampScheduler` contracts are the
-higher level interface that most developers will want to interface with in
-order to schedule a transaction for a future block or timestamp.
+The :class:`BlockScheduler` and :class:`TimestampScheduler` contracts are a
+higher-level interface that most developers should want to use in order to
+schedule a transaction for a future block or timestamp.
 
-Both contracts present an identical API, with the :class:`BlockScheduler`
-treating all of the scheduling parameters as meaning block numbers, and the
-:class:`TimestampScheduler` treating all of the scheduling parameters as
-meaning timestamps and seconds.
+Both contracts present an identical API for creating new
+:class:`TransactionRequest` contracts. Different from :class:`RequestFactory`,
+request parameters are always validated.
+
+:class:`BlockScheduler` treats all of the scheduling parameters as meaning
+block numbers, while :class:`TimestampScheduler` treats them as meaning
+timestamps and seconds.

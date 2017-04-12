@@ -15,12 +15,12 @@ The Alarm service is made of the following contracts.
 * :class:`BlockScheduler`: High level API for creating :class:`TransactionRequest`
   contracts configured to be executed at a specified block number.
 * :class:`TimestampScheduler`: High level API for creating :class:`TransactionRequest`
-  contracts configured to be executed at a specified time as specified by a timestamp.
+  contracts configured to be executed at a certain time, as specified by a timestamp.
 
 .. note:: 
 
-    The actual functionality of most of the contracts is actually housed
-    separatel in various libraries.
+    Actual functionality of most of the contracts is housed separately
+    in various libraries.
 
 
 .. class:: RequestTracker

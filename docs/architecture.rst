@@ -35,7 +35,7 @@ next as well as other common needs.
 
 This database tracks requests based on the address that submits them.  This
 allows the :class:`RequestTracker` to be un-permissioned allowing any address
-to report scheduled transactions and to have them stored in their owne personal
+to report scheduled transactions and to have them stored in their own personal
 index.  The address which submits the transaction request is referred to as the
 *scheduler address*.
 
@@ -48,8 +48,8 @@ This also enables those executing transaction requests to choose which
 RequestFactory
 --------------
 
-The :class:`RequestFactory` contract is designed to be a low level interface
-for developers who need finer grained control over all of the various
+The :class:`RequestFactory` contract is designed to be a low-level interface
+for developers who need fine-grained control over all of the various
 parameters that the :class:`TransactionRequest` can be configured with.
 
 It provides an API for creating new :class:`TransactionRequest` contracts.

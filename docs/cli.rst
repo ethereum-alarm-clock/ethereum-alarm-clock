@@ -215,21 +215,7 @@ If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/get
     autorestart=true
     autostart=false
 
-
-If you are using Parity, put the following in ``/etc/supervisord/conf.d/parity.conf``
-
-.. code-block:: shell
-
-    [program:parity]
-    command=parity --db-path /data/ethereum --unlock <your-account-address> --password /home/ubuntu/scheduler_password
-    user=ubuntu
-    stdout_logfile=/var/log/supervisor/parity-stdout.log
-    stderr_logfile=/var/log/supervisor/parity-stderr.log
-    autorestart=true
-    autostart=false
-
-
-If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+and the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 
@@ -243,8 +229,19 @@ If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/sch
     autorestart=true
     autostart=false
 
+If you are using Parity, put the following in ``/etc/supervisord/conf.d/parity.conf``
 
-If you are using Parity, put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+.. code-block:: shell
+
+    [program:parity]
+    command=parity --db-path /data/ethereum --unlock <your-account-address> --password /home/ubuntu/scheduler_password
+    user=ubuntu
+    stdout_logfile=/var/log/supervisor/parity-stdout.log
+    stderr_logfile=/var/log/supervisor/parity-stderr.log
+    autorestart=true
+    autostart=false
+
+and the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 

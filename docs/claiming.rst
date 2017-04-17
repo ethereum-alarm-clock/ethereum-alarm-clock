@@ -4,6 +4,7 @@ Claiming
 .. contents:: :local:
 
 .. class:: TransactionRequest
+    :noindex:
 
 The Problem
 -----------

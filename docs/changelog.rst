@@ -2,7 +2,7 @@ Changelog
 =========
 
 0.8.0 (unreleased)
------
+------------------
 
 - Full rewrite of all contracts.
 - Support for both time and block based scheduling.

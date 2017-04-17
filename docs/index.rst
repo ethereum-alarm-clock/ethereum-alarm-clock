@@ -45,7 +45,6 @@ Contents:
    scheduler
    cli
    changelog
-   :maxdepth: 1
 
 
 .. _github repository: https://github.com/pipermerriam/ethereum-alarm-clock

@@ -127,8 +127,10 @@ steps should get an EC2 instance provisioned with the scheduler running.
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Setup an EC2 instance running Ubuntu.  The smallest instance size works fine.
-* Add an extra volume to store your blockchain data.  16GB should be sufficient
-  for the near term future.
+* Add an extra volume to store your blockchain data.  20GB should be sufficient
+  for a short while (after April 2017) if storing the entire history,
+  block-for-block, is not required.  Otherwise, a much larger size should be
+  used.
 * Optionally mark this volume to persist past termination of the instance so
   that you can reuse your blockchain data.
 * Make sure that the security policy leaves `30303` open to connections from
@@ -191,7 +193,7 @@ Install the Alarm client.
 
 * ``mkdir -p ~/alarm-0.8.0``
 * ``cd ~/alarm-0.8.0``
-* ``virtualenv -p /usr/bin/python3.4 env && source env/bin/activate``
+* ``virtualenv -p /usr/bin/python3.5 env && source env/bin/activate``
 * ``pip install setuptools --upgrade``
 * ``pip install ethereum-alarm-clock-client==8.0.0b1``
 
@@ -201,7 +203,7 @@ Install the Alarm client.
 
 Supervisord will be used to manage both ``geth`` and ``eth_alarm``.
 
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth.conf``
+If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/geth.conf``
 
 .. code-block:: shell
 
@@ -214,7 +216,7 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth
     autostart=false
 
 
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/parity.conf``
+If you are using Parity, put the following in ``/etc/supervisord/conf.d/parity.conf``
 
 .. code-block:: shell
 
@@ -227,7 +229,7 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/pari
     autostart=false
 
 
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 
@@ -242,7 +244,7 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/sche
     autostart=false
 
 
-If you are using Parity put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+If you are using Parity, put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 

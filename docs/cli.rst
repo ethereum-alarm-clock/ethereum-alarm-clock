@@ -290,7 +290,7 @@ You can monitor these processes with ``tail``
 
 * ``tail -f /var/log/supervisor/geth*.log``
 * ``tail -f /var/log/supervisor/parity*.log``
-* ``tail -f /var/log/supervisor/scheduler-v6*.log``
+* ``tail -f /var/log/supervisor/scheduler-v8*.log``
 
 
 10. System Clock

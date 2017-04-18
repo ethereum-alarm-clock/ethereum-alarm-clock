@@ -127,8 +127,10 @@ steps should get an EC2 instance provisioned with the scheduler running.
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Setup an EC2 instance running Ubuntu.  The smallest instance size works fine.
-* Add an extra volume to store your blockchain data.  16GB should be sufficient
-  for the near term future.
+* Add an extra volume to store your blockchain data.  20GB should be sufficient
+  for a short while (after April 2017) if storing the entire history,
+  block-for-block, is not required.  Otherwise, a much larger size should be
+  used.
 * Optionally mark this volume to persist past termination of the instance so
   that you can reuse your blockchain data.
 * Make sure that the security policy leaves `30303` open to connections from
@@ -191,7 +193,7 @@ Install the Alarm client.
 
 * ``mkdir -p ~/alarm-0.8.0``
 * ``cd ~/alarm-0.8.0``
-* ``virtualenv -p /usr/bin/python3.4 env && source env/bin/activate``
+* ``virtualenv -p /usr/bin/python3.5 env && source env/bin/activate``
 * ``pip install setuptools --upgrade``
 * ``pip install ethereum-alarm-clock-client==8.0.0b1``
 
@@ -201,7 +203,7 @@ Install the Alarm client.
 
 Supervisord will be used to manage both ``geth`` and ``eth_alarm``.
 
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth.conf``
+If you are using Go-Ethereum, put the following in ``/etc/supervisord/conf.d/geth.conf``
 
 .. code-block:: shell
 
@@ -213,21 +215,7 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/geth
     autorestart=true
     autostart=false
 
-
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/parity.conf``
-
-.. code-block:: shell
-
-    [program:parity]
-    command=parity --db-path /data/ethereum --unlock <your-account-address> --password /home/ubuntu/scheduler_password
-    user=ubuntu
-    stdout_logfile=/var/log/supervisor/parity-stdout.log
-    stderr_logfile=/var/log/supervisor/parity-stderr.log
-    autorestart=true
-    autostart=false
-
-
-If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+and the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 
@@ -241,8 +229,19 @@ If you are using Go-Ethereum put the following in ``/etc/supervisord/conf.d/sche
     autorestart=true
     autostart=false
 
+If you are using Parity, put the following in ``/etc/supervisord/conf.d/parity.conf``
 
-If you are using Parity put the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
+.. code-block:: shell
+
+    [program:parity]
+    command=parity --db-path /data/ethereum --unlock <your-account-address> --password /home/ubuntu/scheduler_password
+    user=ubuntu
+    stdout_logfile=/var/log/supervisor/parity-stdout.log
+    stderr_logfile=/var/log/supervisor/parity-stderr.log
+    autorestart=true
+    autostart=false
+
+and the following in ``/etc/supervisord/conf.d/scheduler-v8.conf``
 
 .. code-block:: shell
 
@@ -274,6 +273,14 @@ You will also need to send this account a few ether.  A few times the maximum
 transaction cost should be sufficient as this account should always trend
 upwards as it executes requests and receives payment for them.
 
+Don't forget to back up the key file! Go-Ethereum should have put it in
+
+* ``/data/ethereum/keystore/``
+
+and Parity in
+
+* ``/home/ubuntu/.local/share/io.parity.ethereum/keys/``
+
 8. Turn it on
 ^^^^^^^^^^^^^
 
@@ -291,7 +298,7 @@ You can monitor these processes with ``tail``
 
 * ``tail -f /var/log/supervisor/geth*.log``
 * ``tail -f /var/log/supervisor/parity*.log``
-* ``tail -f /var/log/supervisor/scheduler-v6*.log``
+* ``tail -f /var/log/supervisor/scheduler-v8*.log``
 
 
 10. System Clock

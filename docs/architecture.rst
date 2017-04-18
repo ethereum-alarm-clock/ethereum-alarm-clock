@@ -24,6 +24,7 @@ The Alarm service is made of the following contracts.
 
 
 .. class:: RequestTracker
+    :noindex:
 
 RequestTracker
 --------------
@@ -44,6 +45,7 @@ This also enables those executing transaction requests to choose which
 
 
 .. class:: RequestFactory
+    :noindex:
 
 RequestFactory
 --------------

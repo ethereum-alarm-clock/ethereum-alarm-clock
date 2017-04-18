@@ -273,6 +273,14 @@ You will also need to send this account a few ether.  A few times the maximum
 transaction cost should be sufficient as this account should always trend
 upwards as it executes requests and receives payment for them.
 
+Don't forget to back up the key file! Go-Ethereum should have put it in
+
+* ``/data/ethereum/keystore/``
+
+and Parity in
+
+* ``/home/ubuntu/.local/share/io.parity.ethereum/keys/``
+
 8. Turn it on
 ^^^^^^^^^^^^^
 

@@ -22,7 +22,7 @@ setup(
     py_modules=['eth_alarm_client'],
     install_requires=[
         "gevent>=1.1.2",
-        "populus>=1.2.1",
+        "populus>=1.6.0",
         "web3>=3.0.2",
         "pylru>=1.0.9",
         "python-dotenv>=0.6.0",

@@ -6,4 +6,4 @@ include requirements.txt
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
-include alarm_client/assets/v8.0.0.json
+include alarm_client/assets/*.json

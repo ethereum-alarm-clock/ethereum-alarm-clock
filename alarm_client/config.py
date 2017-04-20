@@ -11,7 +11,7 @@ from web3.utils.abi import (
     filter_by_type,
 )
 
-from populus.utils.wait import (
+from populus.wait import (
     Wait,
 )
 from populus.utils.filesystem import (

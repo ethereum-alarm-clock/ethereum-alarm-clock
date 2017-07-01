@@ -75,7 +75,7 @@ library GroveLib {
             return index.nodes[id].right;
         }
 
-        /// @dev Retrieve the node id of the next node in the tree.
+        /// @dev Retrieve the node id of the previous node in the tree.
         /// @param index The index that the node is part of.
         /// @param id The id for the node to be looked up.
         function getPreviousNode(Index storage index, bytes32 id) constant returns (bytes32) {

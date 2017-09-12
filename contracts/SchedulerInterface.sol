@@ -33,7 +33,7 @@ contract SchedulerInterface {
         } else {
             throw;
         }
-        _ 
+        _;
     }
 
     /*

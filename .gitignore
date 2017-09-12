@@ -1,7 +1,11 @@
+.idea
+.env
 .password
 .genesis.json
+
 build/
 dist/
 chains/
+node_modules/
+
 **/_build
-.env

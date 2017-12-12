@@ -69,7 +69,7 @@ Now lets write a simple contract that can use the scheduling service.
             }
         }
 
-        funtion payout() public returns (bool) {
+        function payout() public returns (bool) {
             if (now < lockedUntil) return false;
 
             return recipient.call.value(this.balance)();

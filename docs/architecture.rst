@@ -7,7 +7,7 @@ Architecture
 Overview
 --------
 
-The Alarm service is made of the following contracts.
+The Ethereum Alarm Clock infrastructure consists of the following contracts:
 
 * :class:`TransactionRequest`: Represents a single scheduled transaction.
 * :class:`RequestFactory`: Low level API for creating :class:`TransactionRequest` contracts.
@@ -34,14 +34,14 @@ transaction requests.  It exposes an API suitable for someone wishing to
 execute transaction requests to be able to query which requests are scheduled
 next as well as other common needs.
 
-This database tracks requests based on the address that submits them.  This
-allows the :class:`RequestTracker` to be un-permissioned allowing any address
+The :class:`RequestTracker` database indexes requests based on the address that submits them.
+Therefore, the :class:`RequestTracker` is un-permissioned and allows any address
 to report scheduled transactions and to have them stored in their own personal
 index.  The address which submits the transaction request is referred to as the
 *scheduler address*.
 
-This also enables those executing transaction requests to choose which
-*scheduler addresses* they wish to execute transactions for.
+The flexibility of the RequestTracker storage enables those executing transaction 
+requests to choose which *scheduler addresses* they wish to watch for upcoming transactions.
 
 
 .. class:: RequestFactory

@@ -27,7 +27,7 @@ configured with.
 Interface
 ---------
 
-.. literalinclude:: ../contracts/SchedulerInterface.sol
+.. literalinclude:: ../contracts/Interface/SchedulerInterface.sol
     :language: solidity
 
 
@@ -38,50 +38,43 @@ The following defaults are used when creating a new :class:`TransactionRequest`
 contract via either :class:`Scheduler` contract.
 
 
-* ``donationBenefactor``: ``0xd3cda913deb6f67967b99d67acdfa1712c293601`` which
-  is the address of Piper Merriam, the creator of this project.
+* ``donationBenefactor``: ``0xecc9c5fff8937578141592e7E62C2D2E364311b8`` which
+  is the address of the developer contribution wallet, which is used to fund the project.
 * ``payment``: ``1000000 * tx.gasprice`` set at the time of scheduling.
 * ``donation``: ``10000 * tx.gasprice`` or 1/100th of the default payment.
 * ``reservedWindowSize``: 16 blocks or 5 minutes.
 * ``freezePeriod``: 10 blocks or 3 minutes
 * ``claimWindowSize``: 255 blocks or 60 minutes.
-* ``requiredStackDepth``: 10 stack frames.
 
 
 API
 ---
 
-There are two ``scheduleTransaction`` methods on each :class:`Scheduler`
-contract with different call signatures.
+There is just one ``schedule`` method on each :class:`Scheduler`
+contract with different call signatures. (Prior versions of the EAC had 2 API methods, we 
+reduced this down to only the full API to force specification of all parameters.)
 
 
-.. method:: Scheduler.scheduleTransaction(address toAddress, bytes callData, uint[4] uintArgs) returns (address)
+.. method:: Scheduler.schedule(address _toAddress, bytes _callData, uint[7] _uintArgs) public payable returns (address newRequest)
 
-This method allows for configuration of the most common parameters needed for
-transaction scheduling.  Due to EVM restrictions, all of the unsigned integer
-arguments are passed in as an array.  The array values are mapped to the
-:class:`TransactionRequest` attributes as follows.
+The ``_toAddress`` is the recipient that the transaction will be sent to when it 
+is executed. The recipient can be any valid Ethereum address including both 
+user accounts and contracts. ``_callData`` is the encoded bytecode that will be sent 
+with the transaction. Simple value transfers can set this variable to an empty string,
+but more complex calls will need to encode the method of the inteded call and pass 
+it in this variable.
 
-* ``uintArgs[0] => callGas``
-* ``uintArgs[1] => callValue``
-* ``uintArgs[2] => windowSize``
-* ``uintArgs[3] => windowStart``
+The ``_uintArgs`` map to the following variables:
 
+* ``_uintArgs[0]``: The ``callGas`` to be sent with the executing transaction.
+* ``_uintArgs[1]``: The ``value`` in wei to be sent with the transaction.
+* ``_uintArgs[2]``: The ``windowSize``, or size of the exeuction window.
+* ``_uintArgs[3]``: The ``windowStart``, or the block / timestamp of when the execution window begins.
+* ``_uintArgs[4]``: The ``gasPrice`` that must be sent with the executing transaction.
+* ``_uintArgs[5]``: The ``donation`` value attached to the transaction.
+* ``_uintArgs[6]``: The ``payment`` value attached to the transaction.
 
-.. method:: Scheduler.scheduleTransaction(address toAddress, bytes callData, uint[4] uintArgs) returns (address)
-
-This method presents three extra fields allowing more fine controll for
-transaction scheduling.  Due to EVM restrictions, all of the unsigned integer
-arguments are passed in as an array.  The array values are mapped to the
-:class:`TransactionRequest` attributes as follows.
-
-*  ``uintArgs[0] => callGas``
-*  ``uintArgs[1] => callValue``
-*  ``uintArgs[2] => donation``
-*  ``uintArgs[3] => payment``
-*  ``uintArgs[4] => requiredStackDepth``
-*  ``uintArgs[5] => windowSize``
-*  ``uintArgs[6] => windowStart``
+The method returns the ``address`` of the newly created :class:`TransactionRequest`.
 
 
 Endowments

@@ -1,0 +1,37 @@
+Cannot be cancelled if:
+
+ during the freeze window -- test 5 in cancelling.js
+ during the execution window -- test 6 in cancelling.js
+ claimed and before the freeze window -- test 4 in cancelling.js
+ by anyone other than owner before the freeze window -- test 2 in cancelling.js
+ executed -- test 7 in cancelling.js
+ cancelled -- test 8 in cancelling.js
+
+Cannot be executed if:
+
+ before execution window -- test 1 in blockExecution.js and timestampExecution.js
+ after execution window -- test 2 in blockExecution.js and timestampExecution.js
+ cancelled -- cannotExecuteIfCancelled.js 
+ already executed -- alreadyExecuted.js
+ in reserve window and not the claimer -- test 1 in blockReserved.js and timestampReserved.js
+ transaction gas price != txnData.gasPrice -- test 2 in execution.js
+ available gas less than txnData.callGas + GAS_OVERHEAD -- test 3 in execution.js
+
+Cannot be claimed if:
+
+ before claim window -- test 1 in blockClaiming.js + timestampClaiming.js
+ after claim window -- test 4 in blockClaiming.js + timestampClaiming.js
+ already cliamed -- test 8 in blockClaiming.js + timestampClaiming.js
+ insufficient deposit -- test 9 in blockClaiming.js + timestampClaiming.js
+
+Proxy function
+
+ can only be called by owner -- proxy.js
+ can only be called if executed -- proxy.js
+
+Claim deposit
+
+ can be refunded if cancelled -- test 1 in claimDeposit.js
+ can be refunded if after execution window and was not executed. -- test 2 in claimDepost.js
+ cannot be refunded if executed -- test 3 in claimDeposit.js
+ cannot be refunded before or during execution window -- test 4 in claimDeposit.js

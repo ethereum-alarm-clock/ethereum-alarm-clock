@@ -1,54 +1,62 @@
-//pragma solidity 0.4.1;
+pragma solidity ^0.4.18;
 
-import {RequestFactoryInterface} from "contracts/RequestFactoryInterface.sol";
-import {TransactionRequest} from "contracts/TransactionRequest.sol";
-import {RequestLib} from "contracts/RequestLib.sol";
-import {SafeSendLib} from "contracts/SafeSendLib.sol";
-import {IterTools} from "contracts/IterTools.sol";
-import {RequestTrackerInterface} from "contracts/RequestTrackerInterface.sol";
+import "contracts/Interface/RequestFactoryInterface.sol";
+import "contracts/Interface/RequestTrackerInterface.sol";
+import "contracts/TransactionRequest.sol";
+import "contracts/Library/RequestLib.sol";
+import "contracts/IterTools.sol";
 
-
+/**
+ * @title RequestFactory
+ * @dev Contract which will produce new TransactionRequests.
+ */
 contract RequestFactory is RequestFactoryInterface {
-    using IterTools for bool[7];
-    using SafeSendLib for address;
+    using IterTools for bool[6];
 
+    // RequestTracker of this contract.
     RequestTrackerInterface public requestTracker;
 
     function RequestFactory(address _trackerAddress) {
-        if (_trackerAddress == 0x0) throw;
+        require( _trackerAddress != 0x0 );
+
         requestTracker = RequestTrackerInterface(_trackerAddress);
     }
 
-    /*
-     *  The lowest level interface for creating a transaction request.
-     *
-     *  addressArgs[1] -  meta.owner
-     *  addressArgs[1] -  paymentData.donationBenefactor
-     *  addressArgs[2] -  txnData.toAddress
-     *  uintArgs[0]    -  paymentData.donation
-     *  uintArgs[1]    -  paymentData.payment
-     *  uintArgs[2]    -  schedule.claimWindowSize
-     *  uintArgs[3]    -  schedule.freezePeriod
-     *  uintArgs[4]    -  schedule.reservedWindowSize
-     *  uintArgs[5]    -  schedule.temporalUnit
-     *  uintArgs[6]    -  schedule.windowSize
-     *  uintArgs[7]    -  schedule.windowStart
-     *  uintArgs[8]    -  txnData.callGas
-     *  uintArgs[9]    -  txnData.callValue
-     *  uintArgs[10]   -  txnData.requiredStackDepth
+    /**
+     * @dev The lowest level interface for creating a transaction request.
+     * 
+     * @param _addressArgs [0] -  meta.owner
+     * @param _addressArgs [1] -  paymentData.donationBenefactor
+     * @param _addressArgs [2] -  txnData.toAddress
+     * @param _uintArgs [0]    -  paymentData.donation
+     * @param _uintArgs [1]    -  paymentData.payment
+     * @param _uintArgs [2]    -  schedule.claimWindowSize
+     * @param _uintArgs [3]    -  schedule.freezePeriod
+     * @param _uintArgs [4]    -  schedule.reservedWindowSize
+     * @param _uintArgs [5]    -  schedule.temporalUnit
+     * @param _uintArgs [6]    -  schedule.windowSize
+     * @param _uintArgs [7]    -  schedule.windowStart
+     * @param _uintArgs [8]    -  txnData.callGas
+     * @param _uintArgs [9]    -  txnData.callValue
+     * @param _uintArgs [10]   -  txnData.gasPrice
+     * @param _callData        -  The call data
      */
-    function createRequest(address[3] addressArgs,
-                           uint[11] uintArgs,
-                           bytes callData) returns (address) {
-        var request = (new TransactionRequest).value(msg.value)(
+    function createRequest(
+        address[3]  _addressArgs,
+        uint[11]    _uintArgs,
+        bytes       _callData
+    )
+        public payable returns (address)
+    {
+        TransactionRequest request = (new TransactionRequest).value(msg.value)(
             [
-                msg.sender,
-                addressArgs[0],  // meta.owner
-                addressArgs[1],  // paymentData.donationBenefactor
-                addressArgs[2]   // txnData.toAddress
+                msg.sender,       // Created by
+                _addressArgs[0],  // meta.owner
+                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[2]   // txnData.toAddress
             ],
-            uintArgs,
-            callData
+            _uintArgs,            //uint[11]
+            _callData
         );
 
         // Track the address locally
@@ -58,20 +66,74 @@ contract RequestFactory is RequestFactoryInterface {
         RequestCreated(address(request));
 
         // Add the request to the RequestTracker
-        requestTracker.addRequest(address(request), uintArgs[7]);
+        requestTracker.addRequest(address(request), _uintArgs[7]); // windowStart
 
-        return request;
+        return address(request);
     }
 
+    /**
+     *  The same as createRequest except that it requires validation prior to
+     *  creation.
+     *
+     *  Parameters are the same as `createRequest`
+     */
+    function createValidatedRequest(
+        address[3]  _addressArgs,
+        uint[11]    _uintArgs,
+        bytes       _callData
+    ) 
+        public payable returns (address)
+    {
+        bool[6] memory isValid = validateRequestParams(
+            _addressArgs,
+            _uintArgs,
+            _callData,
+            msg.value
+        );
+
+        if (!isValid.all()) {
+            if (!isValid[0]) {
+                ValidationError(uint8(Errors.InsufficientEndowment));
+            }
+            if (!isValid[1]) {
+                ValidationError(uint8(Errors.ReservedWindowBiggerThanExecutionWindow));
+            }
+            if (!isValid[2]) {
+                ValidationError(uint8(Errors.InvalidTemporalUnit));
+            }
+            if (!isValid[3]) {
+                ValidationError(uint8(Errors.ExecutionWindowTooSoon));
+            }
+            if (!isValid[4]) {
+                ValidationError(uint8(Errors.CallGasTooHigh));
+            }
+            if (!isValid[5]) {
+                ValidationError(uint8(Errors.EmptyToAddress));
+            }
+
+            // Try to return the ether sent with the message.  If this failed
+            // then revert() to force it to be returned
+            if (!msg.sender.send(msg.value)) {
+                revert();
+            }
+            return 0x0;
+        }
+
+        return createRequest(_addressArgs, _uintArgs, _callData);
+    }
+
+    /// ----------------------------
+    /// Internal
+    /// ----------------------------
+
     /*
-     *  ValidationError
+     *  @dev The enum for launching `ValidationError` events and mapping them to an error.
      */
     enum Errors {
         InsufficientEndowment,
         ReservedWindowBiggerThanExecutionWindow,
         InvalidTemporalUnit,
         ExecutionWindowTooSoon,
-        InvalidRequiredStackDepth,
         CallGasTooHigh,
         EmptyToAddress
     }
@@ -79,68 +141,35 @@ contract RequestFactory is RequestFactoryInterface {
     event ValidationError(uint8 error);
 
     /*
-     * Validate the constructor arguments for either `createRequest` or
-     * `createValidatedRequest`
+     * @dev Validate the constructor arguments for either `createRequest` or `createValidatedRequest`.
      */
-    function validateRequestParams(address[3] addressArgs,
-                                   uint[11] uintArgs,
-                                   bytes callData,
-                                   uint endowment) returns (bool[7]) {
+    function validateRequestParams(
+        address[3]  _addressArgs,
+        uint[11]    _uintArgs,
+        bytes       _callData,
+        uint        _endowment
+    )
+        public returns (bool[6])
+    {
         return RequestLib.validate(
             [
                 msg.sender,      // meta.createdBy
-                addressArgs[0],  // meta.owner
-                addressArgs[1],  // paymentData.donationBenefactor
-                addressArgs[2]   // txnData.toAddress
+                _addressArgs[0],  // meta.owner
+                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[2]   // txnData.toAddress
             ],
-            uintArgs,
-            callData,
-            endowment
+            _uintArgs,
+            _callData,
+            _endowment
         );
     }
 
-    /*
-     *  The same as createRequest except that it requires validation prior to
-     *  creation.
-     *
-     *  Parameters are the same as `createRequest`
-     */
-    function createValidatedRequest(address[3] addressArgs,
-                                    uint[11] uintArgs,
-                                    bytes callData) returns (address) {
-        var is_valid = validateRequestParams(addressArgs,
-                                             uintArgs,
-                                             callData,
-                                             msg.value);
-
-        if (!is_valid.all()) {
-            if (!is_valid[0]) ValidationError(uint8(Errors.InsufficientEndowment));
-            if (!is_valid[1]) ValidationError(uint8(Errors.ReservedWindowBiggerThanExecutionWindow));
-            if (!is_valid[2]) ValidationError(uint8(Errors.InvalidTemporalUnit));
-            if (!is_valid[3]) ValidationError(uint8(Errors.ExecutionWindowTooSoon));
-            if (!is_valid[4]) ValidationError(uint8(Errors.InvalidRequiredStackDepth));
-            if (!is_valid[5]) ValidationError(uint8(Errors.CallGasTooHigh));
-            if (!is_valid[6]) ValidationError(uint8(Errors.EmptyToAddress));
-
-            // Try to return the ether sent with the message.  If this failed
-            // then throw to force it to be returned.
-            if (msg.sender.sendOrThrow(msg.value)) {
-                return 0x0;
-            }
-            throw;
-        }
-
-        return createRequest(addressArgs, uintArgs, callData);
-    }
-
+    /// Mapping to hold known requests.
     mapping (address => bool) requests;
 
-    function isKnownRequest(address _address) returns (bool) {
-        // TODO: decide whether this should be a local mapping or from tracker.
-        return requests[_address];
+    function isKnownRequest(address _address) 
+        public view returns (bool isKnown)
+    {
+        isKnown = requests[_address];
     }
-}
-
-
-contract TestnetRequestFactory is RequestFactory(0x8e67d439713b2022cac2ff4ebca21e173ccba4a0) {
 }

@@ -12,7 +12,8 @@ Execution
     Anyone wishing to write their own execution client should be sure they fully
     understand all of the intricacies related to the execution of transaction
     requests.  The guarantees in place for those executing requests are only in
-    place if the executing client is written appropriately.
+    place if the executing client is written appropriately. Reading this documentation
+    is a good start.
 
 
 Important Windows of Blocks/Time
@@ -50,10 +51,10 @@ executed at block 2100.
 
 Very short ``windowSize`` configurations likely lower the chances of your
 request being executed at the desired time since it is not possible to force a
-transaction to be included in a specific block and thus the party executing
+transaction to be included in a specific block.  The party executing
 your request may either fail to get the transaction included in the correct
 block *or* they may choose to not try for fear that their transaction will not
-be included in the correct block and thus they will not recieve a reimbursment
+be mined in the correct block, thereby not receiving their reimbursment
 for their gas costs.
 
 Similarly, very short ranges of time for timestamp based calls may even make it
@@ -172,28 +173,6 @@ Check #5 and #6: Within the execution window and authorized
     * Always passes if the current time is within the *execution window*
 
 
-Check #7: Stack Depth Check
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In order to understand this check you need to understand the problem it solves.
-One of the more subtle attacks that can be executed against a requested
-transaction is to force it to fail by ensuring that it will encounter the EVM
-stack limit.  Without this check the executor of a transaction request could
-force *any* request to fail by arbitrarily increasing the stack depth prior to
-execution such that when the transaction is sent it encounters the maximum
-stack depth and fails.  From the perspective of the :class:`TransactionRequest`
-contract this sort of failure is indistinguishable from any other exception.
-
-In order to prevent this, prior to execution, the :class:`TransactionRequest`
-contract will ensure that the stack can be extended by a number of stack frames
-equal to ``requiredStackDepth``.  This check passes if the stack can be
-extended by this amount.
-
-This check will be skipped if ``msg.sender == tx.origin`` since in this case it
-is not possible for the stack to have been arbitrarily extended prior to
-execution.
-
-
 Check #8: Sufficient Call Gas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -218,9 +197,9 @@ The accounting phase accounts for all of the payments and reimbursements that
 need to be sent.
 
 The *donation* payment is the mechanism through which developers can earn a
-return on their development efforts on the Alarm service.  For the *official*
-scheduler deployed as part of the alarm service this defaults to 1% of the
-default payment.  This value is multiplied by the *gas multiplier* (see
+return on their development efforts on the Alarm service.  When a person schedules 
+a transaction they may choose to enter a ``donation`` amount which will get sent to 
+the developer.  This value is multiplied by the *gas multiplier* (see
 :ref:`gas-multiplier`) and sent to the ``donationBenefactor`` address.
 
 Next the payment for the actual execution is computed.  The formula for this is
@@ -240,78 +219,6 @@ The three components of the ``totalPayment`` are as follows.
 After these payments have been calculated and sent, the ``Executed`` event is
 logged, and any remaining ether that is not allocated to be paid to any party
 is sent back to the address that scheduled the request.
-
-
-.. _gas-multiplier:
-
-Gas Multiplier
---------------
-
-To understand the *gas multiplier* you must understand the problem it solves.
-
-Transactions requests always provide a 100% reimbursment of gas costs.  This is
-implemented by requiring the scheduler to provide sufficient funds up-front to
-cover the future gas costs of their transaction.  Ideally we want the sender of
-the transaction that executes the request to be motivated to use a ``gasPrice``
-that is as low as possible while still allowing the transaction to be included
-in a block in a timely manner.
-
-A naive approach would be to specify a *maximum* gas price that the scheduler
-is willing to pay.  This might be possible for requests that will be processed
-a short time in the future, but for transactions that are scheduled
-sufficiently far in the future it isn't feasible to set a gas price that is
-going to reliably reflect the current normal gas prices at that time.
-
-In order to mitigate this issue, we instead provide a financial incentive to
-the party executing the request to provide as low a gas cost as possible while
-still getting their transaction included in a timely manner.
-
-Those executing the request are already sufficiently motivated to provide a gas
-price that is high enough to get the transaction mined in a reasonable time
-since if the price they specify is too low it is likely that someone else will
-execute the request before them, or that their transaction will not be included
-before the *execution window* closes.
-
-So, to provide incentive to keep the gas cost reasonably low, the *gas
-multiplier* concept was introduced.  Simply put, the multiplier produces a
-number between 0 and 2 which is applid to the ``payment`` that will be sent for
-fulfilling the request.
-
-At the time of scheduling, the ``gasPrice`` of the scheduling transaction is
-stored.  We refer to this as the ``anchorGasPrice`` as we can assume with some
-reliability that this value is a *reasonable* gas cost that the scheduler is
-willing to pay.
-
-At the time of execution, the following will occur based on the ``gasPrice``
-used for the executing transaction:
-
-    * If ``gasPrice`` is equal to the ``anchorGasPrice`` then the *gas
-      multiplier* will be 1, meaning that the ``payment`` will be issued as is.
-    * When the ``gasPrice`` is greater than the ``anchorGasPrice``, the *gas
-      multiplier* will approach 0 meaning that the payment will steadily get
-      smaller for higher gas prices.
-    * When the ``gasPrice`` is less than the ``anchorGasPrice``, the *gas
-      multiplier* will approach 2 meaning that the payment will steadily get
-      larger for lower gas prices.
-
-The formula used is the following.
-
-* If the execution ``gasPrice`` is greater than ``anchorGasPrice``:
-  
-    ``gasMultiplier = anchorGasPrice / tx.gasprice``
-
-* Else (if the execution ``gasPrice`` is less than or equal to the
-  ``anchorGasPrice``:
-
-    ``gasMultiplier = 2 - (anchorGasPrice / (2 * anchorGasPrice - tx.gasprice))``
-
-
-For example, if at the time of scheduling the gas price was 100 wei and the
-executing transaction uses a ``gasPrice`` of 200 wei, then the gas multiplier
-would be ``100 / 200 => 0.5``.
-
-Alternatively, if the transaction used a ``gasPrice`` of 75 wei then the gas
-multiplier would be ``2 - (100 / (2 * 100 - 75)) => 1.2``.
 
 
 Sending the Execution Transaction

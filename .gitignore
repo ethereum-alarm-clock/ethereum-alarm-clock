@@ -2,10 +2,26 @@
 .env
 .password
 .genesis.json
+.vscode
 
 build/
 dist/
 chains/
+nContracts/
+origContracts/
 node_modules/
 
 **/_build
+alarmClient
+alarmClient/*
+coverage
+coverage/*
+
+alarm_client/*
+deployed.info
+deployed.json
+gas.txt
+notes.txt
+
+script/wallet/keyfile
+script/client/dep*

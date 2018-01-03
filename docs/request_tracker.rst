@@ -10,7 +10,7 @@ Introduction
 
 The :class:`RequestTracker` contract is a simple database contract that exposes
 an API suitable for querying for scheduled transaction requests.  This database
-is *permissionless* in so much as it partitiions transaction requests by the
+is *permissionless* in so much as it partitions transaction requests by the
 address that reported them.  This means that *anyone* can deploy a new request
 scheduler that conforms to whatever specific rules they may need for their use
 case and configure it to report any requests it schedules with this tracker
@@ -25,7 +25,7 @@ scheduler creates.
 Interface
 ---------
 
-.. literalinclude:: ../contracts/RequestTrackerInterface.sol
+.. literalinclude:: ../contracts/Interface/RequestTrackerInterface.sol
     :language: solidity
 
 
@@ -60,7 +60,7 @@ should validate the following things.
   :class:`RequestTracker`.
 
 Any request created by the :class:`RequestFactory` contract regardless of how
-it was created should be safe to execute using the provided execution client.
+it was created should be safe to execute using the provided execution clients.
 
 
 API

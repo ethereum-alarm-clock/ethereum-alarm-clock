@@ -19,7 +19,8 @@ contract('Exceptions', async function(accounts) {
 
     let transactionRequest 
 
-    const gasPrice = config.web3.utils.toWei('66', 'gwei')    
+    const gasPrice = config.web3.utils.toWei('66', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('30', 'kwei') 
 
     /// TransactionRequest constants
     const claimWindowSize = 25 //blocks
@@ -48,7 +49,8 @@ contract('Exceptions', async function(accounts) {
                 windowStart,
                 43324,  //callGas
                 0,      //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-could-be-anything',
             {value: config.web3.utils.toWei('100', 'finney')}

@@ -48,11 +48,11 @@ library ClaimLib {
 
     // TODO: add `requiredDeposit` and remove the hard-coding of the `2 *
     // payment` minimum deposit size.
-    function requiredDeposit(uint _payment)
-        internal pure returns (uint reqDeposit)
-    {
-        reqDeposit = _payment.mul(2);
-    }
+    // function requiredDeposit(uint _payment)
+    //     internal pure returns (uint reqDeposit)
+    // {
+    //     reqDeposit = _payment.mul(2);
+    // }
 
 
     /*
@@ -69,7 +69,7 @@ library ClaimLib {
             depositAmount = self.claimDeposit;
             self.claimDeposit = 0;
             
-            self.claimedBy.transfer(depositAmount);
+            return self.claimedBy.send(depositAmount);
         }
         return true;
     }

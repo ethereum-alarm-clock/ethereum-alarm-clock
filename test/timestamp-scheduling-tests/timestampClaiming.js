@@ -44,6 +44,8 @@ contract('Timestamp claiming', async function(accounts) {
 
         txRecorder = await TransactionRecorder.new()
 
+        const requiredDeposit = config.web3.utils.toWei('25', 'kwei')
+
         // Instantiate a TransactionRequest with temporal unit 2 - aka timestamp
         txRequest = await TransactionRequest.new(
             [
@@ -62,7 +64,8 @@ contract('Timestamp claiming', async function(accounts) {
                 windowStart,
                 1200000,    //callGas
                 0,          //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'just-some-call-data',
             {value: config.web3.utils.toWei('1')}
@@ -344,9 +347,12 @@ contract('Timestamp claiming', async function(accounts) {
             1
         )
 
+        const requiredDeposit = requestData.claimData.requiredDeposit
+        const trySendDeposit = requiredDeposit - 2500
+
         const claimTx = await txRequest.claim({
             from: accounts[0],
-            value: 2 * requestData.paymentData.payment - 1000
+            value: trySendDeposit 
         })
         .should.be.rejectedWith('VM Exception while processing transaction: revert')
 

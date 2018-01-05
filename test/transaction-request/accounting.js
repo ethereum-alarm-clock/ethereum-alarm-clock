@@ -33,6 +33,7 @@ contract('Test accounting', async function(accounts) {
     const donationBenefactor = accounts[3]
 
     const gasPrice = config.web3.utils.toWei('33', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('33', 'kwei')
 
     const donation = 12345
     const payment = 232323
@@ -73,7 +74,8 @@ contract('Test accounting', async function(accounts) {
                 windowStart,
                 2000000, //callGas
                 0,  //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-goes-here',
             {value: config.web3.utils.toWei('1')}

@@ -26,6 +26,7 @@ contract('Test already executed', async function(accounts) {
         const DAY = 24*HOUR
 
         const gasPrice = config.web3.utils.toWei('44', 'gwei')
+        const requiredDeposit = config.web3.utils.toWei('44', 'kwei')
 
         const claimWindowSize = 5*MINUTE 
         const freezePeriod = 2*MINUTE
@@ -55,7 +56,8 @@ contract('Test already executed', async function(accounts) {
                 windowStart,
                 2000000,        //callGas
                 0,              //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-goes-here',
             {value: config.web3.utils.toWei('1')}

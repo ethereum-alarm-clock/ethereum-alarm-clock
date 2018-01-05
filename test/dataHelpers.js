@@ -28,12 +28,12 @@ const parseAbortData = (executeTx) => {
 
 const parseRequestData = async (transactionRequest) => {
     const data = await transactionRequest.requestData()
-    // console.log(data)
     return {
         "claimData": {
             "claimedBy": data[0][0],
             "claimDeposit": data[2][0].toNumber(),
             "paymentModifier": data[3][0].toNumber(),
+            "requiredDeposit": data[2][14].toNumber(),
         },
 
         "meta": {
@@ -83,6 +83,7 @@ class RequestData {
             "claimedBy": data[0][0],
             "claimDeposit": data[2][0].toNumber(),
             "paymentModifier": data[3][0].toNumber(),
+            "requiredDeposit": data[2][14].toNumber(),
         }
 
         this.meta = {

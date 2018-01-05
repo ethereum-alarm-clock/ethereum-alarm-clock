@@ -41,6 +41,7 @@ contract('Request factory', async function(accounts) {
         const temporalUnit = 1
         const callValue = 123456789
         const callGas = 1000000
+        const requiredDeposit = config.web3.utils.toWei('45', 'kwei')
         const testCallData = 'this-is-call-data'
         
         /// Validate the data with the RequestLib
@@ -96,7 +97,8 @@ contract('Request factory', async function(accounts) {
                 windowSize,
                 windowStart,
                 callGas,
-                callValue
+                callValue,
+                requiredDeposit
             ],
             testCallData
         )

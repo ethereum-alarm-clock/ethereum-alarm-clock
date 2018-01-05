@@ -65,11 +65,14 @@ Claim Deposit
 -------------
 
 In order to claim a request you must put down a deposit.  This deposit amount
-is equal to twice the ``payment`` amount associated with this request.
+is specified by the scheduler of the transaction. The account claiming 
+the transaction request must send at least the ``claimDeposit`` amount
+when they attempt to claim an execution.
 
-``claim_deposit = 2 * payment``
-
-The deposit is returned during execution, or when the call is cancelled.
+The ``claimDeposit`` is returned to the claiming account when they 
+execute the transaction request or when the call is cancelled. However,
+if the account that claims the call later fails to execute then they will 
+lose their claim deposit to whoever executes instead.
 
 
 How claiming effects payment
@@ -103,11 +106,14 @@ of `RequestScheduleLib.sol`.
 It is important to note that the *payment modifier* does not apply to gas
 reimbursements which are always paid in full.  No matter when a call is
 claimed, or how it is executed, it will **always** provide a full gas
-reimbursement.  In the past, this was not always the case since the EAC used 
-a slightly different scheme to calculate an anchor gas price.  In version 0.9.0 
-the anchor gas price was removed in favor of forcing the scheduler of the transaction 
-to explicitly specify an **exact** gas price.  So the gas to execute a transaction is
-always reimbursed exactly to the executor of the transaction.
+reimbursement.  
+
+.. note:: 
+    In the past, this was not always the case since the EAC used a slightly different 
+    scheme to calculate an anchor gas price.  In version 0.9.0 
+    the anchor gas price was removed in favor of forcing the scheduler of the transaction 
+    to explicitly specify an **exact** gas price.  So the gas to execute a transaction is
+    always reimbursed exactly to the executor of the transaction.
 
 For clarification of the payment modifier let's consider an example.
 Assume that a transaction request has a ``payment`` set to 2000 wei, a

@@ -18,7 +18,8 @@ contract('claim deposit', async accounts => {
     let txRecorder
     let txRequest 
 
-    const gasPrice = config.web3.utils.toWei('24', 'gwei')    
+    const gasPrice = config.web3.utils.toWei('24', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('40', 'kwei')
 
     /// TransactionRequest constants
     const claimWindowSize = 25 //blocks
@@ -52,7 +53,8 @@ contract('claim deposit', async accounts => {
                 windowStart,
                 43324,  //callGas
                 0,      //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-could-be-anything',
             {value: config.web3.utils.toWei('100', 'finney')}

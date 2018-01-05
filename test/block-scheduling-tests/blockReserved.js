@@ -26,6 +26,9 @@ contract('Block reserved window', function(accounts) {
         const windowStart = curBlock + 38
         const executionWindow = 10
 
+        const gasPrice = config.web3.utils.toWei('12', 'gwei')
+        const requiredDeposit = config.web3.utils.toWei('66', 'kwei')
+
         const txRequest = await TransactionRequest.new(
             [
                 accounts[0], //created by
@@ -42,7 +45,9 @@ contract('Block reserved window', function(accounts) {
                 executionWindow,
                 windowStart,
                 120000, //callGas
-                0 //callValue
+                0, //callValue
+                gasPrice,
+                requiredDeposit
             ],
             'this-is-the-call-data'
         )

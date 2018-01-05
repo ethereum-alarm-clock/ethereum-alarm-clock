@@ -14,13 +14,13 @@ contract TransactionRequestInterface {
     // Data accessors
     function requestData() public view returns (address[6],
                                                 bool[3],
-                                                uint[14],
+                                                uint[15],
                                                 uint8[1]);
 
     function callData() public view returns (bytes);
 
     // Pull mechanisms for payments.
-    function refundClaimDeposit() public;
+    function refundClaimDeposit() public returns (bool);
     function sendDonation() public returns (bool);
     function sendPayment() public returns (bool);
     function sendOwnerEther() public returns (bool);

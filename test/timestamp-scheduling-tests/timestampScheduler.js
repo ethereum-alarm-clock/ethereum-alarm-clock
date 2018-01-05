@@ -23,6 +23,7 @@ contract('Timestamp scheduling', function(accounts) {
     const MINUTE = 60//seconds
 
     const gasPrice = 20000
+    const requiredDeposit = config.web3.utils.toWei('34', 'kwei')
     const testData32 = ethUtil.bufferToHex(
         Buffer.from('32'.padEnd(32, 'AF01'))
     )

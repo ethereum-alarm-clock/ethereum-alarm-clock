@@ -24,6 +24,7 @@ contract('Timestamp execution', async function(accounts) {
     let txRequest
     
     const gasPrice = config.web3.utils.toWei('37', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('60', 'kwei')
 
     /// Constant variables we need in each test
     const claimWindowSize = 5*MINUTE 
@@ -59,7 +60,8 @@ contract('Timestamp execution', async function(accounts) {
                 windowStart,
                 2000000,    //callGas
                 0,          //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-goes-here',
             {value: config.web3.utils.toWei('1')}

@@ -17,6 +17,7 @@ const toBN = config.web3.utils.toBN
 contract('Execution', async function(accounts) {
 
     const gasPrice = config.web3.utils.toWei('66', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('66', 'kwei')
     
     let txRequest
     let txRecorder
@@ -52,7 +53,8 @@ contract('Execution', async function(accounts) {
                 windowStart,
                 2000000, //callGas
                 0, //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-could-be-anything',
             {value: config.web3.utils.toWei('1')}

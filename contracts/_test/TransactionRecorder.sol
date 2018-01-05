@@ -1,8 +1,5 @@
 pragma solidity ^0.4.18;
 
-//// @dev This contract is okay to use bytes and not bytes32
-////       because, we can read bytes from javascript, but not
-////       from Solidity.
 contract TransactionRecorder {
     address owner;
 

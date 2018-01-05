@@ -16,7 +16,7 @@ contract RequestFactory is RequestFactoryInterface {
     // RequestTracker of this contract.
     RequestTrackerInterface public requestTracker;
 
-    function RequestFactory(address _trackerAddress) {
+    function RequestFactory(address _trackerAddress) public {
         require( _trackerAddress != 0x0 );
 
         requestTracker = RequestTrackerInterface(_trackerAddress);
@@ -39,11 +39,12 @@ contract RequestFactory is RequestFactoryInterface {
      * @param _uintArgs [8]    -  txnData.callGas
      * @param _uintArgs [9]    -  txnData.callValue
      * @param _uintArgs [10]   -  txnData.gasPrice
+     * @param _uintArgs [11]   -  claimData.requiredDeposit
      * @param _callData        -  The call data
      */
     function createRequest(
         address[3]  _addressArgs,
-        uint[11]    _uintArgs,
+        uint[12]    _uintArgs,
         bytes       _callData
     )
         public payable returns (address)
@@ -55,7 +56,7 @@ contract RequestFactory is RequestFactoryInterface {
                 _addressArgs[1],  // paymentData.donationBenefactor
                 _addressArgs[2]   // txnData.toAddress
             ],
-            _uintArgs,            //uint[11]
+            _uintArgs,            //uint[12]
             _callData
         );
 
@@ -79,7 +80,7 @@ contract RequestFactory is RequestFactoryInterface {
      */
     function createValidatedRequest(
         address[3]  _addressArgs,
-        uint[11]    _uintArgs,
+        uint[12]    _uintArgs,
         bytes       _callData
     ) 
         public payable returns (address)
@@ -145,11 +146,11 @@ contract RequestFactory is RequestFactoryInterface {
      */
     function validateRequestParams(
         address[3]  _addressArgs,
-        uint[11]    _uintArgs,
+        uint[12]    _uintArgs,
         bytes       _callData,
         uint        _endowment
     )
-        public returns (bool[6])
+        public view returns (bool[6])
     {
         return RequestLib.validate(
             [
@@ -170,6 +171,6 @@ contract RequestFactory is RequestFactoryInterface {
     function isKnownRequest(address _address) 
         public view returns (bool isKnown)
     {
-        isKnown = requests[_address];
+        return requests[_address];
     }
 }

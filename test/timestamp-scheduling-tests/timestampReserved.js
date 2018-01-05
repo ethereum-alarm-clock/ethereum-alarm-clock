@@ -36,6 +36,7 @@ contract('Timestamp reserved window', async function(accounts) {
         const reservedWindowSize = 1*MINUTE
 
         const gasPrice = config.web3.utils.toWei('37', 'gwei')
+        const requiredDeposit = config.web3.utils.toWei('60', 'kwei')
 
         const txRequest = await TransactionRequest.new(
             [
@@ -54,7 +55,8 @@ contract('Timestamp reserved window', async function(accounts) {
                 windowStart,
                 1200000,    //callGas
                 0,          //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'just-some-call-data'
         )

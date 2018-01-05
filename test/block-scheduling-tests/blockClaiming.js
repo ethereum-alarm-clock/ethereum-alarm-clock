@@ -33,7 +33,9 @@ contract('Block claiming', async function(accounts) {
 
         txRecorder = await TransactionRecorder.new()
         expect(txRecorder.address)
-        .to.exist 
+        .to.exist
+
+        const requiredDeposit = config.web3.utils.toWei('20', 'kwei') // 1 kwei = 10e3 wei, ie this is 20000 wei
 
         /// Instantiate a TransactionRequest with temporal unit 1 - aka block
         txRequest = await TransactionRequest.new(
@@ -44,7 +46,7 @@ contract('Block claiming', async function(accounts) {
                 txRecorder.address      // to
             ], [
                 0,                      //donation
-                config.web3.utils.toWei('200', 'finney'),                      //payment
+                config.web3.utils.toWei('200', 'finney'), //payment
                 25,                     //claim window size
                 5,                      //freeze period
                 10,                     //reserved window size
@@ -53,7 +55,8 @@ contract('Block claiming', async function(accounts) {
                 curBlock + 38,          //windowStart
                 100000,                 //callGas
                 0,                      //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'this-is-the-call-data',
             {value: config.web3.utils.toWei('1')}
@@ -316,7 +319,8 @@ contract('Block claiming', async function(accounts) {
 
         const claimTx = await txRequest.claim({
             from: accounts[0],
-            value: (2*requestData.paymentData.payment) - 1000
+            // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in order to fail this test
+            value: config.web3.utils.toWei('15', 'kwei')
         })
         .should.be.rejectedWith('VM Exception while processing transaction: revert')
 

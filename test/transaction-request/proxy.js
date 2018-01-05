@@ -20,6 +20,7 @@ contract('TransactionRequest proxy function', accounts => {
     const reservedWindowSize = 10//blocks
     const executionWindow = 10//blocks
     const gasPrice = config.web3.utils.toWei('66', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('66', 'kwei')
 
     const testData32 = ethUtil.bufferToHex(
         Buffer.from('A1B2'.padEnd(32, 'FF'))
@@ -47,7 +48,8 @@ contract('TransactionRequest proxy function', accounts => {
                 windowStart,
                 43324,              //callGas
                 12345,              //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-could-be-anything',
             {value: config.web3.utils.toWei('500', 'finney')}

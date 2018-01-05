@@ -70,7 +70,8 @@ contract('Schedule to execution flow', function(accounts) {
                 windowStart,        
                 gasPrice,           
                 98765,              //donation
-                80008               //payment
+                80008,              //payment
+                config.web3.utils.toWei('20', 'kwei')   // requiredDeposit
             ],
             {from: accounts[3], value: config.web3.utils.toWei('1')}
         )

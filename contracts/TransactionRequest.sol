@@ -27,10 +27,11 @@ contract TransactionRequest is TransactionRequestInterface {
      *  uintArgs[8]  - txnData.callGas
      *  uintArgs[9]  - txnData.callValue
      *  uintArgs[10] - txnData.gasPrice
+     *  uintArgs[11] - claimData.requiredDeposit
      */
     function TransactionRequest(
         address[4]  addressArgs,
-        uint[11]    uintArgs,
+        uint[12]    uintArgs,
         bytes       callData
     )
         public payable
@@ -63,11 +64,10 @@ contract TransactionRequest is TransactionRequestInterface {
      *  Data accessor functions.
      */
      
-    // TODO: figure out why returning RequestLib.serialize() isn't working.
     // Declaring this function `view`, although it creates a compiler warning, is
     // necessary to return values from it.
     function requestData() 
-        public view returns (address[6], bool[3], uint[14], uint8[1])
+        public view returns (address[6], bool[3], uint[15], uint8[1])
     {
         if (txnRequest.serialize()) {
             return (
@@ -90,7 +90,7 @@ contract TransactionRequest is TransactionRequestInterface {
     /**
      * @dev Proxy a call from this contract to another contract.
      * This function is only callable by the scheduler and can only
-     * be called after the execution window ends. It's purpose is to
+     * be called after the execution window ends. One purpose is to
      * provide a way to transfer assets held by this contract somewhere else.
      * For example, if this request was used to buy tokens during an ICO,
      * it would become the owner of the tokens and this function would need
@@ -107,7 +107,7 @@ contract TransactionRequest is TransactionRequestInterface {
     /*
      *  Pull based payment functions.
      */
-    function refundClaimDeposit() public {
+    function refundClaimDeposit() public returns (bool) {
         txnRequest.refundClaimDeposit();
     }
 

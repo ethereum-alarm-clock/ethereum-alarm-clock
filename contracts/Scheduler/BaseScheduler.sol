@@ -31,25 +31,29 @@ contract BaseScheduler is SchedulerInterface {
      * @param _uintArgs [4] The gasPrice which will be used to execute this transaction.
      * @param _uintArgs [5] The donation value attached to this transaction.
      * @param _uintArgs [6] The payment value attached to this transaction.
+     * @param _uintArgs [7] The deposit required to claim this transaction.
      * @return The address of the new TransactionRequest.   
      */ 
-    function schedule(address   _toAddress,
-                      bytes     _callData,
-                      uint[7]   _uintArgs)
+    function schedule (
+        address   _toAddress,
+        bytes     _callData,
+        uint[8]   _uintArgs
+    )
         doReset
         public payable returns (address newRequest)
     {
-        futureTransaction.toAddress     = _toAddress;
-        futureTransaction.callData      = _callData;
-        futureTransaction.callGas       = _uintArgs[0];
-        futureTransaction.callValue     = _uintArgs[1];
-        futureTransaction.windowSize    = _uintArgs[2];
-        futureTransaction.windowStart   = _uintArgs[3];
-        futureTransaction.gasPrice      = _uintArgs[4];
-        futureTransaction.donation      = _uintArgs[5];
-        futureTransaction.payment       = _uintArgs[6];
+        futureTransaction.toAddress         = _toAddress;
+        futureTransaction.callData          = _callData;
+        futureTransaction.callGas           = _uintArgs[0];
+        futureTransaction.callValue         = _uintArgs[1];
+        futureTransaction.windowSize        = _uintArgs[2];
+        futureTransaction.windowStart       = _uintArgs[3];
+        futureTransaction.gasPrice          = _uintArgs[4];
+        futureTransaction.donation          = _uintArgs[5];
+        futureTransaction.payment           = _uintArgs[6];
+        futureTransaction.requiredDeposit   = _uintArgs[7];
 
-        futureTransaction.temporalUnit  = temporalUnit;
+        futureTransaction.temporalUnit      = temporalUnit;
 
         newRequest = futureTransaction.schedule(factoryAddress);
         require( newRequest != 0x0 );

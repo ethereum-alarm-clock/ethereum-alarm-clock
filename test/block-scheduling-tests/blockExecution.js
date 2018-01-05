@@ -21,7 +21,8 @@ contract('Block execution', async function(accounts) {
     let txRequest
     let txRecorder
 
-    const gasPrice = config.web3.utils.toWei('45', 'gwei')    
+    const gasPrice = config.web3.utils.toWei('45', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('33', 'kwei')  
 
     const executionWindow = 10
     const testData32 = ethUtil.bufferToHex(
@@ -53,7 +54,8 @@ contract('Block execution', async function(accounts) {
                 windowStart,        //windowStart
                 200000,             //callGas
                 0,                  //callValue
-                gasPrice           
+                gasPrice,
+                requiredDeposit    
             ],
             testData32,              //callData
             {value: config.web3.utils.toWei('1')}

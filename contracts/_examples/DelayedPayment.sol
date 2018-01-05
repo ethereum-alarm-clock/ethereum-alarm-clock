@@ -29,7 +29,8 @@ contract DelayedPayment {
                 lockedUntil,        // The start of the execution window.
                 30000000000 wei,    // The gasprice for the transaction (aka 30 gwei)
                 12345 wei,          // The donation included in the transaction.
-                224455 wei          // The payment included in the transaction.
+                224455 wei,         // The payment included in the transaction.
+                20000 wei           // The required amount of wei to claimer must send as deposit.
             ]
         );
     }

@@ -29,6 +29,8 @@ library SchedulerLib {
         uint donation;              // Donation value attached to the transaction.
         uint payment;               // Payment value attached to the transaction.
 
+        uint requiredDeposit;       // The deposit required to claim the transaction.
+
         uint reservedWindowSize;    // The size of the window in which claimer has exclusive rights to execute.
         uint freezePeriod;          // The size of the window in which nothing happens... Is before execution
         uint claimWindowSize;       // The size of the window in which someone can claim the txRequest
@@ -50,6 +52,11 @@ library SchedulerLib {
         uint defaultDonation = self.payment.div(100);
         if (self.donation != defaultDonation ) {
             self.donation = defaultDonation;
+        }
+
+        uint defaultDeposit = self.payment.mul(2);
+        if (self.requiredDeposit != defaultDeposit) {
+            self.requiredDeposit = defaultDeposit;
         }
 
         if (self.toAddress != msg.sender) {
@@ -163,7 +170,8 @@ library SchedulerLib {
                 self.windowStart,         // scheduler.windowStart
                 self.callGas,             // txnData.callGas
                 self.callValue,           // txnData.callValue
-                self.gasPrice             // txnData.gasPrice
+                self.gasPrice,            // txnData.gasPrice
+                self.requiredDeposit      // claimData.requiredDeposit
             ],
             self.callData
         );

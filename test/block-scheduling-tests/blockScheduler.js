@@ -23,16 +23,17 @@ contract('Block scheduling', function(accounts) {
     const User2 = accounts[2]
     const gasPrice = 20000
 
+    const donation = 0
+    const payment = 0
+    const requiredDeposit = config.web3.utils.toWei('22', 'kwei')
+
     let blockScheduler
     let requestFactory
     let requestTracker
     let transactionRecorder
 
     const checkIsNotEmptyAddress = (address) => {
-        if (address == '0x0000000000000000000000000000000000000000') {
-            return false;
-        }
-        return true;
+        return (address == '0x0000000000000000000000000000000000000000')
     }
     
     /////////////
@@ -41,17 +42,20 @@ contract('Block scheduling', function(accounts) {
 
     it('should instantiate contracts', async function() {
         transactionRecorder = await TransactionRecorder.deployed()
-        assert(checkIsNotEmptyAddress(transactionRecorder.address), 'Transaction Recorder was deployed.')
+        expect(transactionRecorder.address)
+        .to.exist
 
         requestTracker = await RequestTracker.deployed()
-        assert(checkIsNotEmptyAddress(requestTracker.address), 'Request Tracker was deployed.')
+        expect(requestTracker.address)
+        .to.exist
 
         requestFactory = await RequestFactory.new(requestTracker.address)
         blockScheduler = await BlockScheduler.new(requestFactory.address)        
 
         /// Get the factory address
         const factoryAddress = await blockScheduler.factoryAddress()
-        assert(checkIsNotEmptyAddress(factoryAddress), 'BlockScheduler is instantiated and linked to requestFactory.')
+        expect(factoryAddress)
+        .to.equal(requestFactory.address)
     })
 
     it('blockScheduler should arbitrarily accept payments sent to it', async function() {
@@ -72,9 +76,6 @@ contract('Block scheduling', function(accounts) {
             Buffer.from('A1B2'.padEnd(32, 'FF'))
         )
 
-        const donation = 0
-        const payment = 0
-
         /// Now let's send it an actual transaction
         const scheduleTx = await blockScheduler.schedule(
             transactionRecorder.address,
@@ -87,6 +88,7 @@ contract('Block scheduling', function(accounts) {
                 gasPrice,
                 donation,
                 payment,
+                requiredDeposit
             ],
             {
                 from: accounts[0], 
@@ -140,12 +142,14 @@ contract('Block scheduling', function(accounts) {
             transactionRecorder.address,
             'this-is-the-call-data',
             [
-                4e20, //callGas set crazy high
-                123454321, //callValue
-                0, //windowSize
+                4e20,           //callGas is set way too high
+                123454321,      //callValue
+                0,              //windowSize
                 windowStart,
-                0,
-                0
+                gasPrice,
+                donation,
+                payment,
+                requiredDeposit
             ],
             {from: User2, value: config.web3.utils.toWei('10')}
         ).should.be.rejectedWith('VM Exception while processing transaction: revert')

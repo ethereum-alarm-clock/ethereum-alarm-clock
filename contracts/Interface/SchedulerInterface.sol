@@ -39,7 +39,7 @@ contract SchedulerInterface {
         
     function schedule(address   _toAddress,
                       bytes     _callData,
-                      uint[7]   _uintArgs)
+                      uint[8]   _uintArgs)
         doReset
         public payable returns (address);
 

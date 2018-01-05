@@ -17,6 +17,7 @@ const { wait, waitUntilBlock } = require('@digix/tempo')(web3)
 contract('Tests execution gas requirements', async accounts => {
 
     const gasPrice = config.web3.utils.toWei('34', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('34', 'kwei')
 
     let requestLib
     let txRecorder
@@ -58,7 +59,8 @@ contract('Tests execution gas requirements', async accounts => {
                 windowStart,
                 2000000,
                 config.web3.utils.toWei('122', 'finney'),
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'here-I-am!!-the-call-data',
             {value: config.web3.utils.toWei('1', 'ether')}

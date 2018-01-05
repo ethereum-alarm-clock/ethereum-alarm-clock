@@ -17,6 +17,7 @@ contract('Cancelling', async function(accounts) {
     const Owner = accounts[0]
 
     const gasPrice = config.web3.utils.toWei('66', 'gwei')
+    const requiredDeposit = config.web3.utils.toWei('66', 'kwei')
 
     let txRequest 
 
@@ -49,7 +50,8 @@ contract('Cancelling', async function(accounts) {
                 windowStart,
                 43324, //callGas
                 12345, //callValue
-                gasPrice
+                gasPrice,
+                requiredDeposit
             ],
             'some-call-data-could-be-anything',
             {value: config.web3.utils.toWei('1')}

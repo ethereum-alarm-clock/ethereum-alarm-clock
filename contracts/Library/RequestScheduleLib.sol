@@ -199,7 +199,7 @@ library RequestScheduleLib {
                                         uint _windowSize)
         public pure returns (bool)
     {
-        return _reservedWindowSize <= _windowSize.add(1); //? - why add 1?
+        return _reservedWindowSize <= _windowSize;
     }
 
     /**

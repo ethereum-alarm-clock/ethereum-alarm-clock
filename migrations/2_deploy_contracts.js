@@ -159,5 +159,5 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 // ${"-".repeat(30)}
 // see deployed.info for addresses of all contracts
 //         `)
-//     })
+    })
 }

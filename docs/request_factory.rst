@@ -23,7 +23,7 @@ right solution for these use cases.
 Interface
 ---------
 
-.. literalinclude:: ../contracts/RequestFactoryInterface.sol
+.. literalinclude:: ../contracts/Interface/RequestFactoryInterface.sol
     :language: solidity
 
 
@@ -44,12 +44,11 @@ a new :class:`TransactionRequest` which fails due to validation errors.  The ``e
 
 
 * ``0 => InsufficientEndowment``
-* ``0 => ReservedWindowBiggerThanExecutionWindow``
-* ``0 => InvalidTemporalUnit``
-* ``0 => ExecutionWindowTooSoon``
-* ``0 => InvalidRequiredStackDepth``
-* ``0 => CallGasTooHigh``
-* ``0 => EmptyToAddress``
+* ``1 => ReservedWindowBiggerThanExecutionWindow``
+* ``2 => InvalidTemporalUnit``
+* ``3 => ExecutionWindowTooSoon``
+* ``4 => CallGasTooHigh``
+* ``5 => EmptyToAddress``
 
 
 Function Arguments
@@ -59,35 +58,35 @@ Because of the call stack limitations imposed by the EVM, all of the following
 functions on the :class:`RequestFactory` contract take their arguments in the
 form of the following form.  
 
-* ``address[3] addressArgs``
-* ``uint256[11] uintArgs``
-* ``bytes callData``
+* ``address[3] _addressArgs``
+* ``uint256[11] _uintArgs``
+* ``bytes _callData``
 
 The arrays map to to the following :class:`TransactionRequest` attributes.
 
 * Addresses (``address``)
-    * ``addressArgs[0] => meta.owner``
-    * ``addressArgs[1] => paymentData.donationBenefactor``
-    * ``addressArgs[2] => txnData.toAddress``
+    * ``_addressArgs[0] => meta.owner``
+    * ``_addressArgs[1] => paymentData.donationBenefactor``
+    * ``_addressArgs[2] => txnData.toAddress``
 
 * Unsigned Integers (``uint`` aka ``uint256``)
-    *  ``uintArgs[0]  => paymentData.donation``
-    *  ``uintArgs[1]  => paymentData.payment``
-    *  ``uintArgs[2]  => schedule.claimWindowSize``
-    *  ``uintArgs[3]  => schedule.freezePeriod``
-    *  ``uintArgs[4]  => schedule.reservedWindowSize``
-    *  ``uintArgs[5]  => schedule.temporalUnit``
-    *  ``uintArgs[6]  => schedule.windowStart``
-    *  ``uintArgs[7]  => schedule.windowSize``
-    *  ``uintArgs[8]  => txnData.callGas``
-    *  ``uintArgs[9]  => txnData.callValue``
-    *  ``uintArgs[10] => txnData.requiredStackDepth``
+    *  ``_uintArgs[0]  => paymentData.donation``
+    *  ``_uintArgs[1]  => paymentData.payment``
+    *  ``_uintArgs[2]  => schedule.claimWindowSize``
+    *  ``_uintArgs[3]  => schedule.freezePeriod``
+    *  ``_uintArgs[4]  => schedule.reservedWindowSize``
+    *  ``_uintArgs[5]  => schedule.temporalUnit``
+    *  ``_uintArgs[6]  => schedule.windowStart``
+    *  ``_uintArgs[7]  => schedule.windowSize``
+    *  ``_uintArgs[8]  => txnData.callGas``
+    *  ``_uintArgs[9]  => txnData.callValue``
+    *  ``_uintArgs[10] => txnData.gasPrice``
 
 
 Validation
 ----------
 
-.. method:: RequestFactory.validateRequestParams(address[3] addressArgs, uint[11] uintArgs, bytes callData, uint endowment) returns (bool[7] result)
+.. method:: RequestFactory.validateRequestParams(address[3] _addressArgs, uint[11] _uintArgs, bytes _callData, uint _endowment) public returns (bool[6] result)
 
 The ``validateRequestParams`` function can be used to validate the parameters
 to both ``createRequest`` and ``createValidatedRequest``.  The additional
@@ -114,11 +113,8 @@ The required minimum endowment can be computed as the sum of the following:
 * ``callValue`` to provide the ether that will be sent with the transaction.
 * ``2 * payment`` to pay for maximum possible payment
 * ``2 * donation`` to pay for maximum possible donation
-* ``2 * callGas * tx.gasprice`` to pay for ``callGas`` with up to a 2x increase
-  in the network gas price.
-* ``2 * 700 * requiredStackDepth * tx.gasprice`` to pay gas for the stack depth
-  checking with up to a 2x increase in network gas costs.
-* ``2 * 180000 * tx.gasprice`` to pay for the gas overhead involved in
+* ``callGas * txnData.gasPrice`` to pay for ``callGas``.
+* ``180000 * txnData.gasPrice`` to pay for the gas overhead involved in
   transaction execution.
 
 
@@ -153,15 +149,7 @@ freezePeriod``.
 * When using timestamp based scheduling, ``block.timestamp`` is used.
 
 
-Check #5: Invalid Stack Depth Check
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* ``result[4]``
-
-Checks that the ``requiredStackDepth`` is less than or equal to 1000.
-
-
-Check #6: Call Gas too high
+Check #5: Call Gas too high
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * ``result[5]``
@@ -170,7 +158,8 @@ Check that the specified ``callGas`` value is not greater than the current
 ``gasLimit - 140000`` where ``140000`` is the gas overhead of request
 execution.
 
-Check #7: Empty To Address
+
+Check #6: Empty To Address
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * ``result[6]``
@@ -183,7 +172,7 @@ Creation of Transaction Requests
 --------------------------------
 
 
-.. method:: RequestFactory.createRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData) returns (address)
+.. method:: RequestFactory.createRequest(address[3] _addressArgs, uint[11] _uintArgs, bytes _callData) public payable returns (address)
 
 This function deploys a new :class:`TransactionRequest` contract.  This
 function does not perform any validation and merely directly deploys the new
@@ -192,7 +181,7 @@ contract.
 Upon successful creation the ``RequestCreated`` event will be logged.
 
 
-.. method:: RequestFactory.createValidatedRequest(address[3] addressArgs, uint[11] uintArgs, bytes callData) returns (address)
+.. method:: RequestFactory.createValidatedRequest(address[3] _addressArgs, uint[11] _uintArgs, bytes _callData) public payable returns (address)
 
 This function first performs validation of the provided arguments and then
 deploys the new :class:`TransactionRequest` contract when validation succeeds.

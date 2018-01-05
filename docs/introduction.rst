@@ -4,47 +4,54 @@ Introduction
 .. contents:: :local:
 
 
-What problem does this solve
-----------------------------
+What problem does this solve?
+-----------------------------
 
-The simplest way to explain the utility of the Alarm service is to explain the
+The simplest way to explain the utility of the EAC is to explain the
 problem it solves.
 
-First, you need to understand the difference between private key based accounts
-and contract accounts.  There are two types of accounts on the Ethereum
-blockchain.
+We will begin with a refresher about the two types of accounts on Ethereum
+and the differences between them. There exists:
 
-1. Accounts that have a private key.
-2. Contracts *(which do not have a private key)*
+1. User accounts (controlled by the holder of the private key)
+2. Contracts *(which are not controlled by a private key)*
 
-Private key accounts are the accounts that humans operate, where as contract
-accounts are deployed pieces of code capable of executing some computer
-program.  Contract accounts cannot however trigger their own code execution.
+User accounts are the accounts that humans control and operate. The controller 
+of a user account is always the person who holds the private key. In contrast,
+contract accounts are not controlled by a private key but are instead deployed 
+code which execute in a determined way when they are called. 
 
-All code execution in the Ethreum Virtual Machine, or EVM must be triggered by
+All code execution in the Ethreum Virtual Machine (the EVM) must be triggered by
 a private key based account.  This is done by sending a transaction, which may
 do something simple like transfering ether, or it may do something more complex
 like calling a function on a contract account.
 
-The second part of the problem is that when you send a transaction it is
-executed as soon as it is included in a block.  The Ethereum protocol does not
-provide any way to create a transaction to be executed at a later time.
+Whenever a user account initiates a contract account, the execution of the contract 
+is immediate. Therefore all calls to contract accounts are included in the same block as 
+the initial call.
 
-This leads us to the problem that the Alarm service solves.  With the
-functionality provided by this service, transactions can be securely scheduled
-to be executed at a later time.
+The Ethereum protocol does not provide any way to create a transaction to be executed at 
+a later time. So, if a developer is creating an application that needs to fire off 
+transactions that must happen at a future date or if a user would like to perform an action
+at a specific time without being present, there is no inherent way to do this on Ethereum.
+
+The EAC service aims to solve these issues while also creating a decentralized 
+incentive based protocol that ensures pretty good guarantees that someone 
+will execute all scheduled transactions.
 
 
 How transactions are executed
 -----------------------------
 
-When a transaction is scheduled a new smart contract is created that holds all
-of the information needed to execute the transaction.  It may be useful to
-think of this as an order on an exchange.  When called during the specified
-execution window, this contract will send the transaction as specified and then
-pay the account that triggered the execution.
+When a user schedules a new transaction, they are deploying a new smart contract 
+that holds all of the information necessary for the execution of the transaction. 
+A good analogy to compare this smart contract to is an order on an exchange.  When 
+this contract "order" is called during the specified execution window, the contract 
+will send the transaction as set by the user. It will also pay the account that 
+triggered the execution and if a donation was specified in the data, a transaction 
+to the beneficiary.
 
-These contracts are referred to as :class:`TransactionRequest` contracts and
+These contracts are of the type called :class:`TransactionRequest` and
 are written to provide strong guarantees of correctness to both parties.
 
 The creator of the :class:`TransactionRequest` contract can know that their
@@ -53,8 +60,8 @@ transaction parameters will be sent exactly as specified.
 
 Similarly, the account that executes the :class:`TransactionRequest` contract
 can know that no matter what occurs during the execution of the transaction
-that they will receive full gas reimbursement as well as their payment for
-execution.
+(including if the transaction fails) that they will receive full gas reimbursement
+as well as their payment for execution.
 
 
 Execution guarantees
@@ -62,14 +69,14 @@ Execution guarantees
 
 You may have noted at this point that this service relies on external parties
 to initiate the execution of these transactions.  This means that it is
-possible that your transaction will not be executed at all.  
+possible that your transaction will not be executed at all.  Indeed, if no one 
+is running an execution client then your transaction will not be executed and will 
+expire. However, incentives have been baked into the system to encourage the 
+running of execution clients and the hope is that many parties will compete for 
+the rights to execute transactions.
 
 In an ideal situation, there is a sufficient volume of scheduled transactions
 that operating a server to execute these transactions is a profitable endeavor.
-The reality is that I operate between 3-5 execution servers dedicated filling
-this role until there is sufficient volume that I am confident I can turn those
-servers off or until it is no longer feasible for me to continue paying their
-costs.
 
 
 How scheduling transactions works

@@ -26,6 +26,15 @@ const parseAbortData = (executeTx) => {
     return reasons
 }
 
+const computeEndowment = (
+    payment,
+    donation,
+    callGas,
+    callValue,
+    gasPrice) => {
+        return payment + (donation * 2) + (callGas * gasPrice) + 180000 * gasPrice + callValue
+}
+
 const parseRequestData = async (transactionRequest) => {
     const data = await transactionRequest.requestData()
     return {
@@ -170,8 +179,13 @@ class RequestData {
         }
     }
 
+    calcEndowment () {
+        return this.paymentData.payment + this.paymentData.donation * 2 + this.txData.callGas * this.txData.gasPrice + 180000 * this.txData.gasPrice + this.txData.callValue
+    }
+
 }
 
+module.exports.computeEndowment = computeEndowment
 module.exports.RequestData = RequestData
 module.exports.parseRequestData = parseRequestData
 module.exports.parseAbortData = parseAbortData

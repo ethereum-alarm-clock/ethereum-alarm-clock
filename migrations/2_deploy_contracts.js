@@ -105,6 +105,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     })
     .then(() => {
         deployer.link(RequestScheduleLib, BaseScheduler)
+        deployer.link(PaymentLib, BaseScheduler)
         deployer.link(SchedulerLib, BaseScheduler)
         deployer.link(RequestLib, BaseScheduler)
         deployer.link(MathLib, BaseScheduler)
@@ -114,6 +115,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
         deployer.link(SchedulerLib, BlockScheduler)
         deployer.link(RequestScheduleLib, BlockScheduler)
+        deployer.link(PaymentLib, BlockScheduler)
         deployer.link(RequestLib, BlockScheduler)
         deployer.link(MathLib, BlockScheduler)
 
@@ -122,6 +124,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
         deployer.link(SchedulerLib, TimestampScheduler)
         deployer.link(RequestScheduleLib, TimestampScheduler)
+        deployer.link(PaymentLib, TimestampScheduler)
         deployer.link(RequestLib, TimestampScheduler)
         deployer.link(MathLib, TimestampScheduler)
 

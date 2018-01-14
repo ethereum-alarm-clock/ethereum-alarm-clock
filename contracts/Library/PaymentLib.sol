@@ -100,7 +100,7 @@ library PaymentLib {
     }
 
     ///---------------
-    /// HELPERS
+    /// Endowment
     ///---------------
 
     /**
@@ -116,10 +116,10 @@ library PaymentLib {
         uint _gasPrice,
         uint _gasOverhead
     ) 
-        internal pure returns (uint)
+        public pure returns (uint)
     {
         return _payment
-                .add(_donation).mul(2)
+                .add(_donation.mul(2))
                 .add(_computeHelper(_callGas, _callValue, _gasOverhead, _gasPrice));
     }
 

@@ -120,24 +120,11 @@ library PaymentLib {
     {
         return _payment
                 .add(_donation.mul(2))
-                .add(_computeHelper(_callGas, _callValue, _gasOverhead, _gasPrice));
+                .add(_callGas.mul(_gasPrice))
+                .add(_gasOverhead.mul(_gasPrice))
+                .add(_callValue);
     }
 
-    /// Was getting a stack depth error after replacing old MathLib with Zeppelin's SafeMath.
-    ///  Added this function to fix it.
-    ///  See for context: https://ethereum.stackexchange.com/questions/7325/stack-too-deep-try-removing-local-variables 
-    function _computeHelper(
-        uint _callGas,
-        uint _callValue,
-        uint _gasOverhead,
-        uint _gasPrice
-    )
-        internal pure returns (uint)
-    {
-        return _callGas.mul(_gasPrice)
-                        .add(_gasOverhead.mul(_gasPrice))
-                        .add(_callValue);
-    }
     /*
      * Validation: ensure that the request endowment is sufficient to cover.
      * - payment * maxMultiplier

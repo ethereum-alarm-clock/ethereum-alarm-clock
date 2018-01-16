@@ -6,6 +6,7 @@ const expect = require('chai').expect
     
 /// Contracts
 const BlockScheduler        = artifacts.require('./BlockScheduler.sol')
+const PaymentLib            = artifacts.require('./PaymentLib.sol')
 const RequestFactory        = artifacts.require('./RequestFactory.sol')
 const RequestTracker        = artifacts.require('./RequestTracker.sol')
 const TransactionRecorder   = artifacts.require('./TransactionRecorder.sol')
@@ -28,6 +29,7 @@ contract('Block scheduling', function(accounts) {
     const requiredDeposit = config.web3.utils.toWei('22', 'kwei')
 
     let blockScheduler
+    let paymentLib
     let requestFactory
     let requestTracker
     let transactionRecorder
@@ -40,7 +42,7 @@ contract('Block scheduling', function(accounts) {
     /// Tests ///
     /////////////
 
-    it('should instantiate contracts', async function() {
+    before(async () => {
         transactionRecorder = await TransactionRecorder.deployed()
         expect(transactionRecorder.address)
         .to.exist
@@ -56,6 +58,10 @@ contract('Block scheduling', function(accounts) {
         const factoryAddress = await blockScheduler.factoryAddress()
         expect(factoryAddress)
         .to.equal(requestFactory.address)
+
+        paymentLib = await PaymentLib.deployed()
+        expect(paymentLib.address)
+        .to.exist
     })
 
     it('blockScheduler should arbitrarily accept payments sent to it', async function() {
@@ -76,6 +82,17 @@ contract('Block scheduling', function(accounts) {
             Buffer.from('A1B2'.padEnd(32, 'FF'))
         )
 
+        // Endowment is the minimum amount of ether that must be sent for the transaction
+        // to be scheduled. It covers all possible payments.
+        const endowment = await paymentLib.computeEndowment(
+            0,
+            0,
+            1212121,    //callGas
+            123454321,  //callValue
+            gasPrice,
+            180000      //gas overhead
+        )
+
         /// Now let's send it an actual transaction
         const scheduleTx = await blockScheduler.schedule(
             transactionRecorder.address,
@@ -92,7 +109,7 @@ contract('Block scheduling', function(accounts) {
             ],
             {
                 from: accounts[0], 
-                value: config.web3.utils.toWei('500', 'finney')
+                value: endowment
             }
         )
 
@@ -119,6 +136,10 @@ contract('Block scheduling', function(accounts) {
         // Sanity check
         expect(requestData.calcEndowment())
         .to.equal(computeEndowment(payment, donation, 1212121, 123454321, gasPrice))
+
+        // Sanity check
+        expect(endowment.toNumber())
+        .to.equal(requestData.calcEndowment())
 
         expect(requestData.txData.toAddress)
         .to.equal(transactionRecorder.address)

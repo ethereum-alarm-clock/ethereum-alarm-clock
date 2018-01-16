@@ -105,6 +105,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     })
     .then(() => {
         deployer.link(RequestScheduleLib, BaseScheduler)
+        deployer.link(PaymentLib, BaseScheduler)
         deployer.link(SchedulerLib, BaseScheduler)
         deployer.link(RequestLib, BaseScheduler)
         deployer.link(MathLib, BaseScheduler)
@@ -114,6 +115,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
         deployer.link(SchedulerLib, BlockScheduler)
         deployer.link(RequestScheduleLib, BlockScheduler)
+        deployer.link(PaymentLib, BlockScheduler)
         deployer.link(RequestLib, BlockScheduler)
         deployer.link(MathLib, BlockScheduler)
 
@@ -122,6 +124,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
         deployer.link(SchedulerLib, TimestampScheduler)
         deployer.link(RequestScheduleLib, TimestampScheduler)
+        deployer.link(PaymentLib, TimestampScheduler)
         deployer.link(RequestLib, TimestampScheduler)
         deployer.link(MathLib, TimestampScheduler)
 
@@ -152,9 +155,9 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
             transactionRecorder: TransactionRecorder.address
         }
 //         Object.keys(contracts).forEach((key) => {
-//             fs.appendFileSync('kovan.info', `${key}, ${contracts[key]}\n`)
+//             fs.appendFileSync('rinkeby.info', `${key}, ${contracts[key]}\n`)
 //         })
-//         fs.appendFileSync('kovan.json', JSON.stringify(contracts))
+//         fs.appendFileSync('rinkeby.json', JSON.stringify(contracts))
 //         console.log(`CONTRACTS SUCCESSFULLY DEPLOYED
 // ${"-".repeat(30)}
 // see deployed.info for addresses of all contracts

@@ -155,9 +155,9 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
             transactionRecorder: TransactionRecorder.address
         }
 //         Object.keys(contracts).forEach((key) => {
-//             fs.appendFileSync('rinkeby.info', `${key}, ${contracts[key]}\n`)
+//             fs.appendFileSync('kovan.info', `${key}, ${contracts[key]}\n`)
 //         })
-//         fs.appendFileSync('rinkeby.json', JSON.stringify(contracts))
+//         fs.appendFileSync('kovan.json', JSON.stringify(contracts))
 //         console.log(`CONTRACTS SUCCESSFULLY DEPLOYED
 // ${"-".repeat(30)}
 // see deployed.info for addresses of all contracts

@@ -136,3 +136,6 @@ timestampScheduler, 0x5cbd0d763120f1e8ba293fcfc07b0278f8e384fc
 
 transactionRecorder, 0x4c5b46da3c64f8ef546644fea7cf82d10bd321d2
 ```
+
+## Thanks and support
+[<img src="https://s3.amazonaws.com/chronologic.network/ChronoLogic_logo.svg" width="128px">](https://github.com/chronologic)

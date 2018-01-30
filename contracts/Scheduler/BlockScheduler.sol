@@ -15,7 +15,7 @@ contract BlockScheduler is BaseScheduler {
      */
     function BlockScheduler(address _factoryAddress) public {
         // Default temporal unit is block number.
-        temporalUnit = RequestScheduleLib.TemporalUnit(1);
+        temporalUnit = RequestScheduleLib.TemporalUnit.Blocks;
 
         // Sets the factoryAddress variable found in SchedulerInterface contract.
         factoryAddress = _factoryAddress;

@@ -15,7 +15,7 @@ contract TimestampScheduler is BaseScheduler {
      */
     function TimestampScheduler(address _factoryAddress) public {
         // Default temporal unit is timestamp.
-        temporalUnit = RequestScheduleLib.TemporalUnit(2);
+        temporalUnit = RequestScheduleLib.TemporalUnit.Timestamp;
 
         // Sets the factoryAddress variable found in SchedulerInterface contract.
         factoryAddress = _factoryAddress;

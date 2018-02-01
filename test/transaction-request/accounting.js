@@ -4,26 +4,27 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+
 const toBN = config.web3.utils.toBN
 
-const MINUTE = 60 //seconds
+const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-contract("Test accounting", async function(accounts) {
+contract("Test accounting", async (accounts) => {
   let txRecorder
 
-  /// Constant variables we need in each test
+  // / Constant variables we need in each test
   const claimWindowSize = 5 * MINUTE
   const freezePeriod = 2 * MINUTE
   const reservedWindowSize = 1 * MINUTE
@@ -37,30 +38,30 @@ contract("Test accounting", async function(accounts) {
   const fee = 12345
   const bounty = 232323
 
-  beforeEach(async function() {
+  beforeEach(async () => {
     // Deploy a fresh transactionRecorder
     txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
   })
 
-  /////////////////////
-  /// Tests ///
-  /////////////////////
+  // ///////////////////
+  // / Tests ///
+  // ///////////////////
 
-  /// 1
-  it("tests transaction request payments", async function() {
+  // / 1
+  it("tests transaction request payments", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
     const windowStart = timestamp + DAY
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         feeRecipient, // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         fee, // fee
@@ -71,8 +72,8 @@ contract("Test accounting", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -87,9 +88,7 @@ contract("Test accounting", async function(accounts) {
 
     expect(requestData.paymentData.bounty).to.equal(bounty)
 
-    const beforeFeeBal = await config.web3.eth.getBalance(
-      requestData.paymentData.feeRecipient
-    )
+    const beforeFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
     const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     await waitUntilBlock(
@@ -101,13 +100,11 @@ contract("Test accounting", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
-    const afterFeeBal = await config.web3.eth.getBalance(
-      requestData.paymentData.feeRecipient
-    )
+    const afterFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
     const afterBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     const Executed = executeTx.logs.find(e => e.event === "Executed")
@@ -116,11 +113,9 @@ contract("Test accounting", async function(accounts) {
 
     expect(feeAmt).to.equal(fee)
 
-    expect(
-      toBN(afterFeeBal)
-        .sub(toBN(beforeFeeBal))
-        .toNumber()
-    ).to.equal(feeAmt)
+    expect(toBN(afterFeeBal)
+      .sub(toBN(beforeFeeBal))
+      .toNumber()).to.equal(feeAmt)
 
     const gasUsed = executeTx.receipt.gasUsed
     const gasCost = gasUsed * gasPrice
@@ -131,27 +126,25 @@ contract("Test accounting", async function(accounts) {
 
     expect(bountyAmt - expectedBounty).to.be.below(120000 * gasPrice)
 
-    expect(
-      toBN(afterBountyBal)
-        .sub(toBN(beforeBountyBal))
-        .toNumber()
-    ).to.equal(bountyAmt - gasCost - 1) // FIXME: Is this an off-by-one error?
+    expect(toBN(afterBountyBal)
+      .sub(toBN(beforeBountyBal))
+      .toNumber()).to.equal(bountyAmt - gasCost - 1) // FIXME: Is this an off-by-one error?
   })
 
-  /// 2
-  it("tests transaction request payments when claimed", async function() {
+  // / 2
+  it("tests transaction request payments when claimed", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
     const windowStart = timestamp + DAY
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         feeRecipient, // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         fee, // fee
@@ -162,8 +155,8 @@ contract("Test accounting", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
       ],
       "some-call-data-goes-here",
@@ -180,9 +173,7 @@ contract("Test accounting", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(claimAt).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(claimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       claimAt - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -196,7 +187,7 @@ contract("Test accounting", async function(accounts) {
     const claimTx = await txRequest.claim({
       value: claimDeposit,
       from: accounts[1],
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(claimTx.receipt).to.exist
 
@@ -205,11 +196,9 @@ contract("Test accounting", async function(accounts) {
 
     const afterClaimBal = await config.web3.eth.getBalance(accounts[1])
 
-    expect(
-      toBN(beforeBountyBal)
-        .sub(toBN(afterClaimBal))
-        .toString()
-    ).to.equal((parseInt(claimDeposit) + claimGasCost).toString())
+    expect(toBN(beforeBountyBal)
+      .sub(toBN(afterClaimBal))
+      .toString()).to.equal((parseInt(claimDeposit) + claimGasCost).toString())
 
     await requestData.refresh()
 
@@ -224,7 +213,7 @@ contract("Test accounting", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -242,11 +231,9 @@ contract("Test accounting", async function(accounts) {
     const expectedBounty =
       parseInt(claimDeposit) +
       executeGasCost +
-      Math.floor(
-        requestData.claimData.paymentModifier *
+      Math.floor(requestData.claimData.paymentModifier *
           requestData.paymentData.bounty /
-          100
-      )
+          100)
 
     expect(bountyAmt).to.be.at.least(expectedBounty)
 
@@ -261,23 +248,23 @@ contract("Test accounting", async function(accounts) {
     else console.log(diff, expectedDiff)
   })
 
-  /// 3
-  it("tests accounting when everything reverts", async function() {})
+  // / 3
+  it("tests accounting when everything reverts", async () => {})
 
-  /// 4
-  it("test claim deposit held by contract on claim", async function() {
+  // / 4
+  it("test claim deposit held by contract on claim", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
     const windowStart = timestamp + DAY
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         feeRecipient, // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         fee, // fee
@@ -288,8 +275,8 @@ contract("Test accounting", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
       ],
       "some-call-data-goes-here",
@@ -304,9 +291,7 @@ contract("Test accounting", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(claimAt).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(claimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       claimAt - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -315,9 +300,7 @@ contract("Test accounting", async function(accounts) {
 
     const depositAmt = config.web3.utils.toWei("1")
 
-    const beforeContractBal = await config.web3.eth.getBalance(
-      txRequest.address
-    )
+    const beforeContractBal = await config.web3.eth.getBalance(txRequest.address)
     const beforeAccountBal = await config.web3.eth.getBalance(accounts[1])
 
     const claimTx = await txRequest.claim({
@@ -329,27 +312,25 @@ contract("Test accounting", async function(accounts) {
     const afterContractBal = await config.web3.eth.getBalance(txRequest.address)
     const afterAccountBal = await config.web3.eth.getBalance(accounts[1])
 
-    expect(
-      toBN(afterContractBal)
-        .sub(toBN(beforeContractBal))
-        .toString()
-    ).to.equal(depositAmt.toString())
+    expect(toBN(afterContractBal)
+      .sub(toBN(beforeContractBal))
+      .toString()).to.equal(depositAmt.toString())
   })
 
-  /// 5
-  it("test claim deposit returned if claim rejected", async function() {
+  // / 5
+  it("test claim deposit returned if claim rejected", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
     const windowStart = timestamp + DAY
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         feeRecipient, // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         fee, // fee
@@ -360,8 +341,8 @@ contract("Test accounting", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
       ],
       "some-call-data-goes-here",
@@ -377,35 +358,29 @@ contract("Test accounting", async function(accounts) {
       requestData.schedule.claimWindowSize -
       200
 
-    expect(tryClaimAt).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(tryClaimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     const depositAmt = config.web3.utils.toWei("1")
 
-    const beforeContractBal = await config.web3.eth.getBalance(
-      txRequest.address
-    )
+    const beforeContractBal = await config.web3.eth.getBalance(txRequest.address)
     const beforeAccountBal = await config.web3.eth.getBalance(accounts[1])
 
     await txRequest
       .claim({
         value: depositAmt,
         from: accounts[1],
-        gasPrice: gasPrice,
+        gasPrice,
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     const afterContractBal = await config.web3.eth.getBalance(txRequest.address)
     const afterAccountBal = await config.web3.eth.getBalance(accounts[1])
 
     expect(afterContractBal).to.equal(beforeContractBal)
 
-    /// Since revert() only returns the gas that wasn't used,
-    /// the balance of the account after a failed transaction
-    /// will be below what it was before.
+    // / Since revert() only returns the gas that wasn't used,
+    // / the balance of the account after a failed transaction
+    // / will be below what it was before.
     expect(parseInt(afterAccountBal)).to.be.below(parseInt(beforeAccountBal))
 
     await requestData.refresh()
@@ -413,7 +388,7 @@ contract("Test accounting", async function(accounts) {
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDRESS)
   })
 
-  it("tests claim deposit returned even if returning it throws", async function() {
-    /// TODO
+  it("tests claim deposit returned even if returning it throws", async () => {
+    // / TODO
   })
 })

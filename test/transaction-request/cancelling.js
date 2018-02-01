@@ -4,10 +4,10 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// / Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const {
   RequestData,
@@ -16,9 +16,10 @@ const {
   wasAborted,
 } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+
 const toBN = config.web3.utils.toBN
 
-contract("Cancelling", async function(accounts) {
+contract("Cancelling", async (accounts) => {
   const Owner = accounts[0]
 
   const gasPrice = config.web3.utils.toWei("66", "gwei")
@@ -26,24 +27,24 @@ contract("Cancelling", async function(accounts) {
 
   let txRequest
 
-  /// TransactionRequest constants
-  const claimWindowSize = 25 //blocks
-  const freezePeriod = 5 //blocks
-  const reservedWindowSize = 10 //blocks
-  const executionWindow = 10 //blocks
+  // / TransactionRequest constants
+  const claimWindowSize = 25 // blocks
+  const freezePeriod = 5 // blocks
+  const reservedWindowSize = 10 // blocks
+  const executionWindow = 10 // blocks
   let windowStart
   let firstClaimBlock
 
-  beforeEach(async function() {
+  beforeEach(async () => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     windowStart = curBlockNum + 38 + 10 + 5
 
     txRequest = await TransactionRequest.new(
       [
-        Owner, //createdBy
-        Owner, //owner
+        Owner, // createdBy
+        Owner, // owner
         accounts[1], // fee recipient
-        accounts[3], //toAddress
+        accounts[3], // toAddress
       ],
       [
         0, // fee
@@ -51,11 +52,11 @@ contract("Cancelling", async function(accounts) {
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
-        1, //temporalUnit = 1, aka blocks
+        1, // temporalUnit = 1, aka blocks
         executionWindow,
         windowStart,
-        43324, //callGas
-        12345, //callValue
+        43324, // callGas
+        12345, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -66,12 +67,12 @@ contract("Cancelling", async function(accounts) {
     firstClaimBlock = windowStart - freezePeriod - claimWindowSize
   })
 
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
-  /// 1
-  it("tests CAN cancel before the claim window", async function() {
+  // / 1
+  it("tests CAN cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelAt =
@@ -93,8 +94,8 @@ contract("Cancelling", async function(accounts) {
     expect(requestDataRefresh.meta.isCancelled).to.be.true
   })
 
-  /// 2
-  it("tests non-owner CANNOT cancel before the claim window", async function() {
+  // / 2
+  it("tests non-owner CANNOT cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelAt =
@@ -113,15 +114,13 @@ contract("Cancelling", async function(accounts) {
 
     await txRequest
       .cancel({ from: accounts[4] })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    /// For completion sakes, let's test if the `Owner` can cancel.
+    // / For completion sakes, let's test if the `Owner` can cancel.
     const cancelTx = await txRequest.cancel({
       Owner,
     })
@@ -132,8 +131,8 @@ contract("Cancelling", async function(accounts) {
     expect(requestData.meta.isCancelled).to.be.true
   })
 
-  /// 3
-  it("tests CAN cancel during claim window when unclaimed", async function() {
+  // / 3
+  it("tests CAN cancel during claim window when unclaimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelAt =
@@ -152,8 +151,8 @@ contract("Cancelling", async function(accounts) {
     expect(requestData.meta.isCancelled).to.be.true
   })
 
-  /// 4
-  it("tests CANNOT be cancelled if claimed and before the freeze window", async function() {
+  // / 4
+  it("tests CANNOT be cancelled if claimed and before the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelAt =
@@ -164,9 +163,7 @@ contract("Cancelling", async function(accounts) {
 
     const claimTx = await txRequest.claim({
       from: accounts[1],
-      value: config.web3.utils.toWei(
-        (2 * requestData.paymentData.bounty).toString()
-      ),
+      value: config.web3.utils.toWei((2 * requestData.paymentData.bounty).toString()),
     })
 
     expect(claimTx.receipt).to.exist
@@ -179,17 +176,15 @@ contract("Cancelling", async function(accounts) {
 
     await txRequest
       .cancel()
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  /// 5
-  it("tests CANNOT cancel during the freeze window", async function() {
+  // / 5
+  it("tests CANNOT cancel during the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelAt =
@@ -205,17 +200,15 @@ contract("Cancelling", async function(accounts) {
 
     await txRequest
       .cancel()
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  /// 6
-  it("tests CANNOT cancel during the execution window", async function() {
+  // / 6
+  it("tests CANNOT cancel during the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     const cancelAt = requestData.schedule.windowStart
@@ -230,15 +223,13 @@ contract("Cancelling", async function(accounts) {
 
     await txRequest
       .cancel()
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.false
   })
 
-  /// 7
-  it("tests CANNOT cancel if was called", async function() {
+  // / 7
+  it("tests CANNOT cancel if was called", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const executeAt = requestData.schedule.windowStart
@@ -256,7 +247,7 @@ contract("Cancelling", async function(accounts) {
 
     const executeTx = await txRequest.execute({
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -266,35 +257,31 @@ contract("Cancelling", async function(accounts) {
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    /// Tries (and fails) to cancel after execution during execution window
+    // / Tries (and fails) to cancel after execution during execution window
     await waitUntilBlock(0, cancelFirst)
 
     await txRequest
       .cancel()
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    /// Tries (and fails) to cancel after execution and after execution window
+    // / Tries (and fails) to cancel after execution and after execution window
     await waitUntilBlock(0, cancelSecond)
 
     await txRequest
       .cancel()
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  /// 8
-  it("tests CANNOT cancel if already cancelled", async function() {
+  // / 8
+  it("tests CANNOT cancel if already cancelled", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const cancelFirst =
@@ -317,7 +304,7 @@ contract("Cancelling", async function(accounts) {
 
     expect(requestData.meta.isCancelled).to.be.true
 
-    /// Now try to cancel again 9 blocks in the future
+    // / Now try to cancel again 9 blocks in the future
 
     await waitUntilBlock(0, cancelSecond)
 
@@ -325,12 +312,10 @@ contract("Cancelling", async function(accounts) {
       .cancel({
         from: Owner,
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
   })
 
-  it("tests cancellable if call is missed", async function() {
+  it("tests cancellable if call is missed", async () => {
     const requestData = await parseRequestData(txRequest)
 
     const cancelAt =
@@ -350,7 +335,7 @@ contract("Cancelling", async function(accounts) {
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.true
   })
 
-  it("tests accounting for pre-execution cancellation", async function() {
+  it("tests accounting for pre-execution cancellation", async () => {
     const requestData = await parseRequestData(txRequest)
 
     const cancelAt =
@@ -365,9 +350,7 @@ contract("Cancelling", async function(accounts) {
     await waitUntilBlock(0, cancelAt)
 
     const balanceBeforeCancel = await config.web3.eth.getBalance(accounts[1])
-    const contractBalanceBefore = await config.web3.eth.getBalance(
-      txRequest.address
-    )
+    const contractBalanceBefore = await config.web3.eth.getBalance(txRequest.address)
 
     const cancelTx = await txRequest.cancel({
       from: Owner, // TODO: this throws if set to another account
@@ -375,13 +358,11 @@ contract("Cancelling", async function(accounts) {
     expect(cancelTx.receipt).to.exist
 
     const balanceAfterCancel = await config.web3.eth.getBalance(accounts[1])
-    const contractBalanceAfter = await config.web3.eth.getBalance(
-      txRequest.address
-    )
+    const contractBalanceAfter = await config.web3.eth.getBalance(txRequest.address)
 
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.true
 
-    /// TODO: Get cancel data
+    // / TODO: Get cancel data
 
     console.log(balanceBeforeCancel)
     console.log(balanceAfterCancel)

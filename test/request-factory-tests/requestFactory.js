@@ -2,33 +2,33 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestLib = artifacts.require("./RequestLib.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
 const { parseRequestData } = require("../dataHelpers.js")
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
-/// Note - these tests were checked very well and should never be wrong.
-/// If they start failing - look in the contracts.
-contract("Request factory", async function(accounts) {
-  it("should create a request with provided properties", async function() {
-    /// Get the instance of the deployed RequestLib
+// Note - these tests were checked very well and should never be wrong.
+// If they start failing - look in the contracts.
+contract("Request factory", async (accounts) => {
+  it("should create a request with provided properties", async () => {
+    // Get the instance of the deployed RequestLib
     const requestLib = await RequestLib.deployed()
     expect(requestLib.address).to.exist
 
-    /// Get the current block
+    // Get the current block
     const curBlock = await config.web3.eth.getBlockNumber()
 
-    /// Set up the data for our transaction request
+    // Set up the data for our transaction request
     const claimWindowSize = 255
     const fee = 12345
     const bounty = 54321
@@ -42,7 +42,7 @@ contract("Request factory", async function(accounts) {
     const requiredDeposit = config.web3.utils.toWei("45", "kwei")
     const testCallData = "this-is-call-data"
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -58,26 +58,26 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment calculate actual endowment
+      config.web3.utils.toWei("10") // endowment calculate actual endowment
     )
 
     isValid.forEach(bool => expect(bool).to.be.true)
 
-    /// Now let's set up a factory and launch the request.
+    // Now let's set up a factory and launch the request.
 
-    /// We need a request tracker for the factory
+    // We need a request tracker for the factory
     const requestTracker = await RequestTracker.deployed()
     expect(requestTracker.address).to.exist
 
-    /// Pass the request tracker to the factory
+    // Pass the request tracker to the factory
     const requestFactory = await RequestFactory.new(requestTracker.address)
     expect(requestFactory.address).to.exist
 
-    /// Create a request with the same args we validated
+    // Create a request with the same args we validated
     const createTx = await requestFactory.createRequest(
       [
         accounts[0],
-        accounts[1], //fee recipient
+        accounts[1], // fee recipient
         accounts[2], // to
       ],
       [
@@ -96,15 +96,11 @@ contract("Request factory", async function(accounts) {
       testCallData
     )
 
-    const logRequestCreated = createTx.logs.find(
-      e => e.event === "RequestCreated"
-    )
+    const logRequestCreated = createTx.logs.find(e => e.event === "RequestCreated")
     expect(logRequestCreated.args.request).to.exist
 
-    /// Now let's create a transactionRequest instance
-    const txRequest = await TransactionRequest.at(
-      logRequestCreated.args.request
-    )
+    // Now let's create a transactionRequest instance
+    const txRequest = await TransactionRequest.at(logRequestCreated.args.request)
     const requestData = await parseRequestData(txRequest)
 
     expect(requestData.meta.owner).to.equal(accounts[0])
@@ -147,22 +143,20 @@ contract("Request factory", async function(accounts) {
 
     expect(requestData.txData.toAddress).to.equal(accounts[2])
 
-    expect(await txRequest.callData()).to.equal(
-      ethUtil.bufferToHex(Buffer.from(testCallData))
-    )
+    expect(await txRequest.callData()).to.equal(ethUtil.bufferToHex(Buffer.from(testCallData)))
 
     expect(requestData.txData.callValue).to.equal(callValue)
 
     expect(requestData.txData.callGas).to.equal(callGas)
 
-    /// Lastly, we just make sure that the transaction request
-    ///  address is a known request for the factory.
-    expect(await requestFactory.isKnownRequest(NULL_ADDR)).to.be.false //sanity check
+    // Lastly, we just make sure that the transaction request
+    // address is a known request for the factory.
+    expect(await requestFactory.isKnownRequest(NULL_ADDR)).to.be.false // sanity check
 
     expect(await requestFactory.isKnownRequest(txRequest.address)).to.be.true
   })
 
-  it("should test request factory insufficient endowment validation error", async function() {
+  it("should test request factory insufficient endowment validation error", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -179,7 +173,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 1000000
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -195,7 +189,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      1 //endowment ATTENTION THIS IS TOO SMALL, HENCE WHY IT FAILS
+      1 // endowment ATTENTION THIS IS TOO SMALL, HENCE WHY IT FAILS
     )
 
     expect(isValid[0]).to.be.false
@@ -203,7 +197,7 @@ contract("Request factory", async function(accounts) {
     isValid.slice(1).forEach(bool => expect(bool).to.be.true)
   })
 
-  it("should test request factory throws validation error on too large of a reserve window", async function() {
+  it("should test request factory throws validation error on too large of a reserve window", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -220,7 +214,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 1000000
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -236,7 +230,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment
+      config.web3.utils.toWei("10") // endowment
     )
 
     expect(isValid[1]).to.be.false
@@ -246,7 +240,7 @@ contract("Request factory", async function(accounts) {
     isValid.slice(2).forEach(bool => expect(bool).to.be.true)
   })
 
-  it("should test request factory throws invalid temporal unit validation error", async function() {
+  it("should test request factory throws invalid temporal unit validation error", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -263,7 +257,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 1000000
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -279,7 +273,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment
+      config.web3.utils.toWei("10") // endowment
     )
 
     expect(isValid[2]).to.be.false
@@ -290,7 +284,7 @@ contract("Request factory", async function(accounts) {
     isValid.slice(4).forEach(bool => expect(bool).to.be.true)
   })
 
-  it("should test request factory too soon execution window validation error", async function() {
+  it("should test request factory too soon execution window validation error", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -307,7 +301,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 1000000
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -323,7 +317,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment
+      config.web3.utils.toWei("10") // endowment
     )
 
     expect(isValid[3]).to.be.false
@@ -332,7 +326,7 @@ contract("Request factory", async function(accounts) {
     isValid.slice(4).forEach(bool => expect(bool).to.be.true)
   })
 
-  it("should test request factory has too high call gas validation error", async function() {
+  it("should test request factory has too high call gas validation error", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -349,7 +343,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 8.8e8 // cannot be over gas limit
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
@@ -365,7 +359,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment
+      config.web3.utils.toWei("10") // endowment
     )
 
     expect(isValid[4]).to.be.false
@@ -374,7 +368,7 @@ contract("Request factory", async function(accounts) {
     isValid.slice(5).forEach(bool => expect(bool).to.be.true)
   })
 
-  it("should test null to address validation error", async function() {
+  it("should test null to address validation error", async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
 
     const requestLib = await RequestLib.deployed()
@@ -391,7 +385,7 @@ contract("Request factory", async function(accounts) {
     const callValue = 123456789
     const callGas = 1000000
 
-    /// Validate the data with the RequestLib
+    // Validate the data with the RequestLib
     const isValid = await requestLib.validate(
       [
         accounts[0],
@@ -412,7 +406,7 @@ contract("Request factory", async function(accounts) {
         callValue,
       ],
       "this-is-call-data",
-      config.web3.utils.toWei("10") //endowment
+      config.web3.utils.toWei("10") // endowment
     )
 
     expect(isValid[5]).to.be.false

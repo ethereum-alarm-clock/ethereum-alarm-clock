@@ -2,19 +2,17 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
-const toBN = config.web3.utils.toBN
-
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 const { parseRequestData } = require("../dataHelpers.js")
 
-contract("Exceptions", async function(accounts) {
+contract("Exceptions", async (accounts) => {
   const Owner = accounts[0]
 
   let transactionRequest
@@ -22,25 +20,25 @@ contract("Exceptions", async function(accounts) {
   const gasPrice = config.web3.utils.toWei("66", "gwei")
   const requiredDeposit = config.web3.utils.toWei("30", "kwei")
 
-  /// TransactionRequest constants
-  const claimWindowSize = 25 //blocks
-  const freezePeriod = 5 //blocks
-  const reservedWindowSize = 10 //blocks
-  const executionWindow = 10 //blocks
+  // TransactionRequest constants
+  const claimWindowSize = 25 // blocks
+  const freezePeriod = 5 // blocks
+  const reservedWindowSize = 10 // blocks
+  const executionWindow = 10 // blocks
 
   const fee = 12345
   const bounty = 0
 
-  beforeEach(async function() {
+  beforeEach(async () => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
-    windowStart = curBlockNum + 38
+    const windowStart = curBlockNum + 38
 
     transactionRequest = await TransactionRequest.new(
       [
-        Owner, //createdBy
-        Owner, //owner
+        Owner, // createdBy
+        Owner, // owner
         accounts[1], // fee recipient
-        accounts[3], //toAddress
+        accounts[3], // toAddress
       ],
       [
         fee,
@@ -48,11 +46,11 @@ contract("Exceptions", async function(accounts) {
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
-        1, //temporalUnit = 1, aka blocks
+        1, // temporalUnit = 1, aka blocks
         executionWindow,
         windowStart,
-        43324, //callGas
-        0, //callValue
+        43324, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -61,22 +59,22 @@ contract("Exceptions", async function(accounts) {
     )
   })
 
-  /// TODO: Make this fail
-  it("tests transactionRequest for transactions that throw exception", async function() {
+  // TODO: Make this fail
+  it("tests transactionRequest for transactions that throw exception", async () => {
     const requestData = await parseRequestData(transactionRequest)
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
-    console.log(requestData.txData.gasPrice)
-    console.log(gasPrice)
+    // console.log(requestData.txData.gasPrice)
+    // console.log(gasPrice)
     const executeTx = await transactionRequest.execute({
       from: accounts[6],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
 
     expect(executeTx.receipt).to.exist
 
-    const gasUsed = executeTx.receipt.gasUsed
+    const { gasUsed } = executeTx.receipt
     const newRequestData = await parseRequestData(transactionRequest)
 
     expect(newRequestData.meta.wasCalled).to.be.true
@@ -92,11 +90,11 @@ contract("Exceptions", async function(accounts) {
     expect(measuredGasConsumption - gasUsed).to.be.below(120000)
   })
 
-  /// TODO: make this fail
-  it("tests transactionRequest when everything throws", async function() {
+  // TODO: make this fail
+  it("tests transactionRequest when everything throws", async () => {
     const requestData = await parseRequestData(transactionRequest)
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
-    /// TODO
+    // TODO
   })
 })

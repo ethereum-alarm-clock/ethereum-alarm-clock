@@ -2,7 +2,7 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
 const PaymentLib = artifacts.require("./PaymentLib.sol")
 
@@ -20,8 +20,8 @@ const config = require("../../config")
  *  - callValue
  */
 
-contract("PaymentLib", account => {
-  const web3 = config.web3
+contract("PaymentLib", () => {
+  const { web3 } = config
   let paymentLib
 
   before(async () => {

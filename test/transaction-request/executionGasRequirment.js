@@ -4,17 +4,17 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const RequestLib = artifacts.require("./RequestLib.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// / Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("Tests execution gas requirements", async accounts => {
+contract("Tests execution gas requirements", async (accounts) => {
   const gasPrice = config.web3.utils.toWei("34", "gwei")
   const requiredDeposit = config.web3.utils.toWei("34", "kwei")
 
@@ -22,11 +22,11 @@ contract("Tests execution gas requirements", async accounts => {
   let txRecorder
   let txRequest
 
-  /// TransactionRequest constants
-  const claimWindowSize = 25 //blocks
-  const freezePeriod = 5 //blocks
-  const reservedWindowSize = 10 //blocks
-  const executionWindow = 10 //blocks
+  // / TransactionRequest constants
+  const claimWindowSize = 25 // blocks
+  const freezePeriod = 5 // blocks
+  const reservedWindowSize = 10 // blocks
+  const executionWindow = 10 // blocks
 
   const fee = 232323
   const bounty = 343434
@@ -42,10 +42,10 @@ contract("Tests execution gas requirements", async accounts => {
 
     txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         accounts[1], // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         fee,
@@ -83,15 +83,13 @@ contract("Tests execution gas requirements", async accounts => {
 
     const executeTx = await txRequest.execute({
       gas: tooLowCallGas,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "InsufficientGas")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "InsufficientGas")).to.exist
 
     expect(await txRecorder.wasCalled()).to.be.false
   })
@@ -112,7 +110,7 @@ contract("Tests execution gas requirements", async accounts => {
 
     const executeTx = await txRequest.execute({
       gas: minCallGas,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 

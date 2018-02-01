@@ -15,7 +15,7 @@ const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
-contract("Block claiming", async accounts => {
+contract("Block claiming", async (accounts) => {
   const Owner = accounts[0]
   const Benefactor = accounts[1]
 
@@ -60,9 +60,9 @@ contract("Block claiming", async accounts => {
     )
   })
 
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
   // 1
   it("should not claim before first claim block", async () => {
@@ -81,17 +81,15 @@ contract("Block claiming", async accounts => {
       .claim({
         value: 2 * requestData.paymentData.bounty,
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
   })
 
-  /// 2
-  it("should allow claiming at the first claim block", async function() {
+  // 2
+  it("should allow claiming at the first claim block", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimBlock =
@@ -114,8 +112,8 @@ contract("Block claiming", async accounts => {
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  /// 3
-  it("should allow claiming at the last claim block", async function() {
+  // 3
+  it("should allow claiming at the last claim block", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const lastClaimBlock =
@@ -123,7 +121,7 @@ contract("Block claiming", async accounts => {
 
     expect(lastClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
 
-    /// Because this function consumes a block we must give ourselves the buffer of two blocks.
+    // Because this function consumes a block we must give ourselves the buffer of two blocks.
     await waitUntilBlock(0, lastClaimBlock - 2)
 
     const claimTx = await txRequest.claim({
@@ -137,8 +135,8 @@ contract("Block claiming", async accounts => {
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  /// 4
-  it("cannot claim after the last block", async function() {
+  // 4
+  it("cannot claim after the last block", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const lastClaimBlock =
@@ -153,16 +151,14 @@ contract("Block claiming", async accounts => {
         from: accounts[0],
         value: 2 * requestData.paymentData.bounty,
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
   })
 
-  it("should execute a claimed block request", async function() {
+  it("should execute a claimed block request", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimBlock =
@@ -189,7 +185,7 @@ contract("Block claiming", async accounts => {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -198,7 +194,7 @@ contract("Block claiming", async accounts => {
     expect(requestData.meta.wasCalled).to.be.true
   })
 
-  it("should execute a claimed call after block reserve window", async function() {
+  it("should execute a claimed call after block reserve window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimBlock =
@@ -227,7 +223,7 @@ contract("Block claiming", async accounts => {
 
     const executeTx = await txRequest.execute({
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -237,7 +233,7 @@ contract("Block claiming", async accounts => {
     // .to.be.true
   })
 
-  /// 7
+  // 7
   it("should determine bounty amount with modifier", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -262,12 +258,10 @@ contract("Block claiming", async accounts => {
 
     await requestData.refresh()
 
-    expect(requestData.claimData.paymentModifier - 2).to.equal(
-      expectedPaymentModifier
-    )
+    expect(requestData.claimData.paymentModifier - 2).to.equal(expectedPaymentModifier)
   })
 
-  /// 8
+  // / 8
   it("CANNOT claim if already claimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -289,25 +283,23 @@ contract("Block claiming", async accounts => {
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
 
-    /// Now try to claim from a different account
+    // Now try to claim from a different account
 
     await txRequest
       .claim({
         from: accounts[6],
         value: config.web3.utils.toWei("1"),
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-    /// Just check this again to be sure
+    // Just check this again to be sure
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  /// 9
+  // 9
   it("CANNOT claim with insufficient claim deposit", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -323,12 +315,13 @@ contract("Block claiming", async accounts => {
     const claimTx = await txRequest
       .claim({
         from: accounts[0],
-        // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in order to fail this test
+        // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in
+        // order to fail this test
         value: config.web3.utils.toWei("15", "kwei"),
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
+
+    expect(claimTx.receipt).to.exist
 
     await requestData.refresh()
 

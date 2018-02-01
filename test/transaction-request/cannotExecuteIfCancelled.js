@@ -4,27 +4,27 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// / Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("tests execution rejected if cancelled", async function(accounts) {
-  it("will reject the execution if it was cancelled", async function() {
+contract("tests execution rejected if cancelled", async (accounts) => {
+  it("will reject the execution if it was cancelled", async () => {
     const Owner = accounts[0]
 
     const gasPrice = config.web3.utils.toWei("66", "gwei")
     const requiredDeposit = config.web3.utils.toWei("66", "kwei")
 
-    /// TransactionRequest constants
-    const claimWindowSize = 25 //blocks
-    const freezePeriod = 5 //blocks
-    const reservedWindowSize = 10 //blocks
-    const executionWindow = 10 //blocks
+    // / TransactionRequest constants
+    const claimWindowSize = 25 // blocks
+    const freezePeriod = 5 // blocks
+    const reservedWindowSize = 10 // blocks
+    const executionWindow = 10 // blocks
 
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 38
@@ -33,10 +33,10 @@ contract("tests execution rejected if cancelled", async function(accounts) {
 
     const txRequest = await TransactionRequest.new(
       [
-        Owner, //createdBy
-        Owner, //owner
+        Owner, // createdBy
+        Owner, // owner
         accounts[1], // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         0, // fee
@@ -44,11 +44,11 @@ contract("tests execution rejected if cancelled", async function(accounts) {
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
-        1, //temporalUnit = 1, aka blocks
+        1, // temporalUnit = 1, aka blocks
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -74,7 +74,7 @@ contract("tests execution rejected if cancelled", async function(accounts) {
 
     const executeTx = await txRequest.execute({
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
 
     await requestData.refresh()
@@ -85,8 +85,6 @@ contract("tests execution rejected if cancelled", async function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "WasCancelled")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "WasCancelled")).to.exist
   })
 })

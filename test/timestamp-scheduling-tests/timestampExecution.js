@@ -19,43 +19,43 @@ const {
 } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 
-const MINUTE = 60 //seconds
+const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-contract("Timestamp execution", async function(accounts) {
+contract("Timestamp execution", async (accounts) => {
   let txRecorder
   let txRequest
 
   const gasPrice = config.web3.utils.toWei("37", "gwei")
   const requiredDeposit = config.web3.utils.toWei("60", "kwei")
 
-  /// Constant variables we need in each test
+  // / Constant variables we need in each test
   const claimWindowSize = 5 * MINUTE
   const freezePeriod = 2 * MINUTE
   const reservedWindowSize = 1 * MINUTE
   const executionWindow = 2 * MINUTE
 
-  beforeEach(async function() {
+  beforeEach(async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
     const windowStart = timestamp + DAY
 
-    /// Deploy a fresh transactionRecorder
+    // / Deploy a fresh transactionRecorder
     txRecorder = await TransactionRecorder.new()
     expect(
       txRecorder.address,
       "transactionRecorder should be fresh for each test"
     ).to.exist
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         accounts[1], // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         12345, // fee
@@ -66,8 +66,8 @@ contract("Timestamp execution", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -93,21 +93,19 @@ contract("Timestamp execution", async function(accounts) {
     })
   })
 
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
-  /// 1
-  it("should reject execution if its before the execution window", async function() {
+  // / 1
+  it("should reject execution if its before the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    expect((await config.web3.eth.getBlock("latest")).timestamp).to.be.below(
-      requestData.schedule.windowStart
-    )
+    expect((await config.web3.eth.getBlock("latest")).timestamp).to.be.below(requestData.schedule.windowStart)
 
     const executeTx = await txRequest.execute({
       from: accounts[1],
@@ -122,13 +120,11 @@ contract("Timestamp execution", async function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "BeforeCallWindow")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "BeforeCallWindow")).to.exist
   })
 
-  /// 2
-  it("should reject execution if its after the execution window", async function() {
+  // / 2
+  it("should reject execution if its after the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -155,13 +151,11 @@ contract("Timestamp execution", async function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "AfterCallWindow")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "AfterCallWindow")).to.exist
   })
 
-  /// 3
-  it("should allow execution at the start of the execution window", async function() {
+  // / 3
+  it("should allow execution at the start of the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -180,7 +174,7 @@ contract("Timestamp execution", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -195,8 +189,8 @@ contract("Timestamp execution", async function(accounts) {
     expect(requestDataRefresh.meta.wasCalled).to.be.true
   })
 
-  /// 4
-  it("should allow execution at the end of the execution window", async function() {
+  // / 4
+  it("should allow execution at the end of the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -214,7 +208,7 @@ contract("Timestamp execution", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[5],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 

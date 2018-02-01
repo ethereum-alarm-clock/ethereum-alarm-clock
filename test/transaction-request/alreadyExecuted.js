@@ -4,25 +4,25 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// / Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("Test already executed", async function(accounts) {
-  it("rejects execution if already executed", async function() {
-    /// Deploy a fresh transactionRecorder
+contract("Test already executed", async (accounts) => {
+  it("rejects execution if already executed", async () => {
+    // / Deploy a fresh transactionRecorder
     const txRecorder = await TransactionRecorder.new()
     expect(
       txRecorder.address,
       "transactionRecorder should be fresh for each test"
     ).to.exist
 
-    const MINUTE = 60 //seconds
+    const MINUTE = 60 // seconds
     const HOUR = 60 * MINUTE
     const DAY = 24 * HOUR
 
@@ -39,13 +39,13 @@ contract("Test already executed", async function(accounts) {
 
     const windowStart = timestamp + DAY
 
-    /// Make a transactionRequest
+    // / Make a transactionRequest
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         accounts[1], // fee recipient
-        txRecorder.address, //toAddress
+        txRecorder.address, // toAddress
       ],
       [
         0, // fee
@@ -56,8 +56,8 @@ contract("Test already executed", async function(accounts) {
         2, // temporalUnit
         executionWindow,
         windowStart,
-        2000000, //callGas
-        0, //callValue
+        2000000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -71,14 +71,14 @@ contract("Test already executed", async function(accounts) {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    /// Should claim a transaction before each test
+    // / Should claim a transaction before each test
     const secsToWait = requestData.schedule.windowStart - timestamp
     await waitUntilBlock(secsToWait, 0)
 
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
@@ -91,17 +91,15 @@ contract("Test already executed", async function(accounts) {
 
     expect(requestData.meta.wasCalled).to.be.true
 
-    /// Now try to duplicate the call
+    // / Now try to duplicate the call
     const executeTx2 = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
 
     expect(wasAborted(executeTx2)).to.be.true
 
-    expect(
-      parseAbortData(executeTx2).find(reason => reason === "AlreadyCalled")
-    ).to.exist
+    expect(parseAbortData(executeTx2).find(reason => reason === "AlreadyCalled")).to.exist
   })
 })

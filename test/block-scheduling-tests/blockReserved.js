@@ -2,20 +2,20 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("Block reserved window", function(accounts) {
-  /// 1
-  it("should reject execution if claimed by another", async function() {
+contract("Block reserved window", (accounts) => {
+  // 1
+  it("should reject execution if claimed by another", async () => {
     const txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
 
@@ -28,22 +28,22 @@ contract("Block reserved window", function(accounts) {
 
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //created by
-        accounts[0], //owner
+        accounts[0], // created by
+        accounts[0], // owner
         accounts[1], // fee recipient
         txRecorder.address, // to
       ],
       [
         0, // fee
-        0, //bounty
-        25, //claim window size
-        5, //freeze period
-        10, //reserved window size
+        0, // bounty
+        25, // claim window size
+        5, // freeze period
+        10, // reserved window size
         1, // temporal unit... 1= block, 2=timestamp
         executionWindow,
         windowStart,
-        120000, //callGas
-        0, //callValue
+        120000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -82,8 +82,6 @@ contract("Block reserved window", function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "ReservedForClaimer")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "ReservedForClaimer")).to.exist
   })
 })

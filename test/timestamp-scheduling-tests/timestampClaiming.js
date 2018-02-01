@@ -2,25 +2,25 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3
+// Brings in config.web3
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
-contract("Timestamp claiming", async function(accounts) {
-  const MINUTE = 60 //seconds
+contract("Timestamp claiming", async (accounts) => {
+  const MINUTE = 60 // seconds
   const HOUR = 60 * MINUTE
   const DAY = 24 * HOUR
 
-  /// Variables we set before each test
+  // Variables we set before each test
   let txRecorder
   let txRequest
 
@@ -28,14 +28,14 @@ contract("Timestamp claiming", async function(accounts) {
 
   const gasPrice = config.web3.utils.toWei("45", "gwei")
 
-  /// Constant variables we need in each test
+  // Constant variables we need in each test
   const claimWindowSize = 5 * MINUTE
   const freezePeriod = 2 * MINUTE
   const reservedWindowSize = 1 * MINUTE
   const executionWindow = 2 * MINUTE
 
-  /// The set up before each test
-  beforeEach(async function() {
+  // The set up before each test
+  beforeEach(async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     timestamp = curBlock.timestamp
 
@@ -55,15 +55,15 @@ contract("Timestamp claiming", async function(accounts) {
       ],
       [
         0, // fee
-        config.web3.utils.toWei("333", "finney"), //payment
+        config.web3.utils.toWei("333", "finney"), // payment
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
         2, // temporal unit
         executionWindow,
         windowStart,
-        1200000, //callGas
-        0, //callValue
+        1200000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -72,12 +72,12 @@ contract("Timestamp claiming", async function(accounts) {
     )
   })
 
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
-  /// 1
-  it("cannot claim before first claim stamp", async function() {
+  // 1
+  it("cannot claim before first claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimStamp =
@@ -85,9 +85,7 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp -
@@ -100,16 +98,14 @@ contract("Timestamp claiming", async function(accounts) {
       .claim({
         value: config.web3.utils.toWei("2"),
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
   })
 
-  it("can claim at the first claim stamp", async function() {
+  it("can claim at the first claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimStamp =
@@ -117,9 +113,7 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -136,15 +130,13 @@ contract("Timestamp claiming", async function(accounts) {
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  it("can claim at the last claim stamp", async function() {
+  it("can claim at the last claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const lastClaimStamp =
       requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
-    expect(lastClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(lastClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       lastClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp - 3,
@@ -161,16 +153,14 @@ contract("Timestamp claiming", async function(accounts) {
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  /// 4
-  it("can not claim after the last claim stamp", async function() {
+  // 4
+  it("can not claim after the last claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const lastClaimStamp =
       requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
-    expect(lastClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(lastClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       lastClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp + 1,
@@ -181,16 +171,14 @@ contract("Timestamp claiming", async function(accounts) {
       .claim({
         value: config.web3.utils.toWei("2"),
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
   })
 
-  it("should execute a claimed timestamp request", async function() {
+  it("should execute a claimed timestamp request", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimStamp =
@@ -198,9 +186,7 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -226,15 +212,17 @@ contract("Timestamp claiming", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
+
+    expect(executeTx.receipt).to.exist
 
     await requestData.refresh()
 
     expect(requestData.meta.wasCalled).to.be.true
   })
 
-  it("should execute a claimed call after reserve window", async function() {
+  it("should execute a claimed call after reserve window", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const firstClaimStamp =
@@ -242,9 +230,7 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -271,7 +257,7 @@ contract("Timestamp claiming", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
 
     await requestData.refresh()
@@ -279,7 +265,7 @@ contract("Timestamp claiming", async function(accounts) {
     expect(requestData.meta.wasCalled).to.be.true
   })
 
-  it("tests claim timestamp to determine the payment modifier", async function() {
+  it("tests claim timestamp to determine the payment modifier", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const claimAt =
@@ -292,9 +278,7 @@ contract("Timestamp claiming", async function(accounts) {
 
     expect(requestData.claimData.paymentModifier).to.equal(0)
 
-    expect(claimAt).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(claimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       claimAt - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -308,13 +292,13 @@ contract("Timestamp claiming", async function(accounts) {
 
     await requestData.refresh()
 
-    console.log(requestData.claimData.paymentModifier, expectedPaymentModifier)
-    /// TODO - sometimes this fails?
+    // console.log(requestData.claimData.paymentModifier, expectedPaymentModifier)
+    // TODO - sometimes this fails?
     // expect(requestData.claimData.paymentModifier)
     // .to.equal(expectedPaymentModifier)
   })
 
-  /// 8
+  // 8
   it("CANNOT claim if already claimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -323,9 +307,7 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
@@ -342,25 +324,23 @@ contract("Timestamp claiming", async function(accounts) {
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
 
-    /// Now try to claim from a different account
+    // Now try to claim from a different account
 
     await txRequest
       .claim({
         from: accounts[3],
         value: config.web3.utils.toWei("1"),
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-    /// Check this again to be sure
+    // Check this again to be sure
 
     await requestData.refresh()
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[0])
   })
 
-  /// 9
+  // 9
   it("CANNOT claim if supplied with insufficient claim deposit", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -369,26 +349,22 @@ contract("Timestamp claiming", async function(accounts) {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
-    expect(firstClaimStamp).to.be.above(
-      (await config.web3.eth.getBlock("latest")).timestamp
-    )
+    expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
       firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
       1
     )
 
-    const requiredDeposit = requestData.claimData.requiredDeposit
+    const { requiredDeposit } = requestData.claimData
     const trySendDeposit = requiredDeposit - 2500
 
-    const claimTx = await txRequest
+    await txRequest
       .claim({
         from: accounts[0],
         value: trySendDeposit,
       })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     await requestData.refresh()
 

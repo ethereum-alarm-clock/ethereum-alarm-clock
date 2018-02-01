@@ -4,22 +4,22 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 
-const MINUTE = 60 //seconds
+const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-contract("Timestamp reserved window", async function(accounts) {
-  /// 1
-  it("should reject execution if claimed by another", async function() {
+contract("Timestamp reserved window", async (accounts) => {
+  // / 1
+  it("should reject execution if claimed by another", async () => {
     const txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
 
@@ -51,8 +51,8 @@ contract("Timestamp reserved window", async function(accounts) {
         2, // temporal unit
         executionWindow,
         windowStart,
-        1200000, //callGas
-        0, //callValue
+        1200000, // callGas
+        0, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -73,7 +73,7 @@ contract("Timestamp reserved window", async function(accounts) {
     })
     expect(claimTx.receipt).to.exist
 
-    /// Search for the claimed function and expect it to exist.
+    // / Search for the claimed function and expect it to exist.
     const Claimed = claimTx.logs.find(e => e.event === "Claimed")
     expect(Claimed).to.exist
 
@@ -90,7 +90,7 @@ contract("Timestamp reserved window", async function(accounts) {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    /// Now let's try to execute it from a third party account
+    // / Now let's try to execute it from a third party account
     const failedExecuteTx = await txRequest.execute({
       from: accounts[3],
       gas: 3000000,
@@ -103,14 +103,10 @@ contract("Timestamp reserved window", async function(accounts) {
 
     expect(wasAborted(failedExecuteTx)).to.be.true
 
-    expect(
-      parseAbortData(failedExecuteTx).find(
-        reason => reason === "ReservedForClaimer"
-      )
-    ).to.exist
+    expect(parseAbortData(failedExecuteTx).find(reason => reason === "ReservedForClaimer")).to.exist
 
-    /// That shouldn't work, because accounts[8] claimed it...
-    /// But this should!
+    // / That shouldn't work, because accounts[8] claimed it...
+    // / But this should!
     const executeTx = await txRequest.execute({
       from: accounts[8],
       gas: 3000000,

@@ -2,13 +2,13 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
-/// Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
 const {
@@ -16,9 +16,9 @@ const {
   parseAbortData,
   wasAborted,
 } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("Block execution", async function(accounts) {
+contract("Block execution", async (accounts) => {
   const Owner = accounts[0]
   const Benefactor = accounts[1]
 
@@ -31,7 +31,7 @@ contract("Block execution", async function(accounts) {
   const executionWindow = 10
   const testData32 = ethUtil.bufferToHex(Buffer.from("A1B2".padEnd(32, "FF")))
 
-  beforeEach(async function() {
+  beforeEach(async () => {
     const curBlock = await config.web3.eth.getBlockNumber()
     const windowStart = curBlock + 38
 
@@ -59,12 +59,12 @@ contract("Block execution", async function(accounts) {
         gasPrice,
         requiredDeposit,
       ],
-      testData32, //callData
+      testData32, // callData
       { value: config.web3.utils.toWei("1") }
     )
 
-    /// The first claim block is the current block + the number of blocks
-    ///  until the window starts, minus the freeze period minus claim window size.
+    // The first claim block is the current block + the number of blocks
+    //  until the window starts, minus the freeze period minus claim window size.
     const firstClaimBlock = windowStart - 5 - 25
     await waitUntilBlock(0, firstClaimBlock)
 
@@ -73,12 +73,12 @@ contract("Block execution", async function(accounts) {
     })
   })
 
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
-  /// 1
-  it("should reject the execution if its before the execution window", async function() {
+  // 1
+  it("should reject the execution if its before the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -99,13 +99,11 @@ contract("Block execution", async function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "BeforeCallWindow")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "BeforeCallWindow")).to.exist
   })
 
-  /// 2
-  it("should reject the execution if its after the execution window", async function() {
+  // 2
+  it("should reject the execution if its after the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -116,9 +114,7 @@ contract("Block execution", async function(accounts) {
       requestData.schedule.windowStart + requestData.schedule.windowSize
     await waitUntilBlock(0, endExecutionWindow + 1)
 
-    expect(await config.web3.eth.getBlockNumber()).to.be.above(
-      endExecutionWindow
-    )
+    expect(await config.web3.eth.getBlockNumber()).to.be.above(endExecutionWindow)
 
     const executeTx = await txRequest.execute({ gas: 3000000 })
 
@@ -130,13 +126,11 @@ contract("Block execution", async function(accounts) {
 
     expect(wasAborted(executeTx)).to.be.true
 
-    expect(
-      parseAbortData(executeTx).find(reason => reason === "AfterCallWindow")
-    ).to.exist
+    expect(parseAbortData(executeTx).find(reason => reason === "AfterCallWindow")).to.exist
   })
 
-  /// 3
-  it("should allow the execution at the start of the execution window", async function() {
+  // 3
+  it("should allow the execution at the start of the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -151,13 +145,13 @@ contract("Block execution", async function(accounts) {
     const executeTx = await txRequest.execute({
       from: accounts[0],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
     const balAfterExecute = await config.web3.eth.getBalance(accounts[0])
 
-    expect(parseInt(balAfterExecute)).to.be.at.least(parseInt(balBeforeExecute))
+    expect(parseInt(balAfterExecute, 10)).to.be.at.least(parseInt(balBeforeExecute, 10))
 
     const requestDataTwo = await parseRequestData(txRequest)
 
@@ -166,8 +160,8 @@ contract("Block execution", async function(accounts) {
     expect(requestDataTwo.meta.wasCalled).to.be.true
   })
 
-  /// 4
-  it("should allow the execution at the end of the execution window", async function() {
+  // 4
+  it("should allow the execution at the end of the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -177,22 +171,22 @@ contract("Block execution", async function(accounts) {
     const endExecutionWindow =
       requestData.schedule.windowStart + requestData.schedule.windowSize
     await waitUntilBlock(0, endExecutionWindow - 1)
-    /// Note: we go to one block before the endExecutionWindow
-    /// because the next transaction will be mined in the next
-    /// block, aka the exact block for `endExecutionWindow`
+    // Note: we go to one block before the endExecutionWindow
+    // because the next transaction will be mined in the next
+    // block, aka the exact block for `endExecutionWindow`
 
     const balBeforeExecute = await config.web3.eth.getBalance(accounts[3])
 
     const executeTx = await txRequest.execute({
       from: accounts[3],
       gas: 3000000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
 
     const balAfterExecute = await config.web3.eth.getBalance(accounts[3])
 
-    expect(parseInt(balAfterExecute)).to.be.at.least(parseInt(balBeforeExecute))
+    expect(parseInt(balAfterExecute, 10)).to.be.at.least(parseInt(balBeforeExecute, 10))
 
     const requestDataTwo = await parseRequestData(txRequest)
 

@@ -2,9 +2,9 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-/// Contracts
+// Contracts
 const BlockScheduler = artifacts.require("./BlockScheduler.sol")
 const PaymentLib = artifacts.require("./PaymentLib.sol")
 const RequestFactory = artifacts.require("./RequestFactory.sol")
@@ -12,15 +12,14 @@ const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, computeEndowment } = require("../dataHelpers.js")
 
 const ethUtil = require("ethereumjs-util")
 
-contract("Block scheduling", function(accounts) {
+contract("Block scheduling", (accounts) => {
   const Owner = accounts[0]
-  const User1 = accounts[1]
   const User2 = accounts[2]
   const gasPrice = 20000
 
@@ -34,13 +33,9 @@ contract("Block scheduling", function(accounts) {
   let requestTracker
   let transactionRecorder
 
-  const checkIsNotEmptyAddress = address => {
-    return address == "0x0000000000000000000000000000000000000000"
-  }
-
-  /////////////
-  /// Tests ///
-  /////////////
+  // ///////////
+  // / Tests ///
+  // ///////////
 
   before(async () => {
     transactionRecorder = await TransactionRecorder.deployed()
@@ -55,7 +50,7 @@ contract("Block scheduling", function(accounts) {
       "0xecc9c5fff8937578141592e7E62C2D2E364311b8"
     )
 
-    /// Get the factory address
+    // Get the factory address
     const factoryAddress = await blockScheduler.factoryAddress()
     expect(factoryAddress).to.equal(requestFactory.address)
 
@@ -63,18 +58,19 @@ contract("Block scheduling", function(accounts) {
     expect(paymentLib.address).to.exist
   })
 
-  it("blockScheduler should arbitrarily accept payments sent to it", async function() {
+  it("blockScheduler should arbitrarily accept payments sent to it", async () => {
     const balBefore = await config.web3.eth.getBalance(blockScheduler.address)
     const tx = await blockScheduler.sendTransaction({
       from: Owner,
       value: 1000,
     })
+    expect(tx.receipt).to.exist
 
     const balAfter = await config.web3.eth.getBalance(blockScheduler.address)
-    assert(balBefore < balAfter, "It sent 1000 wei correctly.")
+    expect(balBefore < balAfter, "It sent 1000 wei correctly.").to.be.true
   })
 
-  it("should do block scheduling with `schedule`", async function() {
+  it("should do block scheduling with `schedule`", async () => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 20
     const testData32 = ethUtil.bufferToHex(Buffer.from("A1B2".padEnd(32, "FF")))
@@ -84,20 +80,20 @@ contract("Block scheduling", function(accounts) {
     const endowment = await paymentLib.computeEndowment(
       0,
       0,
-      1212121, //callGas
-      123454321, //callValue
+      1212121, // callGas
+      123454321, // callValue
       gasPrice,
-      180000 //gas overhead
+      180000 // gas overhead
     )
 
-    /// Now let's send it an actual transaction
+    // Now let's send it an actual transaction
     const scheduleTx = await blockScheduler.schedule(
       transactionRecorder.address,
-      testData32, //callData
+      testData32, // callData
       [
-        1212121, //callGas
-        123454321, //callValue
-        54321, //windowSize
+        1212121, // callGas
+        123454321, // callValue
+        54321, // windowSize
         windowStart,
         gasPrice,
         fee,
@@ -124,12 +120,10 @@ contract("Block scheduling", function(accounts) {
 
     // Test that the endowment was sent to the txRequest
     const balOfTxRequest = await config.web3.eth.getBalance(txRequest.address)
-    expect(parseInt(balOfTxRequest)).to.equal(requestData.calcEndowment())
+    expect(parseInt(balOfTxRequest, 10)).to.equal(requestData.calcEndowment())
 
     // Sanity check
-    expect(requestData.calcEndowment()).to.equal(
-      computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
-    )
+    expect(requestData.calcEndowment()).to.equal(computeEndowment(bounty, fee, 1212121, 123454321, gasPrice))
 
     // Sanity check
     expect(endowment.toNumber()).to.equal(requestData.calcEndowment())
@@ -150,13 +144,11 @@ contract("Block scheduling", function(accounts) {
 
     expect(requestData.txData.gasPrice).to.equal(gasPrice)
 
-    expect(requestData.claimData.requiredDeposit).to.equal(
-      parseInt(requiredDeposit)
-    )
+    expect(requestData.claimData.requiredDeposit).to.equal(parseInt(requiredDeposit, 10))
   })
 
   // This test fails because the call gas is too high
-  it("should revert on invalid transaction", async function() {
+  it("should revert on invalid transaction", async () => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 20
 
@@ -165,9 +157,9 @@ contract("Block scheduling", function(accounts) {
         transactionRecorder.address,
         "this-is-the-call-data",
         [
-          4e20, //callGas is set way too high
-          123454321, //callValue
-          0, //windowSize
+          4e20, // callGas is set way too high
+          123454321, // callValue
+          0, // windowSize
           windowStart,
           gasPrice,
           fee,
@@ -176,8 +168,6 @@ contract("Block scheduling", function(accounts) {
         ],
         { from: User2, value: config.web3.utils.toWei("10") }
       )
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
   })
 })

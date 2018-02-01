@@ -4,22 +4,22 @@ require("chai")
 
 const expect = require("chai").expect
 
-/// Contracts
+// / Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
+// / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 const { RequestData, computeEndowment } = require("../dataHelpers.js")
 
 const ethUtil = require("ethereumjs-util")
 
-contract("Timestamp scheduling", function(accounts) {
-  const MINUTE = 60 //seconds
+contract("Timestamp scheduling", (accounts) => {
+  const MINUTE = 60 // seconds
 
   const gasPrice = 20000
   const requiredDeposit = config.web3.utils.toWei("34", "kwei")
@@ -30,8 +30,8 @@ contract("Timestamp scheduling", function(accounts) {
   let timestampScheduler
   let transactionRecorder
 
-  /// Deploy a fresh instance of contracts for each test.
-  beforeEach(async function() {
+  // / Deploy a fresh instance of contracts for each test.
+  beforeEach(async () => {
     // Request tracker
     requestTracker = await RequestTracker.new()
     expect(requestTracker.address).to.exist
@@ -52,7 +52,7 @@ contract("Timestamp scheduling", function(accounts) {
     expect(transactionRecorder.address).to.exist
   })
 
-  it("should do timestamp scheduling using `schedule", async function() {
+  it("should do timestamp scheduling using `schedule", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
     const windowStart = timestamp + 10 * MINUTE
@@ -61,11 +61,11 @@ contract("Timestamp scheduling", function(accounts) {
 
     const scheduleTx = await timestampScheduler.schedule(
       transactionRecorder.address,
-      testData32, //callData
+      testData32, // callData
       [
-        1212121, //callGas
-        123454321, //callValue
-        55 * MINUTE, //windowSize
+        1212121, // callGas
+        123454321, // callValue
+        55 * MINUTE, // windowSize
         windowStart,
         gasPrice,
         fee,
@@ -93,9 +93,7 @@ contract("Timestamp scheduling", function(accounts) {
     // .to.equal(requestData.calcEndowment())
 
     // Sanity check
-    expect(requestData.calcEndowment()).to.equal(
-      computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
-    )
+    expect(requestData.calcEndowment()).to.equal(computeEndowment(bounty, fee, 1212121, 123454321, gasPrice))
 
     expect(requestData.txData.toAddress).to.equal(transactionRecorder.address)
 
@@ -113,12 +111,10 @@ contract("Timestamp scheduling", function(accounts) {
 
     expect(requestData.txData.gasPrice).to.equal(gasPrice)
 
-    expect(requestData.claimData.requiredDeposit).to.equal(
-      parseInt(requiredDeposit)
-    )
+    expect(requestData.claimData.requiredDeposit).to.equal(parseInt(requiredDeposit))
   })
 
-  it("should revert an invalid transaction", async function() {
+  it("should revert an invalid transaction", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const timestamp = curBlock.timestamp
 
@@ -127,21 +123,19 @@ contract("Timestamp scheduling", function(accounts) {
     const scheduleTx = await timestampScheduler
       .schedule(
         accounts[4],
-        testData32, //callData
+        testData32, // callData
         [
-          4e20, //callGas is too high
-          123123, //callValue
-          55 * MINUTE, //windowSize
+          4e20, // callGas is too high
+          123123, // callValue
+          55 * MINUTE, // windowSize
           windowStart,
           gasPrice,
           0, // fee
           0, // bounty
-          12, //requiredDeposit
+          12, // requiredDeposit
         ],
         { from: accounts[0] }
       )
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
   })
 })

@@ -13,11 +13,11 @@ const ethUtil = require("ethereumjs-util")
 const { RequestData, wasAborted, parseAbortData } = require("../dataHelpers.js")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("TransactionRequest proxy function", accounts => {
-  const claimWindowSize = 25 //blocks
-  const freezePeriod = 5 //blocks
-  const reservedWindowSize = 10 //blocks
-  const executionWindow = 10 //blocks
+contract("TransactionRequest proxy function", (accounts) => {
+  const claimWindowSize = 25 // blocks
+  const freezePeriod = 5 // blocks
+  const reservedWindowSize = 10 // blocks
+  const executionWindow = 10 // blocks
   const gasPrice = config.web3.utils.toWei("66", "gwei")
   const requiredDeposit = config.web3.utils.toWei("66", "kwei")
 
@@ -29,10 +29,10 @@ contract("TransactionRequest proxy function", accounts => {
 
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         accounts[1], // fee recipient
-        accounts[3], //toAddress
+        accounts[3], // toAddress
       ],
       [
         12345, // fee
@@ -40,11 +40,11 @@ contract("TransactionRequest proxy function", accounts => {
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
-        1, //temporalUnit = 1, aka blocks
+        1, // temporalUnit = 1, aka blocks
         executionWindow,
         windowStart,
-        43324, //callGas
-        12345, //callValue
+        43324, // callGas
+        12345, // callValue
         gasPrice,
         requiredDeposit,
       ],
@@ -59,32 +59,28 @@ contract("TransactionRequest proxy function", accounts => {
 
     await waitUntilBlock(0, duringExecutionWindow)
 
-    /// This fails because it is not after the exeucution window
+    // / This fails because it is not after the exeucution window
     await txRequest
       .proxy(accounts[7], testData32)
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
     const afterExecutionWindow =
       requestData.schedule.windowStart + requestData.schedule.windowSize + 1
 
     await waitUntilBlock(0, afterExecutionWindow)
 
-    /// This throws because it is not the scheduling account
+    // / This throws because it is not the scheduling account
     await txRequest
       .proxy(accounts[7], testData32, { from: accounts[4] })
-      .should.be.rejectedWith(
-        "VM Exception while processing transaction: revert"
-      )
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-    /// This is allowed since it is from scheduling accounts
+    // / This is allowed since it is from scheduling accounts
     const tx = await txRequest.proxy(accounts[7], testData32)
     expect(tx.receipt.status).to.equal(1)
   })
 
   it("does some fancy stuff with proxy", async () => {
-    /// Boring set up stuff
+    // / Boring set up stuff
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 38 + 10 + 5
 
@@ -93,10 +89,10 @@ contract("TransactionRequest proxy function", accounts => {
 
     const txRequest = await TransactionRequest.new(
       [
-        accounts[0], //createdBy
-        accounts[0], //owner
+        accounts[0], // createdBy
+        accounts[0], // owner
         accounts[1], // fee recipient
-        tokenContract.address, //toAddress
+        tokenContract.address, // toAddress
       ],
       [
         12345, // fee
@@ -104,11 +100,11 @@ contract("TransactionRequest proxy function", accounts => {
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
-        1, //temporalUnit = 1, aka blocks
+        1, // temporalUnit = 1, aka blocks
         executionWindow,
         windowStart,
-        3000000, //callGas
-        12345, //callValue
+        3000000, // callGas
+        12345, // callValue
         gasPrice,
       ],
       buyTokensSig,
@@ -123,14 +119,12 @@ contract("TransactionRequest proxy function", accounts => {
     const executeTx = await txRequest.execute({
       from: accounts[4],
       gas: 3200000,
-      gasPrice: gasPrice,
+      gasPrice,
     })
     expect(executeTx.receipt).to.exist
     expect(wasAborted(executeTx)).to.be.false
 
-    expect(
-      (await tokenContract.balanceOf(txRequest.address)).toNumber()
-    ).to.equal(12345 * 30) //callValue * rate
+    expect((await tokenContract.balanceOf(txRequest.address)).toNumber()).to.equal(12345 * 30) // callValue * rate
 
     const afterExecutionWindow =
       requestData.schedule.windowStart + requestData.schedule.windowSize + 2
@@ -139,10 +133,10 @@ contract("TransactionRequest proxy function", accounts => {
 
     const t = new config.web3.eth.Contract(require("./SimpleToken.json").abi)
     const encoded_data = t.methods.transfer(accounts[8], 30000).encodeABI()
-    /// This data was generated locally using the method above^^
+    // / This data was generated locally using the method above^^
     // const encoded_data = '0xa9059cbb000000000000000000000000737b4d5a9f46839501719b5d388b7c487b55957a0000000000000000000000000000000000000000000000000000000000007530'
 
-    /// NOTE the method below vv SHOULD work but generates the wrong data string for some reason
+    // / NOTE the method below vv SHOULD work but generates the wrong data string for some reason
     // const transferSig = config.web3.utils.sha3('transfer(address,uint256').slice(0,10)
     // const arg1 = config.web3.utils.padLeft(accounts[8], 64).slice(2)
     // const arg2 = config.web3.utils.padLeft(30000, 64).slice(2)
@@ -152,8 +146,6 @@ contract("TransactionRequest proxy function", accounts => {
     // console.log(e)
     await txRequest.proxy(tokenContract.address, encoded_data)
 
-    expect((await tokenContract.balanceOf(accounts[8])).toNumber()).to.equal(
-      30000
-    )
+    expect((await tokenContract.balanceOf(accounts[8])).toNumber()).to.equal(30000)
   })
 })

@@ -69,36 +69,36 @@
       "type": "constructor"
     }
   ],
-  "bytecode": "0x6060604052341561000f57600080fd5b6040516020806103c583398101604052808051906020019091905050336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555080600160008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550506102e5806100e06000396000f300606060405260043610610057576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806370a082311461005c5780638da5cb5b146100a9578063a9059cbb146100fe575b600080fd5b341561006757600080fd5b610093600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050610158565b6040518082815260200191505060405180910390f35b34156100b457600080fd5b6100bc6101a1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561010957600080fd5b61013e600480803573ffffffffffffffffffffffffffffffffffffffff169060200190919080359060200190919050506101c6565b604051808215151515815260200191505060405180910390f35b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600081600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205411151561021557600080fd5b81600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254039250508190555081600160008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254019250508190555060019050929150505600a165627a7a723058209bcfef9aa84e562bf4712e1144a8ac4bdfbc11a61af9a1b75a9a21baed4dc7110029",
-  "deployedBytecode": "0x606060405260043610610057576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806370a082311461005c5780638da5cb5b146100a9578063a9059cbb146100fe575b600080fd5b341561006757600080fd5b610093600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050610158565b6040518082815260200191505060405180910390f35b34156100b457600080fd5b6100bc6101a1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561010957600080fd5b61013e600480803573ffffffffffffffffffffffffffffffffffffffff169060200190919080359060200190919050506101c6565b604051808215151515815260200191505060405180910390f35b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600081600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205411151561021557600080fd5b81600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254039250508190555081600160008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254019250508190555060019050929150505600a165627a7a723058209bcfef9aa84e562bf4712e1144a8ac4bdfbc11a61af9a1b75a9a21baed4dc7110029",
-  "sourceMap": "147:586:21:-;;;242:116;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;301:10;293:5;;:18;;;;;;;;;;;;;;;;;;339:12;321:8;:15;330:5;;;;;;;;;;;321:15;;;;;;;;;;;;;;;:30;;;;242:116;147:586;;;;;;",
-  "deployedSourceMap": "147:586:21:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;613:117;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;175:20;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;364:243;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;613:117;671:12;709:8;:14;718:4;709:14;;;;;;;;;;;;;;;;699:24;;613:117;;;:::o;175:20::-;;;;;;;;;;;;;:::o;364:243::-;434:12;493:7;470:8;:20;479:10;470:20;;;;;;;;;;;;;;;;:30;462:39;;;;;;;;535:7;511:8;:20;520:10;511:20;;;;;;;;;;;;;;;;:31;;;;;;;;;;;569:7;552:8;:13;561:3;552:13;;;;;;;;;;;;;;;;:24;;;;;;;;;;;596:4;586:14;;364:243;;;;:::o",
-  "source": "/// Super simple token contract that moves funds into the owner account on creation and\n/// only exposes enough API to be used for `test/proxy.js`\ncontract SimpleToken {\n\n    address public owner;\n\n    mapping(address => uint) balances;\n\n    function SimpleToken (uint _totalSupply) {\n        owner = msg.sender;\n        balances[owner] = _totalSupply;\n    }\n\n    function transfer (address _to, uint _amount)\n        public returns (bool success)\n    {\n        require(balances[msg.sender] > _amount);\n        balances[msg.sender] -= _amount;\n        balances[_to] += _amount;\n        success = true;\n    }\n\n    function balanceOf (address _who)\n        public returns (uint balance)\n    {\n        balance = balances[_who];\n    }\n\n}",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/_test/SimpleToken.sol",
+  "bytecode":
+    "0x6060604052341561000f57600080fd5b6040516020806103c583398101604052808051906020019091905050336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555080600160008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550506102e5806100e06000396000f300606060405260043610610057576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806370a082311461005c5780638da5cb5b146100a9578063a9059cbb146100fe575b600080fd5b341561006757600080fd5b610093600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050610158565b6040518082815260200191505060405180910390f35b34156100b457600080fd5b6100bc6101a1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561010957600080fd5b61013e600480803573ffffffffffffffffffffffffffffffffffffffff169060200190919080359060200190919050506101c6565b604051808215151515815260200191505060405180910390f35b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600081600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205411151561021557600080fd5b81600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254039250508190555081600160008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254019250508190555060019050929150505600a165627a7a723058209bcfef9aa84e562bf4712e1144a8ac4bdfbc11a61af9a1b75a9a21baed4dc7110029",
+  "deployedBytecode":
+    "0x606060405260043610610057576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806370a082311461005c5780638da5cb5b146100a9578063a9059cbb146100fe575b600080fd5b341561006757600080fd5b610093600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050610158565b6040518082815260200191505060405180910390f35b34156100b457600080fd5b6100bc6101a1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561010957600080fd5b61013e600480803573ffffffffffffffffffffffffffffffffffffffff169060200190919080359060200190919050506101c6565b604051808215151515815260200191505060405180910390f35b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600081600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205411151561021557600080fd5b81600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254039250508190555081600160008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000828254019250508190555060019050929150505600a165627a7a723058209bcfef9aa84e562bf4712e1144a8ac4bdfbc11a61af9a1b75a9a21baed4dc7110029",
+  "sourceMap":
+    "147:586:21:-;;;242:116;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;301:10;293:5;;:18;;;;;;;;;;;;;;;;;;339:12;321:8;:15;330:5;;;;;;;;;;;321:15;;;;;;;;;;;;;;;:30;;;;242:116;147:586;;;;;;",
+  "deployedSourceMap":
+    "147:586:21:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;613:117;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;175:20;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;364:243;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;613:117;671:12;709:8;:14;718:4;709:14;;;;;;;;;;;;;;;;699:24;;613:117;;;:::o;175:20::-;;;;;;;;;;;;;:::o;364:243::-;434:12;493:7;470:8;:20;479:10;470:20;;;;;;;;;;;;;;;;:30;462:39;;;;;;;;535:7;511:8;:20;520:10;511:20;;;;;;;;;;;;;;;;:31;;;;;;;;;;;569:7;552:8;:13;561:3;552:13;;;;;;;;;;;;;;;;:24;;;;;;;;;;;596:4;586:14;;364:243;;;;:::o",
+  "source":
+    "/// Super simple token contract that moves funds into the owner account on creation and\n/// only exposes enough API to be used for `test/proxy.js`\ncontract SimpleToken {\n\n    address public owner;\n\n    mapping(address => uint) balances;\n\n    function SimpleToken (uint _totalSupply) {\n        owner = msg.sender;\n        balances[owner] = _totalSupply;\n    }\n\n    function transfer (address _to, uint _amount)\n        public returns (bool success)\n    {\n        require(balances[msg.sender] > _amount);\n        balances[msg.sender] -= _amount;\n        balances[_to] += _amount;\n        success = true;\n    }\n\n    function balanceOf (address _who)\n        public returns (uint balance)\n    {\n        balance = balances[_who];\n    }\n\n}",
+  "sourcePath":
+    "/home/logan/Work/ethereum-alarm-clock/contracts/_test/SimpleToken.sol",
   "ast": {
     "attributes": {
-      "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/_test/SimpleToken.sol",
+      "absolutePath":
+        "/home/logan/Work/ethereum-alarm-clock/contracts/_test/SimpleToken.sol",
       "exportedSymbols": {
-        "SimpleToken": [
-          6200
-        ]
+        "SimpleToken": [6200]
       }
     },
     "children": [
       {
         "attributes": {
-          "baseContracts": [
-            null
-          ],
-          "contractDependencies": [
-            null
-          ],
+          "baseContracts": [null],
+          "contractDependencies": [null],
           "contractKind": "contract",
-          "documentation": "Super simple token contract that moves funds into the owner account on creation and\n only exposes enough API to be used for `test/proxy.js`",
+          "documentation":
+            "Super simple token contract that moves funds into the owner account on creation and\n only exposes enough API to be used for `test/proxy.js`",
           "fullyImplemented": true,
-          "linearizedBaseContracts": [
-            6200
-          ],
+          "linearizedBaseContracts": [6200],
           "name": "SimpleToken",
           "scope": 6201
         },
@@ -179,9 +179,7 @@
               "constant": false,
               "implemented": true,
               "isConstructor": true,
-              "modifiers": [
-                null
-              ],
+              "modifiers": [null],
               "name": "SimpleToken",
               "payable": false,
               "scope": 6200,
@@ -225,9 +223,7 @@
               },
               {
                 "attributes": {
-                  "parameters": [
-                    null
-                  ]
+                  "parameters": [null]
                 },
                 "children": [],
                 "id": 6136,
@@ -252,9 +248,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6128,
                               "type": "address",
                               "value": "owner"
@@ -278,9 +272,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 12053,
                                   "type": "msg",
                                   "value": "msg"
@@ -330,9 +322,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6132,
                                   "type": "mapping(address => uint256)",
                                   "value": "balances"
@@ -344,9 +334,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6128,
                                   "type": "address",
                                   "value": "owner"
@@ -363,9 +351,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6134,
                               "type": "uint256",
                               "value": "_totalSupply"
@@ -399,9 +385,7 @@
               "constant": false,
               "implemented": true,
               "isConstructor": false,
-              "modifiers": [
-                null
-              ],
+              "modifiers": [null],
               "name": "transfer",
               "payable": false,
               "scope": 6200,
@@ -514,9 +498,7 @@
                           "isPure": false,
                           "isStructConstructorCall": false,
                           "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
+                          "names": [null],
                           "type": "tuple()",
                           "type_conversion": false
                         },
@@ -529,9 +511,7 @@
                                   "typeString": "bool"
                                 }
                               ],
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 12056,
                               "type": "function (bool) pure",
                               "value": "require"
@@ -568,9 +548,7 @@
                                   {
                                     "attributes": {
                                       "argumentTypes": null,
-                                      "overloadedDeclarations": [
-                                        null
-                                      ],
+                                      "overloadedDeclarations": [null],
                                       "referencedDeclaration": 6132,
                                       "type": "mapping(address => uint256)",
                                       "value": "balances"
@@ -594,9 +572,7 @@
                                       {
                                         "attributes": {
                                           "argumentTypes": null,
-                                          "overloadedDeclarations": [
-                                            null
-                                          ],
+                                          "overloadedDeclarations": [null],
                                           "referencedDeclaration": 12053,
                                           "type": "msg",
                                           "value": "msg"
@@ -618,9 +594,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6153,
                                   "type": "uint256",
                                   "value": "_amount"
@@ -670,9 +644,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6132,
                                   "type": "mapping(address => uint256)",
                                   "value": "balances"
@@ -696,9 +668,7 @@
                                   {
                                     "attributes": {
                                       "argumentTypes": null,
-                                      "overloadedDeclarations": [
-                                        null
-                                      ],
+                                      "overloadedDeclarations": [null],
                                       "referencedDeclaration": 12053,
                                       "type": "msg",
                                       "value": "msg"
@@ -720,9 +690,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6153,
                               "type": "uint256",
                               "value": "_amount"
@@ -767,9 +735,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6132,
                                   "type": "mapping(address => uint256)",
                                   "value": "balances"
@@ -781,9 +747,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6151,
                                   "type": "address",
                                   "value": "_to"
@@ -800,9 +764,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6153,
                               "type": "uint256",
                               "value": "_amount"
@@ -837,9 +799,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6156,
                               "type": "bool",
                               "value": "success"
@@ -890,9 +850,7 @@
               "constant": false,
               "implemented": true,
               "isConstructor": false,
-              "modifiers": [
-                null
-              ],
+              "modifiers": [null],
               "name": "balanceOf",
               "payable": false,
               "scope": 6200,
@@ -985,9 +943,7 @@
                           {
                             "attributes": {
                               "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
+                              "overloadedDeclarations": [null],
                               "referencedDeclaration": 6190,
                               "type": "uint256",
                               "value": "balance"
@@ -1009,9 +965,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6132,
                                   "type": "mapping(address => uint256)",
                                   "value": "balances"
@@ -1023,9 +977,7 @@
                               {
                                 "attributes": {
                                   "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
+                                  "overloadedDeclarations": [null],
                                   "referencedDeclaration": 6187,
                                   "type": "address",
                                   "value": "_who"

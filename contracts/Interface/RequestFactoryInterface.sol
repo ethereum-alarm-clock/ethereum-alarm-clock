@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 contract RequestFactoryInterface {
 
-    event RequestCreated(address request);
+    event RequestCreated(address request, address indexed owner);
 
     function createRequest(address[3] addressArgs,
                            uint[12] uintArgs,

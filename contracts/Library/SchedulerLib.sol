@@ -155,7 +155,7 @@ library SchedulerLib {
         newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
                 msg.sender,                 // meta.owner
-                _feeRecipient,          // paymentData.feeRecipient
+                _feeRecipient,              // paymentData.feeRecipient
                 self.toAddress              // txnData.toAddress
             ],
             [

@@ -64,7 +64,7 @@ contract RequestFactory is RequestFactoryInterface {
         requests[address(request)] = true;
 
         // Log the creation.
-        RequestCreated(address(request));
+        RequestCreated(address(request), _addressArgs[0]);
 
         // Add the request to the RequestTracker
         requestTracker.addRequest(address(request), _uintArgs[7]); // windowStart

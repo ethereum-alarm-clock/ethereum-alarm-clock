@@ -54,6 +54,6 @@
         "mocha": "^3.5.3",
         "should": "^13.1.0",
         "solidity-coverage": "^0.3.5",
-        "truffle": "^4.0.1"
+        "truffle": "^4.0.6"
     }
 }

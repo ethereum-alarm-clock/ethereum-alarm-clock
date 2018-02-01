@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.19;
 
 /// Truffle-specific contract (Not a part of the EAC)
 

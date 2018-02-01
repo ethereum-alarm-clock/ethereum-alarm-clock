@@ -35,7 +35,7 @@ contract("Block reserved window", function(accounts) {
       ],
       [
         0, // fee
-        0, //payment
+        0, //bounty
         25, //claim window size
         5, //freeze period
         10, //reserved window size

@@ -40,7 +40,7 @@ contract("tests execution rejected if cancelled", async function(accounts) {
       ],
       [
         0, // fee
-        0, //payment
+        0, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

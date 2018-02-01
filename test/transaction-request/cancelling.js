@@ -47,7 +47,7 @@ contract("Cancelling", async function(accounts) {
       ],
       [
         0, // fee
-        1, //payment
+        1, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -165,7 +165,7 @@ contract("Cancelling", async function(accounts) {
     const claimTx = await txRequest.claim({
       from: accounts[1],
       value: config.web3.utils.toWei(
-        (2 * requestData.paymentData.payment).toString()
+        (2 * requestData.paymentData.bounty).toString()
       ),
     })
 

@@ -43,7 +43,7 @@ contract("Block claiming", async accounts => {
       ],
       [
         0, // fee
-        config.web3.utils.toWei("200", "finney"), // payment
+        config.web3.utils.toWei("200", "finney"), // bounty
         25, // claim window size
         5, // freeze period
         10, // reserved window size
@@ -79,7 +79,7 @@ contract("Block claiming", async accounts => {
 
     await txRequest
       .claim({
-        value: 2 * requestData.paymentData.payment,
+        value: 2 * requestData.paymentData.bounty,
       })
       .should.be.rejectedWith(
         "VM Exception while processing transaction: revert"
@@ -105,7 +105,7 @@ contract("Block claiming", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[0],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 
@@ -128,7 +128,7 @@ contract("Block claiming", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[0],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 
@@ -151,7 +151,7 @@ contract("Block claiming", async accounts => {
     await txRequest
       .claim({
         from: accounts[0],
-        value: 2 * requestData.paymentData.payment,
+        value: 2 * requestData.paymentData.bounty,
       })
       .should.be.rejectedWith(
         "VM Exception while processing transaction: revert"
@@ -238,7 +238,7 @@ contract("Block claiming", async accounts => {
   })
 
   /// 7
-  it("should determine payment amount", async function() {
+  it("should determine bounty amount with modifier", async () => {
     const requestData = await RequestData.from(txRequest)
 
     const claimAt =

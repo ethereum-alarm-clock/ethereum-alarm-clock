@@ -47,7 +47,7 @@ contract("Block execution", async function(accounts) {
       ],
       [
         12345, // fee
-        224455, // payment
+        224455, // bounty
         25, // claim window size
         5, // freeze period
         10, // reserved window size

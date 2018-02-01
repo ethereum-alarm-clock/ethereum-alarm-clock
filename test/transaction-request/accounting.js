@@ -35,7 +35,7 @@ contract("Test accounting", async function(accounts) {
   const requiredDeposit = config.web3.utils.toWei("33", "kwei")
 
   const fee = 12345
-  const payment = 232323
+  const bounty = 232323
 
   beforeEach(async function() {
     // Deploy a fresh transactionRecorder
@@ -64,7 +64,7 @@ contract("Test accounting", async function(accounts) {
       ],
       [
         fee, // fee
-        payment, //payment
+        bounty, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -85,12 +85,12 @@ contract("Test accounting", async function(accounts) {
 
     expect(requestData.paymentData.fee).to.equal(fee)
 
-    expect(requestData.paymentData.payment).to.equal(payment)
+    expect(requestData.paymentData.bounty).to.equal(bounty)
 
     const beforeFeeBal = await config.web3.eth.getBalance(
       requestData.paymentData.feeRecipient
     )
-    const beforePaymentBal = await config.web3.eth.getBalance(accounts[1])
+    const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     await waitUntilBlock(
       requestData.schedule.windowStart -
@@ -108,11 +108,11 @@ contract("Test accounting", async function(accounts) {
     const afterFeeBal = await config.web3.eth.getBalance(
       requestData.paymentData.feeRecipient
     )
-    const afterPaymentBal = await config.web3.eth.getBalance(accounts[1])
+    const afterBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     const Executed = executeTx.logs.find(e => e.event === "Executed")
     const feeAmt = Executed.args.fee.toNumber()
-    const paymentAmt = Executed.args.payment.toNumber()
+    const bountyAmt = Executed.args.bounty.toNumber()
 
     expect(feeAmt).to.equal(fee)
 
@@ -125,17 +125,17 @@ contract("Test accounting", async function(accounts) {
     const gasUsed = executeTx.receipt.gasUsed
     const gasCost = gasUsed * gasPrice
 
-    const expectedPayment = gasCost + requestData.paymentData.payment
+    const expectedBounty = gasCost + requestData.paymentData.bounty
 
-    expect(paymentAmt).to.be.above(expectedPayment)
+    expect(bountyAmt).to.be.above(expectedBounty)
 
-    expect(paymentAmt - expectedPayment).to.be.below(120000 * gasPrice)
+    expect(bountyAmt - expectedBounty).to.be.below(120000 * gasPrice)
 
     expect(
-      toBN(afterPaymentBal)
-        .sub(toBN(beforePaymentBal))
+      toBN(afterBountyBal)
+        .sub(toBN(beforeBountyBal))
         .toNumber()
-    ).to.equal(paymentAmt - gasCost - 1) // FIXME: Is this an off-by-one error?
+    ).to.equal(bountyAmt - gasCost - 1) // FIXME: Is this an off-by-one error?
   })
 
   /// 2
@@ -155,7 +155,7 @@ contract("Test accounting", async function(accounts) {
       ],
       [
         fee, // fee
-        payment, //payment
+        bounty, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -173,7 +173,7 @@ contract("Test accounting", async function(accounts) {
 
     const requestData = await RequestData.from(txRequest)
 
-    const beforePaymentBal = await config.web3.eth.getBalance(accounts[1])
+    const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     const claimAt =
       requestData.schedule.windowStart -
@@ -189,7 +189,7 @@ contract("Test accounting", async function(accounts) {
       1
     )
 
-    const claimDeposit = 2 * requestData.paymentData.payment
+    const claimDeposit = 2 * requestData.paymentData.bounty
 
     expect(parseInt(claimDeposit)).to.be.above(0)
 
@@ -206,7 +206,7 @@ contract("Test accounting", async function(accounts) {
     const afterClaimBal = await config.web3.eth.getBalance(accounts[1])
 
     expect(
-      toBN(beforePaymentBal)
+      toBN(beforeBountyBal)
         .sub(toBN(afterClaimBal))
         .toString()
     ).to.equal((parseInt(claimDeposit) + claimGasCost).toString())
@@ -230,33 +230,33 @@ contract("Test accounting", async function(accounts) {
 
     await requestData.refresh()
 
-    const afterPaymentBal = await config.web3.eth.getBalance(accounts[1])
+    const afterBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     const Executed = executeTx.logs.find(e => e.event === "Executed")
     const feeAmt = Executed.args.fee.toNumber()
-    const paymentAmt = Executed.args.payment.toNumber()
+    const bountyAmt = Executed.args.bounty.toNumber()
 
     const executeGasUsed = executeTx.receipt.gasUsed
     const executeGasCost = executeGasUsed * gasPrice
 
-    const expectedPayment =
+    const expectedBounty =
       parseInt(claimDeposit) +
       executeGasCost +
       Math.floor(
         requestData.claimData.paymentModifier *
-          requestData.paymentData.payment /
+          requestData.paymentData.bounty /
           100
       )
 
-    expect(paymentAmt).to.be.at.least(expectedPayment)
+    expect(bountyAmt).to.be.at.least(expectedBounty)
 
-    expect(paymentAmt - expectedPayment).to.be.below(100000 * gasPrice)
+    expect(bountyAmt - expectedBounty).to.be.below(100000 * gasPrice)
 
-    const diff = toBN(afterPaymentBal)
-      .sub(toBN(beforePaymentBal))
+    const diff = toBN(afterBountyBal)
+      .sub(toBN(beforeBountyBal))
       .toNumber()
     const expectedDiff =
-      paymentAmt - claimDeposit - executeGasCost - claimGasCost
+      bountyAmt - claimDeposit - executeGasCost - claimGasCost
     if (diff == expectedDiff) expect(diff).to.equal(expectedDiff)
     else console.log(diff, expectedDiff)
   })
@@ -281,7 +281,7 @@ contract("Test accounting", async function(accounts) {
       ],
       [
         fee, // fee
-        payment, //payment
+        bounty, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -353,7 +353,7 @@ contract("Test accounting", async function(accounts) {
       ],
       [
         fee, // fee
-        34343, //payment
+        34343, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

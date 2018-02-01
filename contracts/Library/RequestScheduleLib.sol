@@ -65,14 +65,16 @@ library RequestScheduleLib {
         revert();
     }
 
-    /*
-     * @dev The modifier that will be applied to the payment value for a claimed call.
+    /**
+     * @dev The modifier that will be applied to the bounty value depending
+     * on when a call was claimed.
      */
     function computePaymentModifier(ExecutionWindow storage self) 
         internal view returns (uint8)
     {        
         uint paymentModifier = (getNow(self).sub(firstClaimBlock(self)))
-                                .mul(100).div(self.claimWindowSize); 
+                                .mul(100)
+                                .div(self.claimWindowSize); 
         assert(paymentModifier <= 100); 
 
         return uint8(paymentModifier);

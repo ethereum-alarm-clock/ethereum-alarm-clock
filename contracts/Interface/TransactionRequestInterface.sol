@@ -22,6 +22,6 @@ contract TransactionRequestInterface {
     // Pull mechanisms for payments.
     function refundClaimDeposit() public returns (bool);
     function sendFee() public returns (bool);
-    function sendPayment() public returns (bool);
+    function sendBounty() public returns (bool);
     function sendOwnerEther() public returns (bool);
 }

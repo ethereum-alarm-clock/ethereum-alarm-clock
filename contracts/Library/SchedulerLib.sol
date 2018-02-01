@@ -25,7 +25,7 @@ library SchedulerLib {
         uint gasPrice;              // The gasPrice to be sent with the transaction.
         
         uint fee;                   // Fee value attached to the transaction.
-        uint payment;               // Payment value attached to the transaction.
+        uint bounty;                // Bounty value attached to the transaction.
 
         uint requiredDeposit;       // The deposit required to claim the transaction.
 
@@ -42,17 +42,17 @@ library SchedulerLib {
     function resetCommon(FutureTransaction storage self) 
         public returns (bool complete)
     {
-        uint defaultPayment = tx.gasprice.mul(1000000);
-        if (self.payment != defaultPayment) {
-            self.payment = defaultPayment;
+        uint defaultBounty = tx.gasprice.mul(1000000);
+        if (self.bounty != defaultBounty) {
+            self.bounty = defaultBounty;
         }
 
-        uint defaultFee = self.payment.div(100);
+        uint defaultFee = self.bounty.div(100);
         if (self.fee != defaultFee ) {
             self.fee = defaultFee;
         }
 
-        uint defaultDeposit = self.payment.mul(2);
+        uint defaultDeposit = self.bounty.mul(2);
         if (self.requiredDeposit != defaultDeposit) {
             self.requiredDeposit = defaultDeposit;
         }
@@ -144,7 +144,7 @@ library SchedulerLib {
 
         uint endowment = MathLib.min(
             PaymentLib.computeEndowment(
-                self.payment,
+                self.bounty,
                 self.fee,
                 self.callGas,
                 self.callValue,
@@ -160,7 +160,7 @@ library SchedulerLib {
             ],
             [
                 self.fee,                   // paymentData.fee
-                self.payment,               // paymentData.payment
+                self.bounty,                // paymentData.bounty
                 self.claimWindowSize,       // scheduler.claimWindowSize
                 self.freezePeriod,          // scheduler.freezePeriod
                 self.reservedWindowSize,    // scheduler.reservedWindowSize
@@ -175,9 +175,10 @@ library SchedulerLib {
             self.callData
         );
         
-        /// This check is redundant. see line 55 in BaseScheduler.sol
+        // This check is redundant. see line 55 in BaseScheduler.sol
+        // I'm keeping it for now just to cover my bases, even if I'm covering them twice.
         require(newRequestAddress != 0x0);
-        /// Automatically returns newRequestAddress
+        return newRequestAddress;
     }
 
 }

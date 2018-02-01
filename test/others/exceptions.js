@@ -28,6 +28,9 @@ contract("Exceptions", async function(accounts) {
   const reservedWindowSize = 10 //blocks
   const executionWindow = 10 //blocks
 
+  const fee = 12345
+  const bounty = 0
+
   beforeEach(async function() {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     windowStart = curBlockNum + 38
@@ -40,8 +43,8 @@ contract("Exceptions", async function(accounts) {
         accounts[3], //toAddress
       ],
       [
-        12345, // fee
-        0, //payment
+        fee,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

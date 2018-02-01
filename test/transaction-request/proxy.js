@@ -36,7 +36,7 @@ contract("TransactionRequest proxy function", accounts => {
       ],
       [
         12345, // fee
-        332332, //payment
+        332332, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -100,7 +100,7 @@ contract("TransactionRequest proxy function", accounts => {
       ],
       [
         12345, // fee
-        332332, //payment
+        332332, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

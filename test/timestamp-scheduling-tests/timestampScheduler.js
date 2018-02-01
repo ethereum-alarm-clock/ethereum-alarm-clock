@@ -57,7 +57,7 @@ contract("Timestamp scheduling", function(accounts) {
     const timestamp = curBlock.timestamp
     const windowStart = timestamp + 10 * MINUTE
     const fee = 98765
-    const payment = 80008
+    const bounty = 80008
 
     const scheduleTx = await timestampScheduler.schedule(
       transactionRecorder.address,
@@ -69,7 +69,7 @@ contract("Timestamp scheduling", function(accounts) {
         windowStart,
         gasPrice,
         fee,
-        payment,
+        bounty,
         requiredDeposit,
       ],
       { from: accounts[0], value: config.web3.utils.toWei("10") }
@@ -94,7 +94,7 @@ contract("Timestamp scheduling", function(accounts) {
 
     // Sanity check
     expect(requestData.calcEndowment()).to.equal(
-      computeEndowment(payment, fee, 1212121, 123454321, gasPrice)
+      computeEndowment(, fee, 1212121, 123454321, gasPrice)
     )
 
     expect(requestData.txData.toAddress).to.equal(transactionRecorder.address)
@@ -107,7 +107,7 @@ contract("Timestamp scheduling", function(accounts) {
 
     expect(requestData.paymentData.fee).to.equal(fee)
 
-    expect(requestData.paymentData.payment).to.equal(payment)
+    expect(requestData.paymentData.bounty).to.equal(bounty)
 
     expect(requestData.schedule.windowStart).to.equal(windowStart)
 
@@ -135,7 +135,7 @@ contract("Timestamp scheduling", function(accounts) {
           windowStart,
           gasPrice,
           0, // fee
-          0, //payment
+          0, // bounty
           12, //requiredDeposit
         ],
         { from: accounts[0] }

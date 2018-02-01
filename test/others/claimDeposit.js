@@ -25,7 +25,9 @@ contract("claim deposit", async accounts => {
   const freezePeriod = 5 //blocks
   const reservedWindowSize = 10 //blocks
   const executionWindow = 15 //blocks
-  const payment = config.web3.utils.toWei("232", "finney")
+
+  const fee = 12345
+  const bounty = config.web3.utils.toWei("232", "finney")
 
   beforeEach(async () => {
     txRecorder = await TransactionRecorder.new()
@@ -42,8 +44,8 @@ contract("claim deposit", async accounts => {
         txRecorder.address, //toAddress
       ],
       [
-        12345, // fee
-        payment, //payment
+        fee,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -76,7 +78,7 @@ contract("claim deposit", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[9],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 
@@ -126,7 +128,7 @@ contract("claim deposit", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[9],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 
@@ -185,7 +187,7 @@ contract("claim deposit", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[7],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 
@@ -252,7 +254,7 @@ contract("claim deposit", async accounts => {
 
     const claimTx = await txRequest.claim({
       from: accounts[9],
-      value: 2 * requestData.paymentData.payment,
+      value: 2 * requestData.paymentData.bounty,
     })
     expect(claimTx.receipt).to.exist
 

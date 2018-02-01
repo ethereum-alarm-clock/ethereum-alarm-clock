@@ -33,16 +33,16 @@ contract("PaymentLib", account => {
     const callValue = new BigNumber(123454321)
     const gasPrice = new BigNumber(web3.utils.toWei("55", "gwei"))
     const fee = new BigNumber(web3.utils.toWei("120", "finney"))
-    const payment = new BigNumber(web3.utils.toWei("250", "finney"))
+    const bounty = new BigNumber(web3.utils.toWei("250", "finney"))
 
-    const expectedEndowment = payment
+    const expectedEndowment = bounty
       .plus(fee.mul(2))
       .plus(callGas.mul(gasPrice))
       .plus(gasPrice.mul(180000))
       .plus(callValue)
 
     const endowment = await paymentLib.computeEndowment(
-      payment,
+      bounty,
       fee,
       callGas,
       callValue,
@@ -60,16 +60,16 @@ contract("PaymentLib", account => {
     const callValue = new BigNumber(web3.utils.toWei("3", "ether"))
     const gasPrice = new BigNumber(web3.utils.toWei("25", "gwei"))
     const fee = new BigNumber(web3.utils.toWei("2", "ether"))
-    const payment = new BigNumber(web3.utils.toWei("250", "finney"))
+    const bounty = new BigNumber(web3.utils.toWei("250", "finney"))
 
-    const expectedEndowment = payment
+    const expectedEndowment = bounty
       .plus(fee.mul(2))
       .plus(callGas.mul(gasPrice))
       .plus(gasPrice.mul(180000))
       .plus(callValue)
 
     const endowment = await paymentLib.computeEndowment(
-      payment,
+      bounty,
       fee,
       callGas,
       callValue,

@@ -69,7 +69,7 @@ contract("Schedule to execution flow", function(accounts) {
         windowStart,
         gasPrice,
         98765, // fee
-        80008, //payment
+        80008, // bount
         config.web3.utils.toWei("20", "kwei"), // requiredDeposit
       ],
       { from: accounts[3], value: config.web3.utils.toWei("1") }
@@ -105,7 +105,7 @@ contract("Schedule to execution flow", function(accounts) {
 
     expect(requestData.paymentData.fee).to.equal(98765)
 
-    expect(requestData.paymentData.payment).to.equal(80008)
+    expect(requestData.paymentData.bounty).to.equal(80008)
   })
 
   it("should claim from an account", async function() {

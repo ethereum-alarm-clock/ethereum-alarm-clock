@@ -59,7 +59,7 @@ contract("Timestamp execution", async function(accounts) {
       ],
       [
         12345, // fee
-        224455, //payment
+        224455, // bounty
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

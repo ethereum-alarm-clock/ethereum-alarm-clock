@@ -9,6 +9,8 @@ Changelog
  - Removed the hardcoding of FEE_RECIPIENT to be passed in on creation of schedulers. (done)
  - Added an indexed parameter to `RequestCreated()` event in RequestFactory.sol (done)
  - Peg contracts to compiler version 0.4.19 (done)
+ - Change `paymentData.hasBenefactor()` to `paymentData.hasFeeRecipient()` (done)
+ - Tidied up and cleaned the test suite.
 
 0.9.0-beta
 ----------

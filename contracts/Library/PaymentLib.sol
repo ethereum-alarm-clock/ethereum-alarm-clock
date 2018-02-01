@@ -4,15 +4,22 @@ import "contracts/Library/ExecutionLib.sol";
 import "contracts/Library/MathLib.sol";
 import "contracts/zeppelin/SafeMath.sol";
 
+/**
+ * Library containing the functionality for the bounty and fee payments.
+ * - Bounty payments are the reward paid to the executing agent of transaction
+ * requests.
+ * - Fee payments are the cost of using a Scheduler to make transactions. It is 
+ * a way for developers to monetize their work on the EAC.
+ */
 library PaymentLib {
     using SafeMath for uint;
 
     struct PaymentData {
-        uint payment;               /// The amount in wei to be paid to the executor of this TransactionRequest.
+        uint bounty;                /// The amount in wei to be paid to the executing agent of the TransactionRequest.
 
-        address paymentBenefactor;  /// The address that the payment will be sent to.
+        address bountyBenefactor;   /// The address that the bounty will be sent to.
 
-        uint paymentOwed;           /// The amount that is owed to the paymentBenefactor.
+        uint bountyOwed;            /// The amount that is owed to the bountyBenefactor.
 
         uint fee;                   /// The amount in wei that will be paid to the FEE_RECIPIENT address.
 
@@ -28,7 +35,7 @@ library PaymentLib {
     /**
      * @dev Getter function that returns true if a request has a benefactor.
      */
-    function hasBenefactor(PaymentData storage self)
+    function hasFeeRecipient(PaymentData storage self)
         internal view returns (bool)
     {
         return self.feeRecipient != 0x0;
@@ -44,23 +51,23 @@ library PaymentLib {
     }
 
     /**
-     * @dev Computes the amount to send to the address that fulfilled the request.
+     * @dev Computes the amount to send to the agent that executed the request.
      */
-    function getPayment(PaymentData storage self)
+    function getBounty(PaymentData storage self)
         internal view returns (uint)
     {
-        return self.payment;
+        return self.bounty;
     }
  
     /**
      * @dev Computes the amount to send to the address that fulfilled the request
      *       with an additional modifier. This is used when the call was claimed.
      */
-    function getPaymentWithModifier(PaymentData storage self,
-                                    uint8 _paymentModifier)
+    function getBountyWithModifier(PaymentData storage self,
+                                   uint8 _paymentModifier)
         internal view returns (uint)
     {
-        return getPayment(self).mul(_paymentModifier).div(100);
+        return getBounty(self).mul(_paymentModifier).div(100);
     }
 
     ///---------------
@@ -84,17 +91,17 @@ library PaymentLib {
     }
 
     /**
-     * @dev Send the paymentOwed amount to the paymentBenefactor.
+     * @dev Send the bountyOwed amount to the bountyBenefactor.
      * Note: The send is allowed to fail.
      */
-    function sendPayment(PaymentData storage self)
+    function sendBounty(PaymentData storage self)
         internal returns (bool)
     {
-        uint paymentAmount = self.paymentOwed;
-        if (paymentAmount > 0) {
+        uint bountyAmount = self.bountyOwed;
+        if (bountyAmount > 0) {
             // re-entrance protection.
-            self.paymentOwed = 0;
-            return self.paymentBenefactor.send(paymentAmount);
+            self.bountyOwed = 0;
+            return self.bountyBenefactor.send(bountyAmount);
         }
         return true;
     }
@@ -109,7 +116,7 @@ library PaymentLib {
      * this calculation.
      */
     function computeEndowment(
-        uint _payment,
+        uint _bounty,
         uint _fee,
         uint _callGas,
         uint _callValue,
@@ -118,7 +125,7 @@ library PaymentLib {
     ) 
         public pure returns (uint)
     {
-        return _payment
+        return _bounty
                 .add(_fee.mul(2))
                 .add(_callGas.mul(_gasPrice))
                 .add(_gasOverhead.mul(_gasPrice))
@@ -127,13 +134,13 @@ library PaymentLib {
 
     /*
      * Validation: ensure that the request endowment is sufficient to cover.
-     * - payment * maxMultiplier
+     * - bounty * maxMultiplier
      * - fee * maxMultiplier
      * - gasReimbursment
      * - callValue
      */
     function validateEndowment(uint _endowment,
-                               uint _payment,
+                               uint _bounty,
                                uint _fee,
                                uint _callGas,
                                uint _callValue,
@@ -142,7 +149,7 @@ library PaymentLib {
         public pure returns (bool)
     {
         return _endowment >= computeEndowment(
-            _payment,
+            _bounty,
             _fee,
             _callGas,
             _callValue,

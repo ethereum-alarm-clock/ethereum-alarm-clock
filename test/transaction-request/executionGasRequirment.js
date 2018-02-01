@@ -29,7 +29,7 @@ contract("Tests execution gas requirements", async accounts => {
   const executionWindow = 10 //blocks
 
   const fee = 232323
-  const payment = 343434
+  const bounty = 343434
 
   beforeEach(async () => {
     txRecorder = await TransactionRecorder.new()
@@ -49,7 +49,7 @@ contract("Tests execution gas requirements", async accounts => {
       ],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

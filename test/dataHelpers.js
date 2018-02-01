@@ -26,9 +26,9 @@ const parseAbortData = executeTx => {
     return reasons
 }
 
-const computeEndowment = (payment, fee, callGas, callValue, gasPrice) => {
+const computeEndowment = (bounty, fee, callGas, callValue, gasPrice) => {
     return (
-        payment + fee * 2 + callGas * gasPrice + 180000 * gasPrice + callValue
+        bounty + fee * 2 + callGas * gasPrice + 180000 * gasPrice + callValue
     )
 }
 
@@ -52,11 +52,11 @@ const parseRequestData = async transactionRequest => {
 
         paymentData: {
             feeRecipient: data[0][3],
-            paymentBenefactor: data[0][4],
+            bountyBenefactor: data[0][4],
             fee: data[2][1].toNumber(),
             feeOwed: data[2][2].toNumber(),
-            payment: data[2][3].toNumber(),
-            paymentOwed: data[2][4].toNumber(),
+            bounty: data[2][3].toNumber(),
+            bountyOwed: data[2][4].toNumber(),
         },
 
         schedule: {
@@ -101,11 +101,11 @@ class RequestData {
 
         this.paymentData = {
             feeRecipient: data[0][3],
-            paymentBenefactor: data[0][4],
+            bountyBenefactor: data[0][4],
             fee: data[2][1].toNumber(),
             feeOwed: data[2][2].toNumber(),
-            payment: data[2][3].toNumber(),
-            paymentOwed: data[2][4].toNumber(),
+            bounty: data[2][3].toNumber(),
+            bountyOwed: data[2][4].toNumber(),
         }
 
         this.schedule = {
@@ -151,11 +151,11 @@ class RequestData {
 
         this.paymentData = {
             feeRecipient: data[0][3],
-            paymentBenefactor: data[0][4],
+            bountyBenefactor: data[0][4],
             fee: data[2][1].toNumber(),
             feeOwed: data[2][2].toNumber(),
-            payment: data[2][3].toNumber(),
-            paymentOwed: data[2][4].toNumber(),
+            bounty: data[2][3].toNumber(),
+            bountyOwed: data[2][4].toNumber(),
         }
 
         this.schedule = {
@@ -177,7 +177,7 @@ class RequestData {
 
     calcEndowment() {
         return (
-            this.paymentData.payment +
+            this.paymentData.bounty +
             this.paymentData.fee * 2 +
             this.txData.callGas * this.txData.gasPrice +
             180000 * this.txData.gasPrice +

@@ -25,7 +25,7 @@ contract("Block scheduling", function(accounts) {
   const gasPrice = 20000
 
   const fee = 0
-  const payment = 0
+  const bounty = 0
   const requiredDeposit = config.web3.utils.toWei("22", "kwei")
 
   let blockScheduler
@@ -101,7 +101,7 @@ contract("Block scheduling", function(accounts) {
         windowStart,
         gasPrice,
         fee,
-        payment,
+        bounty,
         requiredDeposit,
       ],
       {
@@ -128,7 +128,7 @@ contract("Block scheduling", function(accounts) {
 
     // Sanity check
     expect(requestData.calcEndowment()).to.equal(
-      computeEndowment(payment, fee, 1212121, 123454321, gasPrice)
+      computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
     )
 
     // Sanity check
@@ -144,7 +144,7 @@ contract("Block scheduling", function(accounts) {
 
     expect(requestData.paymentData.fee).to.equal(fee)
 
-    expect(requestData.paymentData.payment).to.equal(payment)
+    expect(requestData.paymentData.bounty).to.equal(bounty)
 
     expect(requestData.schedule.windowStart).to.equal(windowStart)
 

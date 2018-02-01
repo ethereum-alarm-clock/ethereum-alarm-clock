@@ -26,7 +26,7 @@ library SchedulerLib {
 
         uint gasPrice;              // The gasPrice to be sent with the transaction.
         
-        uint donation;              // Donation value attached to the transaction.
+        uint fee;                   // Fee value attached to the transaction.
         uint payment;               // Payment value attached to the transaction.
 
         uint requiredDeposit;       // The deposit required to claim the transaction.
@@ -49,9 +49,9 @@ library SchedulerLib {
             self.payment = defaultPayment;
         }
 
-        uint defaultDonation = self.payment.div(100);
-        if (self.donation != defaultDonation ) {
-            self.donation = defaultDonation;
+        uint defaultFee = self.payment.div(100);
+        if (self.fee != defaultFee ) {
+            self.fee = defaultFee;
         }
 
         uint defaultDeposit = self.payment.mul(2);
@@ -146,7 +146,7 @@ library SchedulerLib {
         uint endowment = MathLib.min(
             PaymentLib.computeEndowment(
                 self.payment,
-                self.donation,
+                self.fee,
                 self.callGas,
                 self.callValue,
                 self.gasPrice,
@@ -156,11 +156,11 @@ library SchedulerLib {
         newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
                 msg.sender,              // meta.owner
-                DONATION_BENEFACTOR,     // paymentData.donationBenefactor
+                DONATION_BENEFACTOR,     // paymentData.feeRecipient
                 self.toAddress           // txnData.toAddress
             ],
             [
-                self.donation,            // paymentData.donation
+                self.fee,                 // paymentData.fe
                 self.payment,             // paymentData.payment
                 self.claimWindowSize,     // scheduler.claimWindowSize
                 self.freezePeriod,        // scheduler.freezePeriod

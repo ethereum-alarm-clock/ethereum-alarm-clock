@@ -57,7 +57,7 @@ contract('Timestamp scheduling', function(accounts) {
         const curBlock = await config.web3.eth.getBlock('latest')
         const timestamp = curBlock.timestamp 
         const windowStart = timestamp + 10*MINUTE
-        const donation = 98765
+        const fee = 98765
         const payment = 80008
 
         const scheduleTx = await timestampScheduler.schedule(
@@ -69,7 +69,7 @@ contract('Timestamp scheduling', function(accounts) {
                 55 * MINUTE,    //windowSize
                 windowStart,
                 gasPrice,
-                donation,
+                fee,
                 payment,
                 requiredDeposit
             ],
@@ -98,7 +98,7 @@ contract('Timestamp scheduling', function(accounts) {
 
         // Sanity check
         expect(requestData.calcEndowment())
-        .to.equal(computeEndowment(payment, donation, 1212121, 123454321, gasPrice))
+        .to.equal(computeEndowment(payment, fee, 1212121, 123454321, gasPrice))
 
         expect(requestData.txData.toAddress)
         .to.equal(transactionRecorder.address)
@@ -112,8 +112,8 @@ contract('Timestamp scheduling', function(accounts) {
         expect(requestData.txData.callGas)
         .to.equal(1212121)
 
-        expect(requestData.paymentData.donation)
-        .to.equal(donation)
+        expect(requestData.paymentData.fee)
+        .to.equal(fee)
 
         expect(requestData.paymentData.payment)
         .to.equal(payment)
@@ -143,7 +143,7 @@ contract('Timestamp scheduling', function(accounts) {
                 55 * MINUTE,    //windowSize
                 windowStart,
                 gasPrice,
-                0,              //donation
+                0,              // fee
                 0,              //payment
                 12              //requiredDeposit
             ],

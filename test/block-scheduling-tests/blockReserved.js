@@ -33,10 +33,10 @@ contract('Block reserved window', function(accounts) {
             [
                 accounts[0], //created by
                 accounts[0], //owner
-                accounts[1], //donation benefactor
+                accounts[1], // fee recipient
                 txRecorder.address  // to
             ], [
-                0, //donation
+                0, // fee
                 0, //payment
                 25,//claim window size
                 5, //freeze period

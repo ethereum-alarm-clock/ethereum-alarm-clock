@@ -28,11 +28,11 @@ const parseAbortData = (executeTx) => {
 
 const computeEndowment = (
     payment,
-    donation,
+    fee,
     callGas,
     callValue,
     gasPrice) => {
-        return payment + (donation * 2) + (callGas * gasPrice) + 180000 * gasPrice + callValue
+        return payment + (fee * 2) + (callGas * gasPrice) + 180000 * gasPrice + callValue
 }
 
 const parseRequestData = async (transactionRequest) => {
@@ -54,10 +54,10 @@ const parseRequestData = async (transactionRequest) => {
         },
 
         "paymentData": {
-            "donationBenefactor": data[0][3],
+            "feeRecipient": data[0][3],
             "paymentBenefactor": data[0][4],
-            "donation": data[2][1].toNumber(),
-            "donationOwed": data[2][2].toNumber(),
+            "fee": data[2][1].toNumber(),
+            "feeOwed": data[2][2].toNumber(),
             "payment": data[2][3].toNumber(),
             "paymentOwed": data[2][4].toNumber(),
         },
@@ -104,10 +104,10 @@ class RequestData {
         }
 
         this.paymentData = {
-            "donationBenefactor": data[0][3],
+            "feeRecipient": data[0][3],
             "paymentBenefactor": data[0][4],
-            "donation": data[2][1].toNumber(),
-            "donationOwed": data[2][2].toNumber(),
+            "fee": data[2][1].toNumber(),
+            "feeOwed": data[2][2].toNumber(),
             "payment": data[2][3].toNumber(),
             "paymentOwed": data[2][4].toNumber(),
         }
@@ -154,10 +154,10 @@ class RequestData {
         }
 
         this.paymentData = {
-            "donationBenefactor": data[0][3],
+            "feeRecipient": data[0][3],
             "paymentBenefactor": data[0][4],
-            "donation": data[2][1].toNumber(),
-            "donationOwed": data[2][2].toNumber(),
+            "fee": data[2][1].toNumber(),
+            "feeOwed": data[2][2].toNumber(),
             "payment": data[2][3].toNumber(),
             "paymentOwed": data[2][4].toNumber(),
         }
@@ -180,7 +180,7 @@ class RequestData {
     }
 
     calcEndowment () {
-        return this.paymentData.payment + this.paymentData.donation * 2 + this.txData.callGas * this.txData.gasPrice + 180000 * this.txData.gasPrice + this.txData.callValue
+        return this.paymentData.payment + this.paymentData.fee * 2 + this.txData.callGas * this.txData.gasPrice + 180000 * this.txData.gasPrice + this.txData.callValue
     }
 
 }

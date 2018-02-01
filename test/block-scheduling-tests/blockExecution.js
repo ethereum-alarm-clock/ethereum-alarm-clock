@@ -39,21 +39,21 @@ contract('Block execution', async function(accounts) {
 
         txRequest = await TransactionRequest.new(
             [
-                Owner,              //createdBy
-                Owner,              //owner
-                Benefactor,         //donationBenefactor
-                txRecorder.address //toAddress
+                Owner,                  // createdBy
+                Owner,                  // owner
+                Benefactor,             // feeRecipient
+                txRecorder.address      // toAddress
             ], [
-                12345,                  //donation
-                224455,                  //payment
-                25,                 //claim window size
-                5,                  //freeze period
-                10,                 //reserved window size
-                1,                  // temporal unit
-                executionWindow,    //window size
-                windowStart,        //windowStart
-                200000,             //callGas
-                0,                  //callValue
+                12345,                  // fee
+                224455,                 // payment
+                25,                     // claim window size
+                5,                      // freeze period
+                10,                     // reserved window size
+                1,                      // temporal unit
+                executionWindow,        // window size
+                windowStart,            // windowStart
+                200000,                 // callGas
+                0,                      // callValue
                 gasPrice,
                 requiredDeposit    
             ],

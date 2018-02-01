@@ -14,7 +14,7 @@ const config = require('../../config')
  * The endowment is the value that must be sent with the scheduling transaction.
  * It covers the amount of ether for:
  *  - payment
- *  - donation
+ *  - fee
  *  - execution gas 
  *  - callGas
  *  - callValue
@@ -33,18 +33,18 @@ contract('PaymentLib', account => {
         const callGas = new BigNumber(3000000)
         const callValue = new BigNumber(123454321)
         const gasPrice = new BigNumber(web3.utils.toWei('55', 'gwei'))
-        const donation = new BigNumber(web3.utils.toWei('120', 'finney'))
+        const fee = new BigNumber(web3.utils.toWei('120', 'finney'))
         const payment = new BigNumber(web3.utils.toWei('250', 'finney'))
 
         const expectedEndowment = payment 
-                                  .plus(donation.mul(2))
+                                  .plus(fee.mul(2))
                                   .plus(callGas.mul(gasPrice))
                                   .plus(gasPrice.mul(180000))
                                   .plus(callValue)
 
         const endowment = await paymentLib.computeEndowment(
             payment,
-            donation,
+            fee,
             callGas,
             callValue,
             gasPrice,
@@ -62,18 +62,18 @@ contract('PaymentLib', account => {
         const callGas = new BigNumber(3333331)
         const callValue = new BigNumber(web3.utils.toWei('3', 'ether'))
         const gasPrice = new BigNumber(web3.utils.toWei('25', 'gwei'))
-        const donation = new BigNumber(web3.utils.toWei('2', 'ether'))
+        const fee = new BigNumber(web3.utils.toWei('2', 'ether'))
         const payment = new BigNumber(web3.utils.toWei('250', 'finney'))
 
         const expectedEndowment = payment 
-                                  .plus(donation.mul(2))
+                                  .plus(fee.mul(2))
                                   .plus(callGas.mul(gasPrice))
                                   .plus(gasPrice.mul(180000))
                                   .plus(callValue)
 
         const endowment = await paymentLib.computeEndowment(
             payment,
-            donation,
+            fee,
             callGas,
             callValue,
             gasPrice,

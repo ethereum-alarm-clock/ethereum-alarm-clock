@@ -10,15 +10,15 @@ library PaymentLib {
     struct PaymentData {
         uint payment;               /// The amount in wei to be paid to the executor of this TransactionRequest.
 
-        address paymentBenefactor;  /// The address that the payment should be sent to.
+        address paymentBenefactor;  /// The address that the payment will be sent to.
 
         uint paymentOwed;           /// The amount that is owed to the paymentBenefactor.
 
-        uint donation;              /// The amount in wei that will be paid to the donationBenefactor address.
+        uint fee;                   /// The amount in wei that will be paid to the FEE_RECIPIENT address.
 
-        address donationBenefactor; /// The address that the donation should be sent to.
+        address feeRecipient;       /// The address that the fee will be sent to.
 
-        uint donationOwed;          /// The amount that is owed to the donationBenefactor.
+        uint feeOwed;               /// The amount that is owed to the feeRecipient.
     }
 
     ///---------------
@@ -31,16 +31,16 @@ library PaymentLib {
     function hasBenefactor(PaymentData storage self)
         internal view returns (bool)
     {
-        return self.donationBenefactor != 0x0;
+        return self.feeRecipient != 0x0;
     }
 
     /**
-     * @dev Computes the amount to send to the donationBenefactor. 
+     * @dev Computes the amount to send to the feeRecipient. 
      */
-    function getDonation(PaymentData storage self) 
+    function getFee(PaymentData storage self) 
         internal view returns (uint)
     {
-        return self.donation;
+        return self.fee;
     }
 
     /**
@@ -68,17 +68,17 @@ library PaymentLib {
     ///---------------
 
     /**
-     * @dev Send the donationOwed amount to the donationBenefactor.
+     * @dev Send the feeOwed amount to the feeRecipient.
      * Note: The send is allowed to fail.
      */
-    function sendDonation(PaymentData storage self) 
+    function sendFee(PaymentData storage self) 
         internal returns (bool)
     {
-        uint donationAmount = self.donationOwed;
-        if (donationAmount > 0) {
+        uint feeAmount = self.feeOwed;
+        if (feeAmount > 0) {
             // re-entrance protection.
-            self.donationOwed = 0;
-            return self.donationBenefactor.send(donationAmount);
+            self.feeOwed = 0;
+            return self.feeRecipient.send(feeAmount);
         }
         return true;
     }
@@ -110,7 +110,7 @@ library PaymentLib {
      */
     function computeEndowment(
         uint _payment,
-        uint _donation,
+        uint _fee,
         uint _callGas,
         uint _callValue,
         uint _gasPrice,
@@ -119,7 +119,7 @@ library PaymentLib {
         public pure returns (uint)
     {
         return _payment
-                .add(_donation.mul(2))
+                .add(_fee.mul(2))
                 .add(_callGas.mul(_gasPrice))
                 .add(_gasOverhead.mul(_gasPrice))
                 .add(_callValue);
@@ -128,13 +128,13 @@ library PaymentLib {
     /*
      * Validation: ensure that the request endowment is sufficient to cover.
      * - payment * maxMultiplier
-     * - donation * maxMultiplier
+     * - fee * maxMultiplier
      * - gasReimbursment
      * - callValue
      */
     function validateEndowment(uint _endowment,
                                uint _payment,
-                               uint _donation,
+                               uint _fee,
                                uint _callGas,
                                uint _callValue,
                                uint _gasPrice,
@@ -143,7 +143,7 @@ library PaymentLib {
     {
         return _endowment >= computeEndowment(
             _payment,
-            _donation,
+            _fee,
             _callGas,
             _callValue,
             _gasPrice,

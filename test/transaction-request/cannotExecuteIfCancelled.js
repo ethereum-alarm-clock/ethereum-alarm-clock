@@ -36,10 +36,10 @@ contract('tests execution rejected if cancelled', async function(accounts) {
             [
                 Owner, //createdBy
                 Owner, //owner
-                accounts[1], //donationBenefactor
+                accounts[1], // fee recipient
                 txRecorder.address //toAddress
             ], [
-                0, //donation
+                0, // fee
                 0, //payment
                 claimWindowSize,
                 freezePeriod,

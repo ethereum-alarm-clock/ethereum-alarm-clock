@@ -42,10 +42,10 @@ contract('Block claiming', async function(accounts) {
             [
                 Owner,                  // created by
                 Owner,                  // owner
-                Benefactor,             // donation benefactor
+                Benefactor,             // fee recipient
                 txRecorder.address      // to
             ], [
-                0,                      //donation
+                0,                      //fee
                 config.web3.utils.toWei('200', 'finney'), //payment
                 25,                     //claim window size
                 5,                      //freeze period

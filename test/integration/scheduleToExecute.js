@@ -69,7 +69,7 @@ contract('Schedule to execution flow', function(accounts) {
                 365,                //windowSize
                 windowStart,        
                 gasPrice,           
-                98765,              //donation
+                98765,              // fee
                 80008,              //payment
                 config.web3.utils.toWei('20', 'kwei')   // requiredDeposit
             ],
@@ -115,7 +115,7 @@ contract('Schedule to execution flow', function(accounts) {
         expect(requestData.txData.gasPrice)
         .to.equal(parseInt(gasPrice))
 
-        expect(requestData.paymentData.donation)
+        expect(requestData.paymentData.fee)
         .to.equal(98765)
 
         expect(requestData.paymentData.payment)

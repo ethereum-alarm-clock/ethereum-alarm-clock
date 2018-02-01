@@ -36,10 +36,10 @@ contract('Exceptions', async function(accounts) {
             [
                 Owner, //createdBy
                 Owner, //owner
-                accounts[1], //donationBenefactor
+                accounts[1], // fee recipient
                 accounts[3] //toAddress
             ], [
-                12345, //donation
+                12345, // fee
                 0, //payment
                 claimWindowSize,
                 freezePeriod,

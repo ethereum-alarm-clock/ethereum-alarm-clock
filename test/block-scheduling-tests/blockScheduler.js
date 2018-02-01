@@ -24,7 +24,7 @@ contract('Block scheduling', function(accounts) {
     const User2 = accounts[2]
     const gasPrice = 20000
 
-    const donation = 0
+    const fee = 0
     const payment = 0
     const requiredDeposit = config.web3.utils.toWei('22', 'kwei')
 
@@ -103,7 +103,7 @@ contract('Block scheduling', function(accounts) {
                 54321,          //windowSize       
                 windowStart,
                 gasPrice,
-                donation,
+                fee,
                 payment,
                 requiredDeposit
             ],
@@ -135,7 +135,7 @@ contract('Block scheduling', function(accounts) {
 
         // Sanity check
         expect(requestData.calcEndowment())
-        .to.equal(computeEndowment(payment, donation, 1212121, 123454321, gasPrice))
+        .to.equal(computeEndowment(payment, fee, 1212121, 123454321, gasPrice))
 
         // Sanity check
         expect(endowment.toNumber())
@@ -153,8 +153,8 @@ contract('Block scheduling', function(accounts) {
         expect(requestData.txData.callGas)
         .to.equal(1212121)
 
-        expect(requestData.paymentData.donation)
-        .to.equal(donation)
+        expect(requestData.paymentData.fee)
+        .to.equal(fee)
 
         expect(requestData.paymentData.payment)
         .to.equal(payment)
@@ -183,7 +183,7 @@ contract('Block scheduling', function(accounts) {
                 0,              //windowSize
                 windowStart,
                 gasPrice,
-                donation,
+                fee,
                 payment,
                 requiredDeposit
             ],

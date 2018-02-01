@@ -26,9 +26,9 @@ contract RequestFactory is RequestFactoryInterface {
      * @dev The lowest level interface for creating a transaction request.
      * 
      * @param _addressArgs [0] -  meta.owner
-     * @param _addressArgs [1] -  paymentData.donationBenefactor
+     * @param _addressArgs [1] -  paymentData.feeRecipient
      * @param _addressArgs [2] -  txnData.toAddress
-     * @param _uintArgs [0]    -  paymentData.donation
+     * @param _uintArgs [0]    -  paymentData.fee
      * @param _uintArgs [1]    -  paymentData.payment
      * @param _uintArgs [2]    -  schedule.claimWindowSize
      * @param _uintArgs [3]    -  schedule.freezePeriod
@@ -53,7 +53,7 @@ contract RequestFactory is RequestFactoryInterface {
             [
                 msg.sender,       // Created by
                 _addressArgs[0],  // meta.owner
-                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[1],  // paymentData.feeRecipient
                 _addressArgs[2]   // txnData.toAddress
             ],
             _uintArgs,            //uint[12]
@@ -156,7 +156,7 @@ contract RequestFactory is RequestFactoryInterface {
             [
                 msg.sender,      // meta.createdBy
                 _addressArgs[0],  // meta.owner
-                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[1],  // paymentData.feeRecipient
                 _addressArgs[2]   // txnData.toAddress
             ],
             _uintArgs,

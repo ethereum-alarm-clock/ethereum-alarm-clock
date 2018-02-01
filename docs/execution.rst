@@ -196,11 +196,11 @@ Part 3: Accounting
 The accounting phase accounts for all of the payments and reimbursements that
 need to be sent.
 
-The *donation* payment is the mechanism through which developers can earn a
+The *fee* payment is the mechanism through which developers can earn a
 return on their development efforts on the Alarm service.  When a person schedules 
-a transaction they may choose to enter a ``donation`` amount which will get sent to 
+a transaction they may choose to enter a ``fee`` amount which will get sent to 
 the developer.  This value is multiplied by the *gas multiplier* (see
-:ref:`gas-multiplier`) and sent to the ``donationBenefactor`` address.
+:ref:`gas-multiplier`) and sent to the ``feeRecipient`` address.
 
 Next the payment for the actual execution is computed.  The formula for this is
 as follows:
@@ -237,7 +237,7 @@ request was scheduled it is possible that it no longer has sufficient ether to
 pay for gas costs.  The following formula can be used to compute the maximum
 amount of gas that a request is capable of paying:
 
-    ``(request.balance - 2 * (payment + donation)) / tx.gasprice``
+    ``(request.balance - 2 * (payment + fee)) / tx.gasprice``
 
 If you provide a gas value above this amount for the executing transaction then
 you are not guaranteed to be fully reimbursed for gas costs.

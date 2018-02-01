@@ -52,7 +52,7 @@ library RequestLib {
     event Aborted(uint8 reason);
     event Cancelled(uint rewardPayment, uint measuredGasConsumption);
     event Claimed();
-    event Executed(uint payment, uint donation, uint measuredGasConsumption);
+    event Executed(uint payment, uint fee, uint measuredGasConsumption);
 
     /**
      * @dev Validate the initialization parameters of a transaction request.
@@ -74,8 +74,8 @@ library RequestLib {
         request.claimData.claimedBy =               0x0;
         request.meta.createdBy =                    _addressArgs[0];
         request.meta.owner =                        _addressArgs[1];
-        request.paymentData.donationBenefactor =    _addressArgs[2];
-        request.paymentData.donationBenefactor =    0x0;
+        request.paymentData.feeRecipient =          _addressArgs[2];
+        request.paymentData.paymentBenefactor =     0x0;
         request.txnData.toAddress =                 _addressArgs[3];
 
         // Boolean values
@@ -85,9 +85,9 @@ library RequestLib {
 
         // UInt values
         request.claimData.claimDeposit =        0;
-        request.paymentData.donation =          _uintArgs[0];
+        request.paymentData.fee =               _uintArgs[0];
         request.paymentData.payment =           _uintArgs[1];
-        request.paymentData.donationOwed =      0;
+        request.paymentData.feeOwed =           0;
         request.paymentData.paymentOwed =       0;
         request.schedule.claimWindowSize =      _uintArgs[2];
         request.schedule.freezePeriod =         _uintArgs[3];
@@ -109,7 +109,7 @@ library RequestLib {
         isValid[0] = PaymentLib.validateEndowment(
             _endowment,
             request.paymentData.payment,
-            request.paymentData.donation,
+            request.paymentData.fee,
             request.txnData.callGas,
             request.txnData.callValue,
             request.txnData.gasPrice,
@@ -149,7 +149,7 @@ library RequestLib {
             0x0,                // self.claimData.claimedBy
             _addressArgs[0],    // self.meta.createdBy
             _addressArgs[1],    // self.meta.owner
-            _addressArgs[2],    // self.paymentData.donationBenefactor
+            _addressArgs[2],    // self.paymentData.feeRecipient
             0x0,                // self.paymentData.paymentBenefactor
             _addressArgs[3]     // self.txnData.toAddress
         ];
@@ -158,8 +158,8 @@ library RequestLib {
 
         uint[15] memory uintValues = [
             0,                  // self.claimData.claimDeposit
-            _uintArgs[0],       // self.paymentData.donation
-            0,                  // self.paymentData.donationOwed
+            _uintArgs[0],       // self.paymentData.fee
+            0,                  // self.paymentData.feeOwed
             _uintArgs[1],       // self.paymentData.payment
             0,                  // self.paymentData.paymentOwed
             _uintArgs[2],       // self.schedule.claimWindowSize
@@ -202,7 +202,7 @@ library RequestLib {
         self.serializedValues.addressValues[0] = self.claimData.claimedBy;
         self.serializedValues.addressValues[1] = self.meta.createdBy;
         self.serializedValues.addressValues[2] = self.meta.owner;
-        self.serializedValues.addressValues[3] = self.paymentData.donationBenefactor;
+        self.serializedValues.addressValues[3] = self.paymentData.feeRecipient;
         self.serializedValues.addressValues[4] = self.paymentData.paymentBenefactor;
         self.serializedValues.addressValues[5] = self.txnData.toAddress;
 
@@ -213,8 +213,8 @@ library RequestLib {
 
         // UInt256 values
         self.serializedValues.uintValues[0] = self.claimData.claimDeposit;
-        self.serializedValues.uintValues[1] = self.paymentData.donation;
-        self.serializedValues.uintValues[2] = self.paymentData.donationOwed;
+        self.serializedValues.uintValues[1] = self.paymentData.fee;
+        self.serializedValues.uintValues[2] = self.paymentData.feeOwed;
         self.serializedValues.uintValues[3] = self.paymentData.payment;
         self.serializedValues.uintValues[4] = self.paymentData.paymentOwed;
         self.serializedValues.uintValues[5] = self.schedule.claimWindowSize;
@@ -256,7 +256,7 @@ library RequestLib {
         self.claimData.claimedBy =              _addressValues[0];
         self.meta.createdBy =                   _addressValues[1];
         self.meta.owner =                       _addressValues[2];
-        self.paymentData.donationBenefactor =   _addressValues[3];
+        self.paymentData.feeRecipient =         _addressValues[3];
         self.paymentData.paymentBenefactor =    _addressValues[4];
         self.txnData.toAddress =                _addressValues[5];
 
@@ -267,8 +267,8 @@ library RequestLib {
 
         // UInt values
         self.claimData.claimDeposit =       _uintValues[0];
-        self.paymentData.donation =         _uintValues[1];
-        self.paymentData.donationOwed =     _uintValues[2];
+        self.paymentData.fee =              _uintValues[1];
+        self.paymentData.feeOwed =          _uintValues[2];
         self.paymentData.payment =          _uintValues[3];
         self.paymentData.paymentOwed =      _uintValues[4];
         self.schedule.claimWindowSize =     _uintValues[5];
@@ -327,7 +327,7 @@ library RequestLib {
          *  | Phase 3: Accounting |
          *  +---------------------+
          *
-         *  1. Calculate and send donation amount.
+         *  1. Calculate and send fee amount.
          *  2. Calculate and send payment amount.
          *  3. Send remaining ether back to owner.
          *
@@ -385,17 +385,17 @@ library RequestLib {
         // | Begin: Accounting |
         // +-------------------+
 
-        // Compute the donation amount
+        // Compute the fee amount
         if (self.paymentData.hasBenefactor()) {
-            self.paymentData.donationOwed = self.paymentData.getDonation()
-                                                            .add(self.paymentData.donationOwed);
+            self.paymentData.feeOwed = self.paymentData.getFee()
+                                        .add(self.paymentData.feeOwed);
         }
 
         // record this so that we can log it later.
-        uint totalDonationPayment = self.paymentData.donationOwed;
+        uint totalFeePayment = self.paymentData.feeOwed;
 
-        // Send the donation.
-        self.paymentData.sendDonation();
+        // Send the fee.
+        self.paymentData.sendFee();
 
         // Compute the payment amount and who it should be sent do.
         self.paymentData.paymentBenefactor = msg.sender;
@@ -425,7 +425,7 @@ library RequestLib {
         // Log the two payment amounts.  Otherwise it is non-trivial to figure
         // out how much was payed.
         Executed(self.paymentData.paymentOwed,
-                 totalDonationPayment,
+                 totalFeePayment,
                  measuredGasConsumption);
     
         // Attempt to send the payment. This is allowed to fail so it may need to be called again.
@@ -623,13 +623,13 @@ library RequestLib {
     }
 
     /*
-     * Send donation
+     * Send fee
      */
-    function sendDonation(Request storage self) 
+    function sendFee(Request storage self) 
         public returns (bool)
     {
         if (self.schedule.isAfterWindow()) {
-            return self.paymentData.sendDonation();
+            return self.paymentData.sendFee();
         }
         return false;
     }
@@ -662,8 +662,8 @@ library RequestLib {
         // Note! This does not do any checks since it is used in the execute function.
         // The public version of the function should be used for checks and in the cancel function.
         uint ownerRefund = this.balance.sub(self.claimData.claimDeposit)
-                                        .sub(self.paymentData.paymentOwed)
-                                        .sub(self.paymentData.donationOwed);
+                                .sub(self.paymentData.paymentOwed)
+                                .sub(self.paymentData.feeOwed);
         return self.meta.owner.send(ownerRefund);
     }
 }

@@ -40,10 +40,10 @@ contract('Execution', async function(accounts) {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                accounts[1], //donationBenefactor
+                accounts[1], // fee recipient
                 txRecorder.address //toAddress
             ], [
-                0, //donation
+                0, // fee
                 0, //payment
                 claimWindowSize,
                 freezePeriod,

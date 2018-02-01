@@ -29,7 +29,7 @@ contract('Tests execution gas requirements', async accounts => {
     const reservedWindowSize = 10//blocks
     const executionWindow = 10//blocks
     
-    const donation = 232323
+    const fee = 232323
     const payment = 343434
 
     beforeEach(async () => {
@@ -46,10 +46,10 @@ contract('Tests execution gas requirements', async accounts => {
             [
                 accounts[0],    //createdBy
                 accounts[0],    //owner
-                accounts[1],    //donationBenefactor
+                accounts[1],    // fee recipient
                 txRecorder.address//toAddress
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,

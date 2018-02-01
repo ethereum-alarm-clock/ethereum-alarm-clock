@@ -48,8 +48,8 @@ that holds all of the information necessary for the execution of the transaction
 A good analogy to compare this smart contract to is an order on an exchange.  When 
 this contract "order" is called during the specified execution window, the contract 
 will send the transaction as set by the user. It will also pay the account that 
-triggered the execution and if a donation was specified in the data, a transaction 
-to the beneficiary.
+triggered the execution and if a fee was specified in the data, a transaction 
+to the fee recipient.
 
 These contracts are of the type called :class:`TransactionRequest` and
 are written to provide strong guarantees of correctness to both parties.

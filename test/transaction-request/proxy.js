@@ -35,10 +35,10 @@ contract('TransactionRequest proxy function', accounts => {
             [
                 accounts[0],        //createdBy
                 accounts[0],        //owner
-                accounts[1],        //donationBenefactor
+                accounts[1],        // fee recipient
                 accounts[3]         //toAddress
             ], [
-                12345,              //donation
+                12345,              // fee
                 332332,             //payment
                 claimWindowSize,
                 freezePeriod,
@@ -92,10 +92,10 @@ contract('TransactionRequest proxy function', accounts => {
             [
                 accounts[0],            //createdBy
                 accounts[0],            //owner
-                accounts[1],            //donationBenefactor
+                accounts[1],            // fee recipient
                 tokenContract.address   //toAddress
             ], [
-                12345,              //donation
+                12345,              // fee
                 332332,             //payment
                 claimWindowSize,
                 freezePeriod,

@@ -32,7 +32,7 @@ contract('Request factory', async function(accounts) {
 
         /// Set up the data for our transaction request
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -52,7 +52,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -85,10 +85,10 @@ contract('Request factory', async function(accounts) {
         const createTx = await requestFactory.createRequest(
             [
                 accounts[0],
-                accounts[1], //donation benefactor
+                accounts[1], //fee recipient
                 accounts[2] // to
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -135,13 +135,13 @@ contract('Request factory', async function(accounts) {
         expect(requestData.claimData.paymentModifier)
         .to.equal(0)
 
-        expect(requestData.paymentData.donation)
-        .to.equal(donation)
+        expect(requestData.paymentData.fee)
+        .to.equal(fee)
 
-        expect(requestData.paymentData.donationBenefactor)
+        expect(requestData.paymentData.feeRecipient)
         .to.equal(accounts[1])
 
-        expect(requestData.paymentData.donationOwed)
+        expect(requestData.paymentData.feeOwed)
         .to.equal(0)
 
         expect(requestData.paymentData.payment)
@@ -198,7 +198,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -216,7 +216,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -244,7 +244,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -262,7 +262,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -293,7 +293,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -311,7 +311,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -343,7 +343,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 11 // more than the blocks between now and the window start
         const windowStart = curBlock + 10
@@ -361,7 +361,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -390,7 +390,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -408,7 +408,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 accounts[2]
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,
@@ -437,7 +437,7 @@ contract('Request factory', async function(accounts) {
         expect(requestLib.address).to.exist
 
         const claimWindowSize = 255
-        const donation = 12345
+        const fee = 12345
         const payment = 54321
         const freezePeriod = 10
         const windowStart = curBlock + 20
@@ -455,7 +455,7 @@ contract('Request factory', async function(accounts) {
                 accounts[1],
                 NULL_ADDR // TO ADDRESS
             ], [
-                donation,
+                fee,
                 payment,
                 claimWindowSize,
                 freezePeriod,

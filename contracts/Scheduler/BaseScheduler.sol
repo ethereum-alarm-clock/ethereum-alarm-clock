@@ -29,7 +29,7 @@ contract BaseScheduler is SchedulerInterface {
      * @param _uintArgs [2] The size of the execution window of the transaction.
      * @param _uintArgs [3] The (block or timestamp) of when the execution window starts.
      * @param _uintArgs [4] The gasPrice which will be used to execute this transaction.
-     * @param _uintArgs [5] The donation value attached to this transaction.
+     * @param _uintArgs [5] The fee value attached to this transaction.
      * @param _uintArgs [6] The payment value attached to this transaction.
      * @param _uintArgs [7] The deposit required to claim this transaction.
      * @return The address of the new TransactionRequest.   
@@ -49,7 +49,7 @@ contract BaseScheduler is SchedulerInterface {
         futureTransaction.windowSize        = _uintArgs[2];
         futureTransaction.windowStart       = _uintArgs[3];
         futureTransaction.gasPrice          = _uintArgs[4];
-        futureTransaction.donation          = _uintArgs[5];
+        futureTransaction.fee               = _uintArgs[5];
         futureTransaction.payment           = _uintArgs[6];
         futureTransaction.requiredDeposit   = _uintArgs[7];
 

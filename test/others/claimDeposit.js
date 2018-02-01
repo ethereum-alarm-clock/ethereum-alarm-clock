@@ -40,10 +40,10 @@ contract('claim deposit', async accounts => {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                accounts[1], //donationBenefactor
+                accounts[1], // fee recipient
                 txRecorder.address //toAddress
             ], [
-                12345, //donation
+                12345, // fee
                 payment, //payment
                 claimWindowSize,
                 freezePeriod,

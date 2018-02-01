@@ -30,12 +30,12 @@ contract('Test accounting', async function(accounts) {
     const reservedWindowSize = 1*MINUTE
     const executionWindow = 2*MINUTE
 
-    const donationBenefactor = accounts[3]
+    const feeRecipient = accounts[3]
 
     const gasPrice = config.web3.utils.toWei('33', 'gwei')
     const requiredDeposit = config.web3.utils.toWei('33', 'kwei')
 
-    const donation = 12345
+    const fee = 12345
     const payment = 232323
 
     beforeEach(async function() {
@@ -61,10 +61,10 @@ contract('Test accounting', async function(accounts) {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                donationBenefactor, //donationBenefactor
+                feeRecipient, // fee recipient
                 txRecorder.address //toAddress
             ], [
-                donation, //donation
+                fee, // fee
                 payment, //payment
                 claimWindowSize,
                 freezePeriod,
@@ -85,13 +85,13 @@ contract('Test accounting', async function(accounts) {
 
         const requestData = await RequestData.from(txRequest)
 
-        expect(requestData.paymentData.donation)
-        .to.equal(donation)
+        expect(requestData.paymentData.fee)
+        .to.equal(fee)
 
         expect(requestData.paymentData.payment)
         .to.equal(payment)
 
-        const beforeDonationBal = await config.web3.eth.getBalance(requestData.paymentData.donationBenefactor)
+        const beforeFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
         const beforePaymentBal = await config.web3.eth.getBalance(accounts[1])
 
         await waitUntilBlock(
@@ -107,18 +107,18 @@ contract('Test accounting', async function(accounts) {
         expect(executeTx.receipt)
         .to.exist 
 
-        const afterDonationBal = await config.web3.eth.getBalance(requestData.paymentData.donationBenefactor)
+        const afterFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
         const afterPaymentBal = await config.web3.eth.getBalance(accounts[1])
 
         const Executed = executeTx.logs.find(e => e.event === 'Executed')
-        const donationAmt = Executed.args.donation.toNumber()
+        const feeAmt = Executed.args.fee.toNumber()
         const paymentAmt = Executed.args.payment.toNumber()
 
-        expect(donationAmt)
-        .to.equal(donation)
+        expect(feeAmt)
+        .to.equal(fee)
 
-        expect(toBN(afterDonationBal).sub(toBN(beforeDonationBal)).toNumber())
-        .to.equal(donationAmt)   
+        expect(toBN(afterFeeBal).sub(toBN(beforeFeeBal)).toNumber())
+        .to.equal(feeAmt)   
 
         const gasUsed = executeTx.receipt.gasUsed
         const gasCost = gasUsed * gasPrice
@@ -148,10 +148,10 @@ contract('Test accounting', async function(accounts) {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                donationBenefactor, //donationBenefactor
+                feeRecipient, // fee recipient
                 txRecorder.address //toAddress
             ], [
-                donation, //donation
+                fee, // fee
                 payment, //payment
                 claimWindowSize,
                 freezePeriod,
@@ -228,7 +228,7 @@ contract('Test accounting', async function(accounts) {
         const afterPaymentBal = await config.web3.eth.getBalance(accounts[1])
 
         const Executed = executeTx.logs.find(e => e.event === 'Executed')
-        const donationAmt = Executed.args.donation.toNumber()
+        const feeAmt = Executed.args.fee.toNumber()
         const paymentAmt = Executed.args.payment.toNumber()
 
         const executeGasUsed = executeTx.receipt.gasUsed 
@@ -265,10 +265,10 @@ contract('Test accounting', async function(accounts) {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                donationBenefactor, //donationBenefactor
+                feeRecipient, // fee recipient
                 txRecorder.address //toAddress
             ], [
-                donation, //donation
+                fee, // fee
                 payment, //payment
                 claimWindowSize,
                 freezePeriod,
@@ -330,10 +330,10 @@ contract('Test accounting', async function(accounts) {
             [
                 accounts[0], //createdBy
                 accounts[0], //owner
-                donationBenefactor, //donationBenefactor
+                feeRecipient, // fee recipient
                 txRecorder.address //toAddress
             ], [
-                donation, //donation
+                fee, // fee
                 34343, //payment
                 claimWindowSize,
                 freezePeriod,

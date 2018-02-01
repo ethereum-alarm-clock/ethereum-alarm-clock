@@ -13,10 +13,10 @@ contract TransactionRequest is TransactionRequestInterface {
     /*
      *  addressArgs[0] - meta.createdBy
      *  addressArgs[1] - meta.owner
-     *  addressArgs[2] - paymentData.donationBenefactor
+     *  addressArgs[2] - paymentData.feeRecipient
      *  addressArgs[3] - txnData.toAddress
      *
-     *  uintArgs[0]  - paymentData.donation
+     *  uintArgs[0]  - paymentData.fee
      *  uintArgs[1]  - paymentData.payment
      *  uintArgs[2]  - schedule.claimWindowSize
      *  uintArgs[3]  - schedule.freezePeriod
@@ -111,8 +111,8 @@ contract TransactionRequest is TransactionRequestInterface {
         txnRequest.refundClaimDeposit();
     }
 
-    function sendDonation() public returns (bool) {
-        return txnRequest.sendDonation();
+    function sendFee() public returns (bool) {
+        return txnRequest.sendFee();
     }
 
     function sendPayment() public returns (bool) {

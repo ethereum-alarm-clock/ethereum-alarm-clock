@@ -8,7 +8,7 @@ Changelog
  - Replaced term `payment` to `bounty`.
  - Removed the hardcoding of FEE_RECIPIENT to be passed in on creation of schedulers. (done)
  - Added an indexed parameter to `RequestCreated()` event in RequestFactory.sol (done)
- - Peg contracts to compiler version 0.4.19
+ - Peg contracts to compiler version 0.4.19 (done)
 
 0.9.0-beta
 ----------

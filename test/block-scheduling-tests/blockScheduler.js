@@ -52,7 +52,7 @@ contract('Block scheduling', function(accounts) {
         .to.exist
 
         requestFactory = await RequestFactory.new(requestTracker.address)
-        blockScheduler = await BlockScheduler.new(requestFactory.address)        
+        blockScheduler = await BlockScheduler.new(requestFactory.address, "0xecc9c5fff8937578141592e7E62C2D2E364311b8")        
 
         /// Get the factory address
         const factoryAddress = await blockScheduler.factoryAddress()

@@ -45,7 +45,7 @@ contract('Timestamp scheduling', function(accounts) {
         expect(requestFactory.address).to.exist 
 
         // Timestamp scheduler
-        timestampScheduler = await TimestampScheduler.new(requestFactory.address)
+        timestampScheduler = await TimestampScheduler.new(requestFactory.address, "0xecc9c5fff8937578141592e7E62C2D2E364311b8")
         expect(timestampScheduler.address).to.exist
 
         // Transaction recorder

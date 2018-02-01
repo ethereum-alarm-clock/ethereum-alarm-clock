@@ -119,7 +119,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         deployer.link(RequestLib, BlockScheduler)
         deployer.link(MathLib, BlockScheduler)
 
-        return deployer.deploy(BlockScheduler, RequestFactory.address)
+        return deployer.deploy(BlockScheduler, RequestFactory.address, '0xecc9c5fff8937578141592e7E62C2D2E364311b8')
     })
     .then(() => {
         deployer.link(SchedulerLib, TimestampScheduler)
@@ -128,7 +128,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         deployer.link(RequestLib, TimestampScheduler)
         deployer.link(MathLib, TimestampScheduler)
 
-        return deployer.deploy(TimestampScheduler, RequestFactory.address)
+        return deployer.deploy(TimestampScheduler, RequestFactory.address, '0xecc9c5fff8937578141592e7E62C2D2E364311b8')
     })
     .then(() => {
         return deployer.deploy(TransactionRecorder)

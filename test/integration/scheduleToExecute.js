@@ -47,7 +47,7 @@ contract('Schedule to execution flow', function(accounts) {
         expect(requestFactory.address)
         .to.exist 
 
-        blockScheduler = await BlockScheduler.new(requestFactory.address)
+        blockScheduler = await BlockScheduler.new(requestFactory.address, "0xecc9c5fff8937578141592e7E62C2D2E364311b8")
         expect(blockScheduler.address)
         .to.exist 
 

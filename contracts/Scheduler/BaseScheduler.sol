@@ -11,6 +11,8 @@ import "contracts/Library/SchedulerLib.sol";
 contract BaseScheduler is SchedulerInterface {
     using SchedulerLib for SchedulerLib.FutureTransaction;
 
+    address public feeRecipient;       // Recipient of the fee.
+
     /*
      * @dev Fallback function to be able to receive ether. This can occur
      *  legitimately when scheduling fails due to a validation error.
@@ -55,7 +57,7 @@ contract BaseScheduler is SchedulerInterface {
 
         futureTransaction.temporalUnit      = temporalUnit;
 
-        newRequest = futureTransaction.schedule(factoryAddress);
+        newRequest = futureTransaction.schedule(factoryAddress, feeRecipient);
         require( newRequest != 0x0 );
 
         NewRequest(newRequest);

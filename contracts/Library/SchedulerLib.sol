@@ -12,11 +12,9 @@ import "contracts/zeppelin/SafeMath.sol";
 library SchedulerLib {
     using SafeMath for uint;
 
-    address constant DONATION_BENEFACTOR = 0xecc9c5fff8937578141592e7E62C2D2E364311b8;
-
     struct FutureTransaction {
         address toAddress;          // Destination of the transaction.
-        bytes callData;           // Bytecode to be included with the transaction.
+        bytes callData;             // Bytecode to be included with the transaction.
         
         uint callGas;               // Amount of gas to be used with the transaction.
         uint callValue;             // Amount of ether to send with the transaction.
@@ -137,7 +135,8 @@ library SchedulerLib {
      */
     function schedule(
         FutureTransaction storage self,
-        address _factoryAddress
+        address _factoryAddress,
+        address _feeRecipient
     ) 
         internal returns (address newRequestAddress) 
     {
@@ -155,23 +154,23 @@ library SchedulerLib {
 
         newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
-                msg.sender,              // meta.owner
-                DONATION_BENEFACTOR,     // paymentData.feeRecipient
-                self.toAddress           // txnData.toAddress
+                msg.sender,                 // meta.owner
+                _feeRecipient,          // paymentData.feeRecipient
+                self.toAddress              // txnData.toAddress
             ],
             [
-                self.fee,                 // paymentData.fe
-                self.payment,             // paymentData.payment
-                self.claimWindowSize,     // scheduler.claimWindowSize
-                self.freezePeriod,        // scheduler.freezePeriod
-                self.reservedWindowSize,  // scheduler.reservedWindowSize
-                uint(self.temporalUnit),  // scheduler.temporalUnit (1: block, 2: timestamp)
-                self.windowSize,          // scheduler.windowSize
-                self.windowStart,         // scheduler.windowStart
-                self.callGas,             // txnData.callGas
-                self.callValue,           // txnData.callValue
-                self.gasPrice,            // txnData.gasPrice
-                self.requiredDeposit      // claimData.requiredDeposit
+                self.fee,                   // paymentData.fee
+                self.payment,               // paymentData.payment
+                self.claimWindowSize,       // scheduler.claimWindowSize
+                self.freezePeriod,          // scheduler.freezePeriod
+                self.reservedWindowSize,    // scheduler.reservedWindowSize
+                uint(self.temporalUnit),    // scheduler.temporalUnit (1: block, 2: timestamp)
+                self.windowSize,            // scheduler.windowSize
+                self.windowStart,           // scheduler.windowStart
+                self.callGas,               // txnData.callGas
+                self.callValue,             // txnData.callValue
+                self.gasPrice,              // txnData.gasPrice
+                self.requiredDeposit        // claimData.requiredDeposit
             ],
             self.callData
         );

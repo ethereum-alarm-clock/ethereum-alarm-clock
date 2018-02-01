@@ -31,7 +31,7 @@ contract("Request factory", async function(accounts) {
     /// Set up the data for our transaction request
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 511
@@ -47,7 +47,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -82,7 +82,7 @@ contract("Request factory", async function(accounts) {
       ],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -129,11 +129,11 @@ contract("Request factory", async function(accounts) {
 
     expect(requestData.paymentData.feeOwed).to.equal(0)
 
-    expect(requestData.paymentData.payment).to.equal(payment)
+    expect(requestData.paymentData.bounty).to.equal(bounty)
 
-    expect(requestData.paymentData.paymentBenefactor).to.equal(NULL_ADDR)
+    expect(requestData.paymentData.bountyBenefactor).to.equal(NULL_ADDR)
 
-    expect(requestData.paymentData.paymentOwed).to.equal(0)
+    expect(requestData.paymentData.bountyOwed).to.equal(0)
 
     expect(requestData.schedule.claimWindowSize).to.equal(claimWindowSize)
 
@@ -170,7 +170,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 255
@@ -184,7 +184,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -211,7 +211,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 255
@@ -225,7 +225,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -254,7 +254,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 255
@@ -268,7 +268,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -298,7 +298,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 11 // more than the blocks between now and the window start
     const windowStart = curBlock + 10
     const windowSize = 255
@@ -312,7 +312,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -340,7 +340,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 255
@@ -354,7 +354,7 @@ contract("Request factory", async function(accounts) {
       [accounts[0], accounts[0], accounts[1], accounts[2]],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,
@@ -382,7 +382,7 @@ contract("Request factory", async function(accounts) {
 
     const claimWindowSize = 255
     const fee = 12345
-    const payment = 54321
+    const bounty = 54321
     const freezePeriod = 10
     const windowStart = curBlock + 20
     const windowSize = 255
@@ -401,7 +401,7 @@ contract("Request factory", async function(accounts) {
       ],
       [
         fee,
-        payment,
+        bounty,
         claimWindowSize,
         freezePeriod,
         reservedWindowSize,

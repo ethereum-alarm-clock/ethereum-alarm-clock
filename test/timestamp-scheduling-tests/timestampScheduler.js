@@ -94,7 +94,7 @@ contract("Timestamp scheduling", function(accounts) {
 
     // Sanity check
     expect(requestData.calcEndowment()).to.equal(
-      computeEndowment(, fee, 1212121, 123454321, gasPrice)
+      computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
     )
 
     expect(requestData.txData.toAddress).to.equal(transactionRecorder.address)

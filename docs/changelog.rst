@@ -5,7 +5,7 @@ Changelog
 -----
 
  - Replaced term `donation` and `donationBenefactor` with `fee` and `feeRecipient` (done)
- - Replaced term `payment` to `bounty`.
+ - Replaced term `payment` to `bounty`. (done)
  - Removed the hardcoding of FEE_RECIPIENT to be passed in on creation of schedulers. (done)
  - Added an indexed parameter to `RequestCreated()` event in RequestFactory.sol (done)
  - Peg contracts to compiler version 0.4.19 (done)

@@ -171,7 +171,7 @@ contract("Block scheduling", function(accounts) {
           windowStart,
           gasPrice,
           fee,
-          payment,
+          bounty,
           requiredDeposit,
         ],
         { from: User2, value: config.web3.utils.toWei("10") }

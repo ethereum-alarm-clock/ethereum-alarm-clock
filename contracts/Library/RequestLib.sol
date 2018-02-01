@@ -566,7 +566,7 @@ library RequestLib {
             rewardPayment = rewardOwed;
 
             /// Transfers the rewardPayment.
-            if (rewardOwed > 0) { // ? - will it ever not be above zero?
+            if (rewardOwed > 0) {
                 self.paymentData.paymentOwed = 0;
                 rewardBenefactor.transfer(rewardOwed);
             }

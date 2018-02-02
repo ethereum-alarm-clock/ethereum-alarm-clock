@@ -25,7 +25,7 @@ const parseAbortData = (executeTx) => {
 }
 
 const computeEndowment = (bounty, fee, callGas, callValue, gasPrice) => (
-  bounty + fee * 2 + callGas * gasPrice + 180000 * gasPrice + callValue
+  bounty + (fee * 2) + (callGas * gasPrice) + (180000 * gasPrice) + callValue
 )
 
 const parseRequestData = async (transactionRequest) => {

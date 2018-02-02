@@ -2,7 +2,7 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
 // / Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
@@ -13,7 +13,6 @@ const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
 // / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
 const { RequestData, computeEndowment } = require("../dataHelpers.js")
 
 const ethUtil = require("ethereumjs-util")
@@ -54,8 +53,8 @@ contract("Timestamp scheduling", (accounts) => {
 
   it("should do timestamp scheduling using `schedule", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
-    const timestamp = curBlock.timestamp
-    const windowStart = timestamp + 10 * MINUTE
+    const { timestamp } = curBlock
+    const windowStart = timestamp + (10 * MINUTE)
     const fee = 98765
     const bounty = 80008
 
@@ -111,16 +110,16 @@ contract("Timestamp scheduling", (accounts) => {
 
     expect(requestData.txData.gasPrice).to.equal(gasPrice)
 
-    expect(requestData.claimData.requiredDeposit).to.equal(parseInt(requiredDeposit))
+    expect(requestData.claimData.requiredDeposit).to.equal(parseInt(requiredDeposit, 10))
   })
 
   it("should revert an invalid transaction", async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
-    const timestamp = curBlock.timestamp
+    const { timestamp } = curBlock
 
-    const windowStart = timestamp + 10 * MINUTE
+    const windowStart = timestamp + (10 * MINUTE)
 
-    const scheduleTx = await timestampScheduler
+    await timestampScheduler
       .schedule(
         accounts[4],
         testData32, // callData

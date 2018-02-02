@@ -2,20 +2,20 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-// / Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Test already executed", async (accounts) => {
   it("rejects execution if already executed", async () => {
-    // / Deploy a fresh transactionRecorder
+    // Deploy a fresh transactionRecorder
     const txRecorder = await TransactionRecorder.new()
     expect(
       txRecorder.address,
@@ -35,7 +35,7 @@ contract("Test already executed", async (accounts) => {
     const executionWindow = 2 * MINUTE
 
     const curBlock = await config.web3.eth.getBlock("latest")
-    const timestamp = curBlock.timestamp
+    const { timestamp } = curBlock
 
     const windowStart = timestamp + DAY
 

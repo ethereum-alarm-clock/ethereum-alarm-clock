@@ -38,7 +38,7 @@ contract("Timestamp execution", async (accounts) => {
 
   beforeEach(async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
-    const timestamp = curBlock.timestamp
+    const { timestamp } = curBlock
 
     const windowStart = timestamp + DAY
 
@@ -91,6 +91,8 @@ contract("Timestamp execution", async (accounts) => {
       from: accounts[1],
       value: config.web3.utils.toWei("1"),
     })
+
+    expect(claimTx.receipt).to.exist
   })
 
   // ///////////
@@ -166,7 +168,7 @@ contract("Timestamp execution", async (accounts) => {
     const secsToWait =
       startExecutionWindow -
       (await config.web3.eth.getBlock("latest")).timestamp
-    console.log(secsToWait)
+    // console.log(secsToWait)
     await waitUntilBlock(secsToWait, 1)
 
     const balBeforeExecute = await config.web3.eth.getBalance(accounts[1])
@@ -180,7 +182,7 @@ contract("Timestamp execution", async (accounts) => {
 
     const balAfterExecute = await config.web3.eth.getBalance(accounts[1])
 
-    expect(parseInt(balAfterExecute)).to.be.at.least(parseInt(balBeforeExecute))
+    expect(parseInt(balAfterExecute, 10)).to.be.at.least(parseInt(balBeforeExecute, 10))
 
     const requestDataRefresh = await parseRequestData(txRequest)
 
@@ -214,7 +216,7 @@ contract("Timestamp execution", async (accounts) => {
 
     const balAfterExecute = await config.web3.eth.getBalance(accounts[5])
 
-    expect(parseInt(balAfterExecute)).to.be.at.least(parseInt(balBeforeExecute))
+    expect(parseInt(balAfterExecute, 10)).to.be.at.least(parseInt(balBeforeExecute, 10))
 
     const requestDataRefresh = await parseRequestData(txRequest)
 

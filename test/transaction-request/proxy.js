@@ -2,15 +2,14 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
 const SimpleToken = artifacts.require("./SimpleToken.sol")
-const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
 const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
-const { RequestData, wasAborted, parseAbortData } = require("../dataHelpers.js")
+const { RequestData, wasAborted } = require("../dataHelpers.js")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("TransactionRequest proxy function", (accounts) => {
@@ -59,7 +58,7 @@ contract("TransactionRequest proxy function", (accounts) => {
 
     await waitUntilBlock(0, duringExecutionWindow)
 
-    // / This fails because it is not after the exeucution window
+    // This fails because it is not after the exeucution window
     await txRequest
       .proxy(accounts[7], testData32)
       .should.be.rejectedWith("VM Exception while processing transaction: revert")
@@ -69,18 +68,18 @@ contract("TransactionRequest proxy function", (accounts) => {
 
     await waitUntilBlock(0, afterExecutionWindow)
 
-    // / This throws because it is not the scheduling account
+    // This throws because it is not the scheduling account
     await txRequest
       .proxy(accounts[7], testData32, { from: accounts[4] })
       .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-    // / This is allowed since it is from scheduling accounts
+    // This is allowed since it is from scheduling accounts
     const tx = await txRequest.proxy(accounts[7], testData32)
     expect(tx.receipt.status).to.equal(1)
   })
 
   it("does some fancy stuff with proxy", async () => {
-    // / Boring set up stuff
+    // Boring set up stuff
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 38 + 10 + 5
 
@@ -132,7 +131,7 @@ contract("TransactionRequest proxy function", (accounts) => {
     await waitUntilBlock(0, afterExecutionWindow)
 
     const t = new config.web3.eth.Contract(require("./SimpleToken.json").abi)
-    const encoded_data = t.methods.transfer(accounts[8], 30000).encodeABI()
+    const encodedData = t.methods.transfer(accounts[8], 30000).encodeABI()
     // / This data was generated locally using the method above^^
     // const encoded_data = '0xa9059cbb000000000000000000000000737b4d5a9f46839501719b5d388b7c487b55957a0000000000000000000000000000000000000000000000000000000000007530'
 
@@ -144,7 +143,7 @@ contract("TransactionRequest proxy function", (accounts) => {
 
     // console.log(encodedTransferData)
     // console.log(e)
-    await txRequest.proxy(tokenContract.address, encoded_data)
+    await txRequest.proxy(tokenContract.address, encodedData)
 
     expect((await tokenContract.balanceOf(accounts[8])).toNumber()).to.equal(30000)
   })

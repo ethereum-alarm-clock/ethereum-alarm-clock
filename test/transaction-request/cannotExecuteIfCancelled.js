@@ -2,16 +2,16 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-// / Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("tests execution rejected if cancelled", async (accounts) => {
   it("will reject the execution if it was cancelled", async () => {
@@ -20,7 +20,7 @@ contract("tests execution rejected if cancelled", async (accounts) => {
     const gasPrice = config.web3.utils.toWei("66", "gwei")
     const requiredDeposit = config.web3.utils.toWei("66", "kwei")
 
-    // / TransactionRequest constants
+    // TransactionRequest constants
     const claimWindowSize = 25 // blocks
     const freezePeriod = 5 // blocks
     const reservedWindowSize = 10 // blocks

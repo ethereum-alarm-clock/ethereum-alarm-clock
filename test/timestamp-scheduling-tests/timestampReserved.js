@@ -2,7 +2,7 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
 // / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
@@ -11,7 +11,7 @@ const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 // / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
@@ -24,7 +24,7 @@ contract("Timestamp reserved window", async (accounts) => {
     expect(txRecorder.address).to.exist
 
     const block = await config.web3.eth.getBlock("latest")
-    const timestamp = block.timestamp
+    const { timestamp } = block
 
     const windowStart = timestamp + DAY
     const executionWindow = 2 * MINUTE

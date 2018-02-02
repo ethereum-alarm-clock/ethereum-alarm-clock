@@ -2,22 +2,18 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-// / Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const {
   RequestData,
   parseRequestData,
-  parseAbortData,
-  wasAborted,
 } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
-
-const toBN = config.web3.utils.toBN
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Cancelling", async (accounts) => {
   const Owner = accounts[0]
@@ -33,7 +29,6 @@ contract("Cancelling", async (accounts) => {
   const reservedWindowSize = 10 // blocks
   const executionWindow = 10 // blocks
   let windowStart
-  let firstClaimBlock
 
   beforeEach(async () => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
@@ -63,15 +58,13 @@ contract("Cancelling", async (accounts) => {
       "some-call-data-could-be-anything",
       { value: config.web3.utils.toWei("1") }
     )
-
-    firstClaimBlock = windowStart - freezePeriod - claimWindowSize
   })
 
   // ///////////
   // / Tests ///
   // ///////////
 
-  // / 1
+  // 1
   it("tests CAN cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -94,7 +87,7 @@ contract("Cancelling", async (accounts) => {
     expect(requestDataRefresh.meta.isCancelled).to.be.true
   })
 
-  // / 2
+  // 2
   it("tests non-owner CANNOT cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -120,7 +113,7 @@ contract("Cancelling", async (accounts) => {
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    // / For completion sakes, let's test if the `Owner` can cancel.
+    // For completion sakes, let's test if the `Owner` can cancel.
     const cancelTx = await txRequest.cancel({
       Owner,
     })
@@ -131,7 +124,7 @@ contract("Cancelling", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.true
   })
 
-  // / 3
+  // 3
   it("tests CAN cancel during claim window when unclaimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -145,13 +138,14 @@ contract("Cancelling", async (accounts) => {
     await waitUntilBlock(0, cancelAt)
 
     const cancelTx = await txRequest.cancel({ from: Owner })
+    expect(cancelTx.receipt).to.exist
 
     await requestData.refresh()
 
     expect(requestData.meta.isCancelled).to.be.true
   })
 
-  // / 4
+  // 4
   it("tests CANNOT be cancelled if claimed and before the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -183,7 +177,7 @@ contract("Cancelling", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  // / 5
+  // 5
   it("tests CANNOT cancel during the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -207,7 +201,7 @@ contract("Cancelling", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  // / 6
+  // 6
   it("tests CANNOT cancel during the execution window", async () => {
     const requestData = await parseRequestData(txRequest)
 
@@ -228,7 +222,7 @@ contract("Cancelling", async (accounts) => {
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.false
   })
 
-  // / 7
+  // 7
   it("tests CANNOT cancel if was called", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -257,7 +251,7 @@ contract("Cancelling", async (accounts) => {
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    // / Tries (and fails) to cancel after execution during execution window
+    // Tries (and fails) to cancel after execution during execution window
     await waitUntilBlock(0, cancelFirst)
 
     await txRequest
@@ -268,7 +262,7 @@ contract("Cancelling", async (accounts) => {
 
     expect(requestData.meta.isCancelled).to.be.false
 
-    // / Tries (and fails) to cancel after execution and after execution window
+    // Tries (and fails) to cancel after execution and after execution window
     await waitUntilBlock(0, cancelSecond)
 
     await txRequest
@@ -280,7 +274,7 @@ contract("Cancelling", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.false
   })
 
-  // / 8
+  // 8
   it("tests CANNOT cancel if already cancelled", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -304,7 +298,7 @@ contract("Cancelling", async (accounts) => {
 
     expect(requestData.meta.isCancelled).to.be.true
 
-    // / Now try to cancel again 9 blocks in the future
+    // Now try to cancel again 9 blocks in the future
 
     await waitUntilBlock(0, cancelSecond)
 
@@ -362,12 +356,12 @@ contract("Cancelling", async (accounts) => {
 
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.true
 
-    // / TODO: Get cancel data
+    // TODO: Get cancel data
 
-    console.log(balanceBeforeCancel)
-    console.log(balanceAfterCancel)
-    console.log(contractBalanceBefore)
-    console.log(contractBalanceAfter)
+    // console.log(balanceBeforeCancel)
+    // console.log(balanceAfterCancel)
+    // console.log(contractBalanceBefore)
+    // console.log(contractBalanceAfter)
   })
 
   // /// TODO

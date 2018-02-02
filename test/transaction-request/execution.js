@@ -2,18 +2,16 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-// / Bring in config.web3 (v1.0.0)
+// Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
-
-const toBN = config.web3.utils.toBN
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Execution", async (accounts) => {
   const gasPrice = config.web3.utils.toWei("66", "gwei")
@@ -26,7 +24,7 @@ contract("Execution", async (accounts) => {
     txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
 
-    // / TransactionRequest constants
+    // TransactionRequest constants
     const claimWindowSize = 25 // blocks
     const freezePeriod = 5 // blocks
     const reservedWindowSize = 10 // blocks
@@ -73,11 +71,11 @@ contract("Execution", async (accounts) => {
     })
     expect(executeTx.receipt).to.exist
 
-    assert((await txRecorder.wasCalled()) === true)
-    assert((await txRecorder.lastCaller()) === txRequest.address)
-    assert((await txRecorder.lastCallValue()).toNumber() === 0)
+    expect((await txRecorder.wasCalled()) === true).to.be.true
+    expect((await txRecorder.lastCaller()) === txRequest.address).to.be.true
+    expect((await txRecorder.lastCallValue()).toNumber() === 0).to.be.true
     expect(await txRecorder.lastCallData()).to.exist
-    assert(Math.abs((await txRecorder.lastCallGas()) - 2000000) < 10000)
+    expect(Math.abs((await txRecorder.lastCallGas()) - 2000000) < 10000).to.be.true
   })
 
   // / 2
@@ -104,7 +102,7 @@ contract("Execution", async (accounts) => {
     expect(parseAbortData(failedExecuteTx).find(reason => reason === "MismatchGasPrice")).to.exist
   })
 
-  // / 3
+  // 3
   it("CANNOT execute if available gas is less than txnData.callGas + GAS_OVERHEAD", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -112,13 +110,13 @@ contract("Execution", async (accounts) => {
 
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
-    // / The min required gas is txnData.callGas + GAS_OVERHEAD (180000)
+    // The min required gas is txnData.callGas + GAS_OVERHEAD (180000)
     const gas = requestData.txData.callGas + 180000 - 5000
     // console.log(gas)
     // console.log(gas + 5000)
-    // / TODO: Investigate this further ^^^^
+    // TODO: Investigate this further ^^^^
 
-    // / FAILS BECAUSE NOT SUPPLIED ENOUGH GAS
+    // FAILS BECAUSE NOT SUPPLIED ENOUGH GAS
     const failedExecuteTx = await txRequest.execute({
       from: accounts[5],
       gas,

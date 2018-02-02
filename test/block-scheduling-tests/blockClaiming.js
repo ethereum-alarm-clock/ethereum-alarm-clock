@@ -261,7 +261,7 @@ contract("Block claiming", async (accounts) => {
     expect(requestData.claimData.paymentModifier - 2).to.equal(expectedPaymentModifier)
   })
 
-  // / 8
+  // 8
   it("CANNOT claim if already claimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
@@ -312,7 +312,7 @@ contract("Block claiming", async (accounts) => {
 
     await waitUntilBlock(0, firstClaimBlock)
 
-    const claimTx = await txRequest
+    await txRequest
       .claim({
         from: accounts[0],
         // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in
@@ -320,8 +320,6 @@ contract("Block claiming", async (accounts) => {
         value: config.web3.utils.toWei("15", "kwei"),
       })
       .should.be.rejectedWith("VM Exception while processing transaction: revert")
-
-    expect(claimTx.receipt).to.exist
 
     await requestData.refresh()
 

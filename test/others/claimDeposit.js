@@ -267,13 +267,11 @@ contract("claim deposit", async (accounts) => {
     const cancelAt = claimAt + requestData.schedule.claimWindowSize + 2
     await waitUntilBlock(0, cancelAt)
 
-    const cancelTx = await txRequest
+    await txRequest
       .cancel({
         from: accounts[0],
       })
       .should.be.rejectedWith("VM Exception while processing transaction: revert")
-
-    expect(cancelTx.receipt).to.exist
 
     await requestData.refresh()
 

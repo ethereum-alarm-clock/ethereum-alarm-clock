@@ -10,7 +10,7 @@ Changelog
  - Added an indexed parameter to `RequestCreated()` event in RequestFactory.sol (done)
  - Peg contracts to compiler version 0.4.19 (done)
  - Change `paymentData.hasBenefactor()` to `paymentData.hasFeeRecipient()` (done)
- - Tidied up and cleaned the test suite.
+ - Tidied up and cleaned the test suite. ( in progress )
 
 0.9.0-beta
 ----------

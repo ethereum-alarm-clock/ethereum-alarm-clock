@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
 import "contracts/Library/ClaimLib.sol";
 import "contracts/Library/ExecutionLib.sol";
@@ -52,7 +52,7 @@ library RequestLib {
     event Aborted(uint8 reason);
     event Cancelled(uint rewardPayment, uint measuredGasConsumption);
     event Claimed();
-    event Executed(uint payment, uint donation, uint measuredGasConsumption);
+    event Executed(uint bounty, uint fee, uint measuredGasConsumption);
 
     /**
      * @dev Validate the initialization parameters of a transaction request.
@@ -74,8 +74,8 @@ library RequestLib {
         request.claimData.claimedBy =               0x0;
         request.meta.createdBy =                    _addressArgs[0];
         request.meta.owner =                        _addressArgs[1];
-        request.paymentData.donationBenefactor =    _addressArgs[2];
-        request.paymentData.donationBenefactor =    0x0;
+        request.paymentData.feeRecipient =          _addressArgs[2];
+        request.paymentData.bountyBenefactor =      0x0;
         request.txnData.toAddress =                 _addressArgs[3];
 
         // Boolean values
@@ -85,10 +85,10 @@ library RequestLib {
 
         // UInt values
         request.claimData.claimDeposit =        0;
-        request.paymentData.donation =          _uintArgs[0];
-        request.paymentData.payment =           _uintArgs[1];
-        request.paymentData.donationOwed =      0;
-        request.paymentData.paymentOwed =       0;
+        request.paymentData.fee =               _uintArgs[0];
+        request.paymentData.bounty =            _uintArgs[1];
+        request.paymentData.feeOwed =           0;
+        request.paymentData.bountyOwed =        0;
         request.schedule.claimWindowSize =      _uintArgs[2];
         request.schedule.freezePeriod =         _uintArgs[3];
         request.schedule.reservedWindowSize =   _uintArgs[4];
@@ -108,8 +108,8 @@ library RequestLib {
         // ValidationError event codes are logged when validation fails.
         isValid[0] = PaymentLib.validateEndowment(
             _endowment,
-            request.paymentData.payment,
-            request.paymentData.donation,
+            request.paymentData.bounty,
+            request.paymentData.fee,
             request.txnData.callGas,
             request.txnData.callValue,
             request.txnData.gasPrice,
@@ -149,8 +149,8 @@ library RequestLib {
             0x0,                // self.claimData.claimedBy
             _addressArgs[0],    // self.meta.createdBy
             _addressArgs[1],    // self.meta.owner
-            _addressArgs[2],    // self.paymentData.donationBenefactor
-            0x0,                // self.paymentData.paymentBenefactor
+            _addressArgs[2],    // self.paymentData.feeRecipient
+            0x0,                // self.paymentData.bountyBenefactor
             _addressArgs[3]     // self.txnData.toAddress
         ];
 
@@ -158,10 +158,10 @@ library RequestLib {
 
         uint[15] memory uintValues = [
             0,                  // self.claimData.claimDeposit
-            _uintArgs[0],       // self.paymentData.donation
-            0,                  // self.paymentData.donationOwed
-            _uintArgs[1],       // self.paymentData.payment
-            0,                  // self.paymentData.paymentOwed
+            _uintArgs[0],       // self.paymentData.fee
+            0,                  // self.paymentData.feeOwed
+            _uintArgs[1],       // self.paymentData.bounty
+            0,                  // self.paymentData.bountyOwed
             _uintArgs[2],       // self.schedule.claimWindowSize
             _uintArgs[3],       // self.schedule.freezePeriod
             _uintArgs[4],       // self.schedule.reservedWindowSize
@@ -202,8 +202,8 @@ library RequestLib {
         self.serializedValues.addressValues[0] = self.claimData.claimedBy;
         self.serializedValues.addressValues[1] = self.meta.createdBy;
         self.serializedValues.addressValues[2] = self.meta.owner;
-        self.serializedValues.addressValues[3] = self.paymentData.donationBenefactor;
-        self.serializedValues.addressValues[4] = self.paymentData.paymentBenefactor;
+        self.serializedValues.addressValues[3] = self.paymentData.feeRecipient;
+        self.serializedValues.addressValues[4] = self.paymentData.bountyBenefactor;
         self.serializedValues.addressValues[5] = self.txnData.toAddress;
 
         // Boolean values
@@ -213,10 +213,10 @@ library RequestLib {
 
         // UInt256 values
         self.serializedValues.uintValues[0] = self.claimData.claimDeposit;
-        self.serializedValues.uintValues[1] = self.paymentData.donation;
-        self.serializedValues.uintValues[2] = self.paymentData.donationOwed;
-        self.serializedValues.uintValues[3] = self.paymentData.payment;
-        self.serializedValues.uintValues[4] = self.paymentData.paymentOwed;
+        self.serializedValues.uintValues[1] = self.paymentData.fee;
+        self.serializedValues.uintValues[2] = self.paymentData.feeOwed;
+        self.serializedValues.uintValues[3] = self.paymentData.bounty;
+        self.serializedValues.uintValues[4] = self.paymentData.bountyOwed;
         self.serializedValues.uintValues[5] = self.schedule.claimWindowSize;
         self.serializedValues.uintValues[6] = self.schedule.freezePeriod;
         self.serializedValues.uintValues[7] = self.schedule.reservedWindowSize;
@@ -256,8 +256,8 @@ library RequestLib {
         self.claimData.claimedBy =              _addressValues[0];
         self.meta.createdBy =                   _addressValues[1];
         self.meta.owner =                       _addressValues[2];
-        self.paymentData.donationBenefactor =   _addressValues[3];
-        self.paymentData.paymentBenefactor =    _addressValues[4];
+        self.paymentData.feeRecipient =         _addressValues[3];
+        self.paymentData.bountyBenefactor =     _addressValues[4];
         self.txnData.toAddress =                _addressValues[5];
 
         // Boolean values
@@ -267,10 +267,10 @@ library RequestLib {
 
         // UInt values
         self.claimData.claimDeposit =       _uintValues[0];
-        self.paymentData.donation =         _uintValues[1];
-        self.paymentData.donationOwed =     _uintValues[2];
-        self.paymentData.payment =          _uintValues[3];
-        self.paymentData.paymentOwed =      _uintValues[4];
+        self.paymentData.fee =              _uintValues[1];
+        self.paymentData.feeOwed =          _uintValues[2];
+        self.paymentData.bounty =           _uintValues[3];
+        self.paymentData.bountyOwed =       _uintValues[4];
         self.schedule.claimWindowSize =     _uintValues[5];
         self.schedule.freezePeriod =        _uintValues[6];
         self.schedule.reservedWindowSize =  _uintValues[7];
@@ -327,12 +327,14 @@ library RequestLib {
          *  | Phase 3: Accounting |
          *  +---------------------+
          *
-         *  1. Calculate and send donation amount.
-         *  2. Calculate and send payment amount.
+         *  1. Calculate and send fee amount.
+         *  2. Calculate and send bounty amount.
          *  3. Send remaining ether back to owner.
          *
          */
 
+        // Record the gas at the beginning of the transaction so we can
+        // calculate how much has been used later.
         uint startGas = msg.gas;
 
         // +----------------------+
@@ -371,11 +373,12 @@ library RequestLib {
         // | Begin: Execution |
         // +------------------+
 
-        /// Mark as being called before sending transaction to prevent re-entrance.
+        // Mark as being called before sending transaction to prevent re-entrance.
         self.meta.wasCalled = true;
 
-        /// Send the transaction...
-        /// The transaction is allowed to fail and the caller will still get paid.
+        // Send the transaction...
+        // The transaction is allowed to fail and the executing agent will still get the bounty.
+        // `.sendTransaction()` will return false on a failed exeuction. 
         self.meta.wasSuccessful = self.txnData.sendTransaction();
 
         // +----------------+
@@ -385,58 +388,68 @@ library RequestLib {
         // | Begin: Accounting |
         // +-------------------+
 
-        // Compute the donation amount
-        if (self.paymentData.hasBenefactor()) {
-            self.paymentData.donationOwed = self.paymentData.getDonation()
-                                                            .add(self.paymentData.donationOwed);
+        // Compute the fee amount
+        if (self.paymentData.hasFeeRecipient()) {
+            self.paymentData.feeOwed = self.paymentData.getFee()
+                                       .add(self.paymentData.feeOwed);
         }
 
-        // record this so that we can log it later.
-        uint totalDonationPayment = self.paymentData.donationOwed;
+        // Record this locally so that we can log it later.
+        // `.sendFee()` below will change `self.paymentData.feeOwed` to 0 to prevent re-entrance.
+        uint totalFeePayment = self.paymentData.feeOwed;
 
-        // Send the donation.
-        self.paymentData.sendDonation();
+        // Send the fee. This transaction may also fail but can be called again after
+        // execution.
+        self.paymentData.sendFee();
 
-        // Compute the payment amount and who it should be sent do.
-        self.paymentData.paymentBenefactor = msg.sender;
+        // Compute the bounty amount.
+        self.paymentData.bountyBenefactor = msg.sender;
         if (self.claimData.isClaimed()) {
-            self.paymentData.paymentOwed = self.claimData.claimDeposit.add(self.paymentData.paymentOwed);
-            // need to zero out the claim deposit since it is now accounted for
-            // in the paymentOwed value.
+            // If the transaction request was claimed, we add the deposit to the bounty whether
+            // or not the same agent who claimed is executing.
+            self.paymentData.bountyOwed = self.claimData.claimDeposit
+                                          .add(self.paymentData.bountyOwed);
+            // To prevent re-entrance we zero out the claim deposit since it is now accounted for
+            // in the bounty value.
             self.claimData.claimDeposit = 0;
-            self.paymentData.paymentOwed = self.paymentData.getPaymentWithModifier(self.claimData.paymentModifier)
-                                                           .add(self.paymentData.paymentOwed);
+            // Depending on when the transaction request was claimed, we apply the modifier to the
+            // bounty payment and add it to the bounty already owed.
+            self.paymentData.bountyOwed = self.paymentData.getBountyWithModifier(self.claimData.paymentModifier)
+                                          .add(self.paymentData.bountyOwed);
         } else {
-            self.paymentData.paymentOwed = self.paymentData.getPayment()
-                                                           .add(self.paymentData.paymentOwed);
+            // Not claimed. Just add the full bounty.
+            self.paymentData.bountyOwed = self.paymentData.getBounty()
+                                          .add(self.paymentData.bountyOwed);
         }
 
-        // Record the amount of gas used by execution.
-        uint measuredGasConsumption = startGas.sub(msg.gas).add(_EXECUTE_EXTRA_GAS);
+        // Take down the amount of gas used so far in execution to compensate the executing agent.
+        uint measuredGasConsumption = startGas
+                                      .sub(msg.gas)
+                                      .add(_EXECUTE_EXTRA_GAS);
 
         // // +----------------------------------------------------------------------+
         // // | NOTE: All code after this must be accounted for by EXECUTE_EXTRA_GAS |
         // // +----------------------------------------------------------------------+
 
-        // Add the gas reimbursment amount to the payment.
-        self.paymentData.paymentOwed = measuredGasConsumption.mul(tx.gasprice)
-                                                             .add(self.paymentData.paymentOwed);
+        // Add the gas reimbursment amount to the bounty.
+        self.paymentData.bountyOwed = measuredGasConsumption
+                                      .mul(tx.gasprice)
+                                      .add(self.paymentData.bountyOwed);
 
-        // Log the two payment amounts.  Otherwise it is non-trivial to figure
+        // Log the bounty and fee. Otherwise it is non-trivial to figure
         // out how much was payed.
-        Executed(self.paymentData.paymentOwed,
-                 totalDonationPayment,
-                 measuredGasConsumption);
+        Executed(self.paymentData.bountyOwed, totalFeePayment, measuredGasConsumption);
     
-        // Attempt to send the payment. This is allowed to fail so it may need to be called again.
-        self.paymentData.sendPayment();
+        // Attempt to send the bounty. as with `.sendFee()` it may fail and need to be caled after execution.
+        self.paymentData.sendBounty();
 
-        // Send all extra ether back to the owner.
+        // If any ether is left, send it back to the owner of the transaction request.
         _sendOwnerEther(self);
 
         // +-----------------+
         // | End: Accounting |
         // +-----------------+
+        // Successful
         return true;
     }
 
@@ -535,63 +548,65 @@ library RequestLib {
         uint rewardPayment;
         uint measuredGasConsumption;
 
-        /// Checks if this transactionRequest can be cancelled.
+        // Checks if this transactionRequest can be cancelled.
         require( isCancellable(self) );
 
-        /// Set here to prevent re-entrance attacks.
+        // Set here to prevent re-entrance attacks.
         self.meta.isCancelled = true;
 
-        /// Refund the claim deposit (if there is one)
+        // Refund the claim deposit (if there is one)
         require( self.claimData.refundDeposit() );
 
-        /// Send a reward to the canceller if they are not the owner.
-        /// This is to incentivize the cancelling of expired transactionRequests.
+        // Send a reward to the cancelling agent if they are not the owner.
+        // This is to incentivize the cancelling of expired transaction requests.
         // This also guarantees that it is being cancelled after the call window
         // since the `isCancellable()` function checks this.
         if (msg.sender != self.meta.owner) {
-            /// Create the rewardBenefactor
+            // Create the rewardBenefactor
             address rewardBenefactor = msg.sender;
-            /// Create the rewardOwed variable, it is one-hundredth
-            /// of the payment.
-            uint rewardOwed = self.paymentData.paymentOwed.add(
-                self.paymentData.payment.div(100)
-            );
+            // Create the rewardOwed variable, it is one-hundredth
+            // of the bounty.
+            uint rewardOwed = self.paymentData.bountyOwed
+                              .add(self.paymentData.bounty.div(100));
 
-            /// Calc the amount of gas caller used to call this function.
-            measuredGasConsumption = startGas.sub(msg.gas).add(_CANCEL_EXTRA_GAS);
-            /// Add their gas fees to the reward.
-            rewardOwed = measuredGasConsumption.mul(tx.gasprice).add(rewardOwed);
+            // Calculate the amount of gas cancelling agent used in this transaction.
+            measuredGasConsumption = startGas
+                                     .sub(msg.gas)
+                                     .add(_CANCEL_EXTRA_GAS);
+            // Add their gas fees to the reward.
+            rewardOwed = measuredGasConsumption
+                         .mul(tx.gasprice)
+                         .add(rewardOwed);
 
-            /// Take note of the rewardPayment to log it.
+            // Take note of the rewardPayment to log it.
             rewardPayment = rewardOwed;
 
-            /// Transfers the rewardPayment.
-            if (rewardOwed > 0) { // ? - will it ever not be above zero?
-                self.paymentData.paymentOwed = 0;
+            // Transfers the rewardPayment.
+            if (rewardOwed > 0) {
+                self.paymentData.bountyOwed = 0;
                 rewardBenefactor.transfer(rewardOwed);
             }
         }
 
-        /// Logs are our friends.
+        // Log it!
         Cancelled(rewardPayment, measuredGasConsumption);
 
-        // send the remaining ether to the owner.
+        // Send the remaining ether to the owner.
         return sendOwnerEther(self);
-        // return true;
     }
 
     /*
-     * @dev Performs the checks to verify that a request is claimable.
+     * @dev Performs some checks to verify that a transaction request is claimable.
      * @param self The Request object.
      */
     function isClaimable(Request storage self) 
         internal view returns (bool)
     {
-        /// Require not claimed and not cancelled.
+        // Require not claimed and not cancelled.
         require( !self.claimData.isClaimed() );
         require( !self.meta.isCancelled );
 
-        // Require that it's in the claim window and the value sent is over the min deposit.
+        // Require that it's in the claim window and the value sent is over the required deposit.
         require( self.schedule.inClaimWindow() );
         require( msg.value >= self.claimData.requiredDeposit );
         return true;
@@ -623,30 +638,36 @@ library RequestLib {
     }
 
     /*
-     * Send donation
+     * Send fee. Wrapper over the real function that perform an extra
+     * check to see if it's after the execution window (and thus the first transaction failed)
      */
-    function sendDonation(Request storage self) 
+    function sendFee(Request storage self) 
         public returns (bool)
     {
         if (self.schedule.isAfterWindow()) {
-            return self.paymentData.sendDonation();
+            return self.paymentData.sendFee();
         }
         return false;
     }
 
     /*
-     * Send payment
+     * Send bounty. Wrapper over the real function that performs an extra
+     * check to see if it's after execution window (and thus the first transaction failed)
      */
-    function sendPayment(Request storage self) 
+    function sendBounty(Request storage self) 
         public returns (bool)
     {
         /// check wasCalled
         if (self.schedule.isAfterWindow()) {
-            return self.paymentData.sendPayment();
+            return self.paymentData.sendBounty();
         }
         return false;
     }
 
+    /**
+     * Send owner ether. Wrapper over the real function that performs an extra 
+     * check to see if it's after execution window (and thus the first transaction failed)
+     */
     function sendOwnerEther(Request storage self)
         public returns (bool)
     {
@@ -661,9 +682,10 @@ library RequestLib {
     {
         // Note! This does not do any checks since it is used in the execute function.
         // The public version of the function should be used for checks and in the cancel function.
-        uint ownerRefund = this.balance.sub(self.claimData.claimDeposit)
-                                        .sub(self.paymentData.paymentOwed)
-                                        .sub(self.paymentData.donationOwed);
+        uint ownerRefund = this.balance
+                           .sub(self.claimData.claimDeposit)
+                           .sub(self.paymentData.bountyOwed)
+                           .sub(self.paymentData.feeOwed);
         return self.meta.owner.send(ownerRefund);
     }
 }

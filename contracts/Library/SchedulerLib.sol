@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
 import "contracts/Interface/RequestFactoryInterface.sol";
 
@@ -12,11 +12,9 @@ import "contracts/zeppelin/SafeMath.sol";
 library SchedulerLib {
     using SafeMath for uint;
 
-    address constant DONATION_BENEFACTOR = 0xecc9c5fff8937578141592e7E62C2D2E364311b8;
-
     struct FutureTransaction {
         address toAddress;          // Destination of the transaction.
-        bytes callData;           // Bytecode to be included with the transaction.
+        bytes callData;             // Bytecode to be included with the transaction.
         
         uint callGas;               // Amount of gas to be used with the transaction.
         uint callValue;             // Amount of ether to send with the transaction.
@@ -26,8 +24,8 @@ library SchedulerLib {
 
         uint gasPrice;              // The gasPrice to be sent with the transaction.
         
-        uint donation;              // Donation value attached to the transaction.
-        uint payment;               // Payment value attached to the transaction.
+        uint fee;                   // Fee value attached to the transaction.
+        uint bounty;                // Bounty value attached to the transaction.
 
         uint requiredDeposit;       // The deposit required to claim the transaction.
 
@@ -44,17 +42,17 @@ library SchedulerLib {
     function resetCommon(FutureTransaction storage self) 
         public returns (bool complete)
     {
-        uint defaultPayment = tx.gasprice.mul(1000000);
-        if (self.payment != defaultPayment) {
-            self.payment = defaultPayment;
+        uint defaultBounty = tx.gasprice.mul(1000000);
+        if (self.bounty != defaultBounty) {
+            self.bounty = defaultBounty;
         }
 
-        uint defaultDonation = self.payment.div(100);
-        if (self.donation != defaultDonation ) {
-            self.donation = defaultDonation;
+        uint defaultFee = self.bounty.div(100);
+        if (self.fee != defaultFee ) {
+            self.fee = defaultFee;
         }
 
-        uint defaultDeposit = self.payment.mul(2);
+        uint defaultDeposit = self.bounty.mul(2);
         if (self.requiredDeposit != defaultDeposit) {
             self.requiredDeposit = defaultDeposit;
         }
@@ -137,7 +135,8 @@ library SchedulerLib {
      */
     function schedule(
         FutureTransaction storage self,
-        address _factoryAddress
+        address _factoryAddress,
+        address _feeRecipient
     ) 
         internal returns (address newRequestAddress) 
     {
@@ -145,8 +144,8 @@ library SchedulerLib {
 
         uint endowment = MathLib.min(
             PaymentLib.computeEndowment(
-                self.payment,
-                self.donation,
+                self.bounty,
+                self.fee,
                 self.callGas,
                 self.callValue,
                 self.gasPrice,
@@ -155,30 +154,31 @@ library SchedulerLib {
 
         newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [
-                msg.sender,              // meta.owner
-                DONATION_BENEFACTOR,     // paymentData.donationBenefactor
-                self.toAddress           // txnData.toAddress
+                msg.sender,                 // meta.owner
+                _feeRecipient,              // paymentData.feeRecipient
+                self.toAddress              // txnData.toAddress
             ],
             [
-                self.donation,            // paymentData.donation
-                self.payment,             // paymentData.payment
-                self.claimWindowSize,     // scheduler.claimWindowSize
-                self.freezePeriod,        // scheduler.freezePeriod
-                self.reservedWindowSize,  // scheduler.reservedWindowSize
-                uint(self.temporalUnit),  // scheduler.temporalUnit (1: block, 2: timestamp)
-                self.windowSize,          // scheduler.windowSize
-                self.windowStart,         // scheduler.windowStart
-                self.callGas,             // txnData.callGas
-                self.callValue,           // txnData.callValue
-                self.gasPrice,            // txnData.gasPrice
-                self.requiredDeposit      // claimData.requiredDeposit
+                self.fee,                   // paymentData.fee
+                self.bounty,                // paymentData.bounty
+                self.claimWindowSize,       // scheduler.claimWindowSize
+                self.freezePeriod,          // scheduler.freezePeriod
+                self.reservedWindowSize,    // scheduler.reservedWindowSize
+                uint(self.temporalUnit),    // scheduler.temporalUnit (1: block, 2: timestamp)
+                self.windowSize,            // scheduler.windowSize
+                self.windowStart,           // scheduler.windowStart
+                self.callGas,               // txnData.callGas
+                self.callValue,             // txnData.callValue
+                self.gasPrice,              // txnData.gasPrice
+                self.requiredDeposit        // claimData.requiredDeposit
             ],
             self.callData
         );
         
-        /// This check is redundant. see line 55 in BaseScheduler.sol
+        // This check is redundant. see line 55 in BaseScheduler.sol
+        // I'm keeping it for now just to cover my bases, even if I'm covering them twice.
         require(newRequestAddress != 0x0);
-        /// Automatically returns newRequestAddress
+        return newRequestAddress;
     }
 
 }

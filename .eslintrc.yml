@@ -1,0 +1,10 @@
+extends: airbnb-base
+rules:
+  semi:
+    - 0
+  quotes:
+    - 0
+  no-unused-expressions:
+    - 0
+  comma-dangle:
+    - 0

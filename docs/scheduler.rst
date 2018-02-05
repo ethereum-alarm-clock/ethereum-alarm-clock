@@ -38,10 +38,10 @@ The following defaults are used when creating a new :class:`TransactionRequest`
 contract via either :class:`Scheduler` contract.
 
 
-* ``donationBenefactor``: ``0xecc9c5fff8937578141592e7E62C2D2E364311b8`` which
+* ``feeRecipient``: ``0xecc9c5fff8937578141592e7E62C2D2E364311b8`` which
   is the address of the developer contribution wallet, which is used to fund the project.
 * ``payment``: ``1000000 * tx.gasprice`` set at the time of scheduling.
-* ``donation``: ``10000 * tx.gasprice`` or 1/100th of the default payment.
+* ``fee``: ``10000 * tx.gasprice`` or 1/100th of the default payment.
 * ``reservedWindowSize``: 16 blocks or 5 minutes.
 * ``freezePeriod``: 10 blocks or 3 minutes
 * ``claimWindowSize``: 255 blocks or 60 minutes.
@@ -71,7 +71,7 @@ The ``_uintArgs`` map to the following variables:
 * ``_uintArgs[2]``: The ``windowSize``, or size of the exeuction window.
 * ``_uintArgs[3]``: The ``windowStart``, or the block / timestamp of when the execution window begins.
 * ``_uintArgs[4]``: The ``gasPrice`` that must be sent with the executing transaction.
-* ``_uintArgs[5]``: The ``donation`` value attached to the transaction.
+* ``_uintArgs[5]``: The ``fee`` value attached to the transaction.
 * ``_uintArgs[6]``: The ``payment`` value attached to the transaction.
 
 The method returns the ``address`` of the newly created :class:`TransactionRequest`.

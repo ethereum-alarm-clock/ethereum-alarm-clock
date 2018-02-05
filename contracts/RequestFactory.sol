@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
 import "contracts/Interface/RequestFactoryInterface.sol";
 import "contracts/Interface/RequestTrackerInterface.sol";
@@ -26,10 +26,10 @@ contract RequestFactory is RequestFactoryInterface {
      * @dev The lowest level interface for creating a transaction request.
      * 
      * @param _addressArgs [0] -  meta.owner
-     * @param _addressArgs [1] -  paymentData.donationBenefactor
+     * @param _addressArgs [1] -  paymentData.feeRecipient
      * @param _addressArgs [2] -  txnData.toAddress
-     * @param _uintArgs [0]    -  paymentData.donation
-     * @param _uintArgs [1]    -  paymentData.payment
+     * @param _uintArgs [0]    -  paymentData.fee
+     * @param _uintArgs [1]    -  paymentData.bounty
      * @param _uintArgs [2]    -  schedule.claimWindowSize
      * @param _uintArgs [3]    -  schedule.freezePeriod
      * @param _uintArgs [4]    -  schedule.reservedWindowSize
@@ -53,7 +53,7 @@ contract RequestFactory is RequestFactoryInterface {
             [
                 msg.sender,       // Created by
                 _addressArgs[0],  // meta.owner
-                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[1],  // paymentData.feeRecipient
                 _addressArgs[2]   // txnData.toAddress
             ],
             _uintArgs,            //uint[12]
@@ -64,7 +64,7 @@ contract RequestFactory is RequestFactoryInterface {
         requests[address(request)] = true;
 
         // Log the creation.
-        RequestCreated(address(request));
+        RequestCreated(address(request), _addressArgs[0]);
 
         // Add the request to the RequestTracker
         requestTracker.addRequest(address(request), _uintArgs[7]); // windowStart
@@ -156,7 +156,7 @@ contract RequestFactory is RequestFactoryInterface {
             [
                 msg.sender,      // meta.createdBy
                 _addressArgs[0],  // meta.owner
-                _addressArgs[1],  // paymentData.donationBenefactor
+                _addressArgs[1],  // paymentData.feeRecipient
                 _addressArgs[2]   // txnData.toAddress
             ],
             _uintArgs,

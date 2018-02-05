@@ -1,332 +1,328 @@
-require('chai')
-    .use(require('chai-as-promised'))
-    .should()   
+require("chai")
+  .use(require("chai-as-promised"))
+  .should()
 
-const expect = require('chai').expect
+const { expect } = require("chai")
 
-/// Contracts
-const TransactionRequest  = artifacts.require('./TransactionRequest.sol')
-const TransactionRecorder = artifacts.require('./TransactionRecorder.sol')
+// Contracts
+const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
-/// Brings in config.web3 (v1.0.0)
-const config = require('../../config')
-const { RequestData } = require('../dataHelpers.js')
-const { wait, waitUntilBlock } = require('@digix/tempo')(web3)
+// Brings in config.web3 (v1.0.0)
+const config = require("../../config")
+const { RequestData } = require("../dataHelpers.js")
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-const NULL_ADDR = '0x0000000000000000000000000000000000000000'
+const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
-contract('Block claiming', async function(accounts) {
-    const Owner = accounts[0]
-    const Benefactor = accounts[1]
+contract("Block claiming", async (accounts) => {
+  const Owner = accounts[0]
+  const Benefactor = accounts[1]
 
-    const gasPrice = config.web3.utils.toWei('45', 'gwei')
+  const gasPrice = config.web3.utils.toWei("45", "gwei")
 
-    let txRequest
-    let txRecorder
+  let txRequest
+  let txRecorder
 
-    let firstClaimBlock
-    let lastClaimBlock
+  // Before each test we deploy a new instance of Transaction Request so we have a fresh instance
+  beforeEach(async () => {
+    const curBlock = await config.web3.eth.getBlockNumber()
 
-    /// Before each test we deploy a new instance of Transaction Request so we have a fresh instance
-    beforeEach(async function () {
-        const curBlock = await config.web3.eth.getBlockNumber()
+    txRecorder = await TransactionRecorder.new()
+    expect(txRecorder.address).to.exist
 
-        txRecorder = await TransactionRecorder.new()
-        expect(txRecorder.address)
-        .to.exist
+    const requiredDeposit = config.web3.utils.toWei("20", "kwei") // 1 kwei = 10e3 wei, ie this is 20000 wei
 
-        const requiredDeposit = config.web3.utils.toWei('20', 'kwei') // 1 kwei = 10e3 wei, ie this is 20000 wei
+    // Instantiate a TransactionRequest with temporal unit 1 - aka block
+    txRequest = await TransactionRequest.new(
+      [
+        Owner, // created by
+        Owner, // owner
+        Benefactor, // fee recipient
+        txRecorder.address, // to
+      ],
+      [
+        0, // fee
+        config.web3.utils.toWei("200", "finney"), // bounty
+        25, // claim window size
+        5, // freeze period
+        10, // reserved window size
+        1, // temporal unit - blocks is 1
+        10, // window size
+        curBlock + 38, // windowStart
+        100000, // callGas
+        0, // callValue
+        gasPrice,
+        requiredDeposit,
+      ],
+      "this-is-the-call-data",
+      { value: config.web3.utils.toWei("1") }
+    )
+  })
 
-        /// Instantiate a TransactionRequest with temporal unit 1 - aka block
-        txRequest = await TransactionRequest.new(
-            [
-                Owner,                  // created by
-                Owner,                  // owner
-                Benefactor,             // donation benefactor
-                txRecorder.address      // to
-            ], [
-                0,                      //donation
-                config.web3.utils.toWei('200', 'finney'), //payment
-                25,                     //claim window size
-                5,                      //freeze period
-                10,                     //reserved window size
-                1,                      //temporal unit - blocks is 1
-                10,                     //window size
-                curBlock + 38,          //windowStart
-                100000,                 //callGas
-                0,                      //callValue
-                gasPrice,
-                requiredDeposit
-            ],
-            'this-is-the-call-data',
-            {value: config.web3.utils.toWei('1')}
-        )
+  // ///////////
+  // / Tests ///
+  // ///////////
+
+  // 1
+  it("should not claim before first claim block", async () => {
+    const requestData = await RequestData.from(txRequest)
+
+    const firstClaimBlock =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
+
+    expect(firstClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
+
+    await waitUntilBlock(0, firstClaimBlock - 2)
+
+    await txRequest
+      .claim({
+        value: 2 * requestData.paymentData.bounty,
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
+
+    await requestData.refresh()
+
+    expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
+  })
+
+  // 2
+  it("should allow claiming at the first claim block", async () => {
+    const requestData = await RequestData.from(txRequest)
+
+    const firstClaimBlock =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
+
+    expect(firstClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
+
+    await waitUntilBlock(0, firstClaimBlock)
+
+    const claimTx = await txRequest.claim({
+      from: accounts[0],
+      value: 2 * requestData.paymentData.bounty,
     })
+    expect(claimTx.receipt).to.exist
 
-    /////////////
-    /// Tests ///
-    /////////////
+    await requestData.refresh()
 
-    /// 1
-    it('should not claim before first claim block', async function() {
-        const requestData = await RequestData.from(txRequest)
+    expect(requestData.claimData.claimedBy).to.equal(accounts[0])
+  })
 
-        const firstClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+  // 3
+  it("should allow claiming at the last claim block", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        expect(firstClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    const lastClaimBlock =
+      requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
-        await waitUntilBlock(0, firstClaimBlock - 2)
+    expect(lastClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
 
-        await txRequest.claim({
-            value: (2*requestData.paymentData.payment)
-        }).should.be.rejectedWith('VM Exception while processing transaction: revert')
+    // Because this function consumes a block we must give ourselves the buffer of two blocks.
+    await waitUntilBlock(0, lastClaimBlock - 2)
 
-        await requestData.refresh()
-
-        expect(requestData.claimData.claimedBy)
-        .to.equal(NULL_ADDR)
+    const claimTx = await txRequest.claim({
+      from: accounts[0],
+      value: 2 * requestData.paymentData.bounty,
     })
+    expect(claimTx.receipt).to.exist
 
-    /// 2
-    it('should allow claiming at the first claim block', async function() {
-        const requestData = await RequestData.from(txRequest)
+    await requestData.refresh()
 
-        const firstClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    expect(requestData.claimData.claimedBy).to.equal(accounts[0])
+  })
 
-        expect(firstClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+  // 4
+  it("cannot claim after the last block", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        await waitUntilBlock(0, firstClaimBlock)
+    const lastClaimBlock =
+      requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
-        const claimTx = await txRequest.claim({
-            from: accounts[0],
-            value: (2*requestData.paymentData.payment)
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    expect(lastClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
 
-        await requestData.refresh() 
+    await waitUntilBlock(0, lastClaimBlock)
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[0])
+    await txRequest
+      .claim({
+        from: accounts[0],
+        value: 2 * requestData.paymentData.bounty,
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
+
+    await requestData.refresh()
+
+    expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
+  })
+
+  it("should execute a claimed block request", async () => {
+    const requestData = await RequestData.from(txRequest)
+
+    const firstClaimBlock =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
+
+    expect(firstClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
+
+    await waitUntilBlock(0, firstClaimBlock)
+
+    const claimTx = await txRequest.claim({
+      from: accounts[1],
+      value: config.web3.utils.toWei("2"),
     })
+    expect(claimTx.receipt).to.exist
 
-    /// 3
-    it('should allow claiming at the last claim block', async function() {
-        const requestData = await RequestData.from(txRequest)
-        
-        const lastClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod
+    await requestData.refresh()
 
-        expect(lastClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.claimData.claimedBy).to.equal(accounts[1])
 
-        /// Because this function consumes a block we must give ourselves the buffer of two blocks.
-        await waitUntilBlock(0, lastClaimBlock - 2)
+    await waitUntilBlock(0, requestData.schedule.windowStart)
 
-        const claimTx = await txRequest.claim({
-            from: accounts[0],
-            value: (2*requestData.paymentData.payment)
-        })
-        expect(claimTx.receipt)
-        .to.exist 
-
-        await requestData.refresh() 
-
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[0])
+    const executeTx = await txRequest.execute({
+      from: accounts[1],
+      gas: 3000000,
+      gasPrice,
     })
+    expect(executeTx.receipt).to.exist
 
-    /// 4
-    it('cannot claim after the last block', async function() {
-        const requestData = await RequestData.from(txRequest)
-        
-        const lastClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod
+    await requestData.refresh()
 
-        expect(lastClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.meta.wasCalled).to.be.true
+  })
 
-        await waitUntilBlock(0, lastClaimBlock)
+  it("should execute a claimed call after block reserve window", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        await txRequest.claim({
-            from: accounts[0],
-            value: (2*requestData.paymentData.payment)
-        }).should.be.rejectedWith('VM Exception while processing transaction: revert')
+    const firstClaimBlock =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        await requestData.refresh() 
+    expect(firstClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(NULL_ADDR)
-        
+    await waitUntilBlock(0, firstClaimBlock)
+
+    const claimTx = await txRequest.claim({
+      value: config.web3.utils.toWei("2"),
+      from: accounts[2],
     })
+    expect(claimTx.receipt).to.exist
 
-    it('should execute a claimed block request', async function() {
-        const requestData = await RequestData.from(txRequest)
-        
-        const firstClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    await requestData.refresh()
 
-        expect(firstClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.claimData.claimedBy).to.equal(accounts[2])
 
-        await waitUntilBlock(0, firstClaimBlock)
+    await waitUntilBlock(
+      0,
+      requestData.schedule.windowStart + requestData.schedule.reservedWindowSize
+    )
 
-        const claimTx = await txRequest.claim({
-            from: accounts[1],
-            value: config.web3.utils.toWei('2')
-        })
-        expect(claimTx.receipt)
-        .to.exist 
-
-        await requestData.refresh()
-
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[1])
-
-        await waitUntilBlock(0, requestData.schedule.windowStart)
-
-        const executeTx = await txRequest.execute({
-            from: accounts[1],
-            gas: 3000000,
-            gasPrice: gasPrice
-        })
-        expect(executeTx.receipt)
-        .to.exist 
-
-        await requestData.refresh()
-
-        expect(requestData.meta.wasCalled)
-        .to.be.true 
+    const executeTx = await txRequest.execute({
+      gas: 3000000,
+      gasPrice,
     })
+    expect(executeTx.receipt).to.exist
 
-    it('should execute a claimed call after block reserve window', async function() {
-        const requestData = await RequestData.from(txRequest)
+    await requestData.refresh()
+    // console.log(requestData)
+    // expect(requestData.meta.wasCalled)
+    // .to.be.true
+  })
 
-        const firstClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
-    
-        expect(firstClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+  // 7
+  it("should determine bounty amount with modifier", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        await waitUntilBlock(0, firstClaimBlock)
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize +
+      Math.floor(requestData.schedule.claimWindowSize * 2 / 3)
 
-        const claimTx = await txRequest.claim({
-            value: config.web3.utils.toWei('2'),
-            from: accounts[2]
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    const expectedPaymentModifier = Math.floor(100 * 2 / 3)
 
-        await requestData.refresh() 
+    expect(requestData.claimData.paymentModifier).to.equal(0)
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[2])
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
-        await waitUntilBlock(0, requestData.schedule.windowStart + requestData.schedule.reservedWindowSize)
+    await waitUntilBlock(0, claimAt)
 
-        const executeTx = await txRequest.execute({
-            gas: 3000000,
-            gasPrice: gasPrice
-        })
-        expect(executeTx.receipt)
-        .to.exist 
-
-        await requestData.refresh() 
-        // console.log(requestData)
-        // expect(requestData.meta.wasCalled)
-        // .to.be.true 
+    const claimTx = await txRequest.claim({
+      value: config.web3.utils.toWei("2"),
     })
+    expect(claimTx.receipt).to.exist
 
-    /// 7
-    it('should determine payment amount', async function() {
-        const requestData = await RequestData.from(txRequest)
+    await requestData.refresh()
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize + Math.floor(requestData.schedule.claimWindowSize * 2 / 3)
-    
-        const expectedPaymentModifier = Math.floor(100 * 2 / 3)
+    expect(requestData.claimData.paymentModifier - 2).to.equal(expectedPaymentModifier)
+  })
 
-        expect(requestData.claimData.paymentModifier)
-        .to.equal(0)
+  // 8
+  it("CANNOT claim if already claimed", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        await waitUntilBlock(0, claimAt)
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
-        const claimTx = await txRequest.claim({
-            value: config.web3.utils.toWei('2')
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    await waitUntilBlock(0, claimAt)
 
-        await requestData.refresh() 
-        
-        expect(requestData.claimData.paymentModifier - 2)
-        .to.equal(expectedPaymentModifier)
+    const claimTx = await txRequest.claim({
+      value: config.web3.utils.toWei("1"),
     })
+    expect(claimTx.receipt).to.exist
 
-    /// 8 
-    it('CANNOT claim if already claimed', async () => {
+    await requestData.refresh()
 
-        const requestData = await RequestData.from(txRequest)
+    expect(requestData.claimData.claimedBy).to.equal(accounts[0])
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    // Now try to claim from a different account
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    await txRequest
+      .claim({
+        from: accounts[6],
+        value: config.web3.utils.toWei("1"),
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-        await waitUntilBlock(
-            0,
-            claimAt
-        )
+    // Just check this again to be sure
 
-        const claimTx = await txRequest.claim({
-            value: config.web3.utils.toWei('1')
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    await requestData.refresh()
 
-        await requestData.refresh()
+    expect(requestData.claimData.claimedBy).to.equal(accounts[0])
+  })
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[0])
+  // 9
+  it("CANNOT claim with insufficient claim deposit", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        /// Now try to claim from a different account
+    const firstClaimBlock =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        await txRequest.claim({
-            from: accounts[6],
-            value: config.web3.utils.toWei('1')
-        })
-        .should.be.rejectedWith('VM Exception while processing transaction: revert')
+    expect(firstClaimBlock).to.be.above(await config.web3.eth.getBlockNumber())
 
-        /// Just check this again to be sure
+    await waitUntilBlock(0, firstClaimBlock)
 
-        await requestData.refresh()
+    await txRequest
+      .claim({
+        from: accounts[0],
+        // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in
+        // order to fail this test
+        value: config.web3.utils.toWei("15", "kwei"),
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[0])
+    await requestData.refresh()
 
-    })
-
-    /// 9
-    it('CANNOT claim with insufficient claim deposit', async () => {
-        const requestData = await RequestData.from(txRequest)
-
-        const firstClaimBlock = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
-
-        expect(firstClaimBlock)
-        .to.be.above(await config.web3.eth.getBlockNumber())
-
-        await waitUntilBlock(0, firstClaimBlock)
-
-        const claimTx = await txRequest.claim({
-            from: accounts[0],
-            // Since the requiredDeposit is 20 kwei, we will send the value of 15 kwei in order to fail this test
-            value: config.web3.utils.toWei('15', 'kwei')
-        })
-        .should.be.rejectedWith('VM Exception while processing transaction: revert')
-
-        await requestData.refresh() 
-
-        expect(requestData.claimData.claimedBy)
-        .to.equal(NULL_ADDR)
-    })
+    expect(requestData.claimData.claimedBy).to.equal(NULL_ADDR)
+  })
 })

@@ -66,11 +66,11 @@ The arrays map to to the following :class:`TransactionRequest` attributes.
 
 * Addresses (``address``)
     * ``_addressArgs[0] => meta.owner``
-    * ``_addressArgs[1] => paymentData.donationBenefactor``
+    * ``_addressArgs[1] => paymentData.feeRecipient``
     * ``_addressArgs[2] => txnData.toAddress``
 
 * Unsigned Integers (``uint`` aka ``uint256``)
-    *  ``_uintArgs[0]  => paymentData.donation``
+    *  ``_uintArgs[0]  => paymentData.fee``
     *  ``_uintArgs[1]  => paymentData.payment``
     *  ``_uintArgs[2]  => schedule.claimWindowSize``
     *  ``_uintArgs[3]  => schedule.freezePeriod``
@@ -105,14 +105,14 @@ Check #1: Insufficient Endowment
 
 * ``result[0]``
 
-Checks that the provided ``endowment`` is sufficient to pay for the donation
+Checks that the provided ``endowment`` is sufficient to pay for the fee
 and payment as well as gas reimbursment.
 
 The required minimum endowment can be computed as the sum of the following:
 
 * ``callValue`` to provide the ether that will be sent with the transaction.
 * ``2 * payment`` to pay for maximum possible payment
-* ``2 * donation`` to pay for maximum possible donation
+* ``2 * fee`` to pay for maximum possible fee
 * ``callGas * txnData.gasPrice`` to pay for ``callGas``.
 * ``180000 * txnData.gasPrice`` to pay for the gas overhead involved in
   transaction execution.

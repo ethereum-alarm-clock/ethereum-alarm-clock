@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
 contract TransactionRequestInterface {
     
@@ -21,7 +21,7 @@ contract TransactionRequestInterface {
 
     // Pull mechanisms for payments.
     function refundClaimDeposit() public returns (bool);
-    function sendDonation() public returns (bool);
-    function sendPayment() public returns (bool);
+    function sendFee() public returns (bool);
+    function sendBounty() public returns (bool);
     function sendOwnerEther() public returns (bool);
 }

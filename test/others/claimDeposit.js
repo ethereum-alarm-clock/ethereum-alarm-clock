@@ -1,302 +1,284 @@
-require('chai')
-    .use(require('chai-as-promised'))
-    .should()
+require("chai")
+  .use(require("chai-as-promised"))
+  .should()
 
-const expect = require('chai').expect 
+const { expect } = require("chai")
 
-/// Contracts
-const TransactionRecorder = artifacts.require('./TransactionRecorder.sol')
-const TransactionRequest = artifacts.require('./TransactionRequest.sol')
+// Contracts
+const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
+const TransactionRequest = artifacts.require("./TransactionRequest.sol")
 
-/// Brings in config.web3 (v1.0.0)
-const config = require('../../config')
-const { RequestData, wasAborted } = require('../dataHelpers.js')
-const { wait, waitUntilBlock } = require('@digix/tempo')(web3)
+// Brings in config.web3 (v1.0.0)
+const config = require("../../config")
+const { RequestData, wasAborted } = require("../dataHelpers.js")
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract('claim deposit', async accounts => {
+contract("claim deposit", async (accounts) => {
+  let txRecorder
+  let txRequest
 
-    let txRecorder
-    let txRequest 
+  const gasPrice = config.web3.utils.toWei("24", "gwei")
+  const requiredDeposit = config.web3.utils.toWei("40", "kwei")
 
-    const gasPrice = config.web3.utils.toWei('24', 'gwei')
-    const requiredDeposit = config.web3.utils.toWei('40', 'kwei')
+  // TransactionRequest constants
+  const claimWindowSize = 25 // blocks
+  const freezePeriod = 5 // blocks
+  const reservedWindowSize = 10 // blocks
+  const executionWindow = 15 // blocks
 
-    /// TransactionRequest constants
-    const claimWindowSize = 25 //blocks
-    const freezePeriod = 5 //blocks
-    const reservedWindowSize = 10 //blocks
-    const executionWindow = 15 //blocks
-    const payment = config.web3.utils.toWei('232', 'finney')
+  const fee = 12345
+  const bounty = config.web3.utils.toWei("232", "finney")
 
-    beforeEach(async () => {
-        txRecorder = await TransactionRecorder.new()
-        expect(txRecorder.address)
-        .to.exist
+  beforeEach(async () => {
+    txRecorder = await TransactionRecorder.new()
+    expect(txRecorder.address).to.exist
 
-        const curBlockNum = await config.web3.eth.getBlockNumber()
-        windowStart = curBlockNum + 38
+    const curBlockNum = await config.web3.eth.getBlockNumber()
+    const windowStart = curBlockNum + 38
 
-        txRequest = await TransactionRequest.new(
-            [
-                accounts[0], //createdBy
-                accounts[0], //owner
-                accounts[1], //donationBenefactor
-                txRecorder.address //toAddress
-            ], [
-                12345, //donation
-                payment, //payment
-                claimWindowSize,
-                freezePeriod,
-                reservedWindowSize,
-                1, //temporalUnit = 1, aka blocks
-                executionWindow,
-                windowStart,
-                43324,  //callGas
-                0,      //callValue
-                gasPrice,
-                requiredDeposit
-            ],
-            'some-call-data-could-be-anything',
-            {value: config.web3.utils.toWei('100', 'finney')}
-        )
+    txRequest = await TransactionRequest.new(
+      [
+        accounts[0], // createdBy
+        accounts[0], // owner
+        accounts[1], // fee recipient
+        txRecorder.address, // toAddress
+      ],
+      [
+        fee,
+        bounty,
+        claimWindowSize,
+        freezePeriod,
+        reservedWindowSize,
+        1, // temporalUnit = 1, aka blocks
+        executionWindow,
+        windowStart,
+        43324, // callGas
+        0, // callValue
+        gasPrice,
+        requiredDeposit,
+      ],
+      "some-call-data-could-be-anything",
+      { value: config.web3.utils.toWei("100", "finney") }
+    )
+  })
+
+  it("tests claim deposit CAN be refunded if after execution window and was not executed", async () => {
+    const requestData = await RequestData.from(txRequest)
+
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
+
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
+
+    await waitUntilBlock(0, claimAt)
+
+    const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
+
+    const claimTx = await txRequest.claim({
+      from: accounts[9],
+      value: 2 * requestData.paymentData.bounty,
     })
-   
-    it('tests claim deposit CAN be refunded if after execution window and was not executed', async () => {
+    expect(claimTx.receipt).to.exist
 
-        const requestData = await RequestData.from(txRequest)
+    const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    await requestData.refresh()
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.claimData.claimedBy).to.equal(accounts[9])
 
-        await waitUntilBlock(0, claimAt)
+    expect(parseInt(balBeforeClaim, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
-        const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
+    expect(requestData.meta.isCancelled).to.be.false
 
-        const claimTx = await txRequest.claim({
-            from: accounts[9],
-            value: 2 * requestData.paymentData.payment
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    // Now we wait until after the execution period to cancel.
+    const cancelAt =
+      requestData.schedule.windowStart + requestData.schedule.windowSize + 10
 
-        const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
+    await waitUntilBlock(0, cancelAt)
 
-        await requestData.refresh()
+    const cancelTx = await txRequest.cancel({
+      from: accounts[0],
+    })
+    expect(cancelTx.receipt).to.exist
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[9])
+    await requestData.refresh()
 
-        expect(parseInt(balBeforeClaim))
-        .to.be.above(parseInt(balAfterClaim))
+    expect(requestData.meta.isCancelled).to.be.true
 
-        expect(requestData.meta.isCancelled)
-        .to.be.false
+    const balAfterCancel = await config.web3.eth.getBalance(accounts[9])
 
-        /// Now we wait until after the execution period to cancel.
-        const cancelAt = requestData.schedule.windowStart + requestData.schedule.windowSize + 10
+    expect(parseInt(balAfterCancel, 10)).to.be.above(parseInt(balAfterClaim, 10))
+  })
 
-        await waitUntilBlock(0, cancelAt)
+  it("tests claim deposit CAN be refunded if after execution window and was not executed", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        const cancelTx = await txRequest.cancel({
-            from: accounts[0]
-        })
-        expect(cancelTx.receipt)
-        .to.exist 
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        await requestData.refresh()
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
-        expect(requestData.meta.isCancelled)
-        .to.be.true 
+    await waitUntilBlock(0, claimAt)
 
-        const balAfterCancel = await config.web3.eth.getBalance(accounts[9])
+    const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
 
-        expect(parseInt(balAfterCancel))
-        .to.be.above(parseInt(balAfterClaim))
-    })   
-    
-    it('tests claim deposit CAN be refunded if after execution window and was not executed', async () => {
+    const claimTx = await txRequest.claim({
+      from: accounts[9],
+      value: 2 * requestData.paymentData.bounty,
+    })
+    expect(claimTx.receipt).to.exist
 
-        const requestData = await RequestData.from(txRequest)
+    const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    await requestData.refresh()
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.claimData.claimedBy).to.equal(accounts[9])
 
-        await waitUntilBlock(0, claimAt)
+    expect(parseInt(balBeforeClaim, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
-        const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
+    expect(requestData.meta.isCancelled).to.be.false
 
-        const claimTx = await txRequest.claim({
-            from: accounts[9],
-            value: 2 * requestData.paymentData.payment
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    // Now we wait until after the execution period to cancel.
+    const refundAt =
+      requestData.schedule.windowStart + requestData.schedule.windowSize + 10
 
-        const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
+    await waitUntilBlock(0, refundAt)
 
-        await requestData.refresh()
+    await txRequest.refundClaimDeposit({
+      from: accounts[6],
+      gas: 3000000,
+    })
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[9])
+    const balAfterRefund = await config.web3.eth.getBalance(accounts[9])
 
-        expect(parseInt(balBeforeClaim))
-        .to.be.above(parseInt(balAfterClaim))
+    expect(parseInt(balAfterRefund, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
-        expect(requestData.meta.isCancelled)
-        .to.be.false
+    const cancelTx = await txRequest.cancel({
+      from: accounts[0],
+    })
+    expect(cancelTx.receipt).to.exist
 
-        /// Now we wait until after the execution period to cancel.
-        const refundAt = requestData.schedule.windowStart + requestData.schedule.windowSize + 10
+    await requestData.refresh()
 
-        await waitUntilBlock(0, refundAt)
+    expect(requestData.meta.isCancelled).to.be.true
 
-        await txRequest.refundClaimDeposit({
-            from: accounts[6],
-            gas: 3000000
-        })
+    const balAfterCancel = await config.web3.eth.getBalance(accounts[9])
 
-        const balAfterRefund = await config.web3.eth.getBalance(accounts[9])
+    expect(parseInt(balAfterCancel, 10)).to.equal(parseInt(balAfterRefund, 10))
+  })
 
-        expect(parseInt(balAfterRefund))
-        .to.be.above(parseInt(balAfterClaim))
+  it("tests claim deposit CANNOT be refunded if executed", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        const cancelTx = await txRequest.cancel({
-            from: accounts[0]
-        })
-        expect(cancelTx.receipt)
-        .to.exist 
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        await requestData.refresh()
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
-        expect(requestData.meta.isCancelled)
-        .to.be.true 
+    await waitUntilBlock(0, claimAt)
 
-        const balAfterCancel = await config.web3.eth.getBalance(accounts[9])
+    const balBeforeClaim = await config.web3.eth.getBalance(accounts[7])
 
-        expect(parseInt(balAfterCancel))
-        .to.equal(parseInt(balAfterRefund))
-    })   
+    const claimTx = await txRequest.claim({
+      from: accounts[7],
+      value: 2 * requestData.paymentData.bounty,
+    })
+    expect(claimTx.receipt).to.exist
 
-    it('tests claim deposit CANNOT be refunded if executed', async () => {
-        
-        const requestData = await RequestData.from(txRequest)
+    const balAfterClaim = await config.web3.eth.getBalance(accounts[7])
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize 
+    await requestData.refresh()
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(requestData.claimData.claimedBy).to.equal(accounts[7])
 
-        await waitUntilBlock(0, claimAt)
+    expect(parseInt(balBeforeClaim, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
-        const balBeforeClaim = await config.web3.eth.getBalance(accounts[7])
+    // Now we execute from a different account
+    const executeAt =
+      requestData.schedule.windowStart + requestData.schedule.reservedWindowSize
 
-        const claimTx = await txRequest.claim({
-            from: accounts[7],
-            value: 2 * requestData.paymentData.payment 
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    await waitUntilBlock(0, executeAt)
 
-        const balAfterClaim = await config.web3.eth.getBalance(accounts[7])
+    const executeTx = await txRequest.execute({
+      from: accounts[2],
+      gas: 3000000,
+      gasPrice,
+    })
+    expect(executeTx.receipt).to.exist
 
-        await requestData.refresh()
+    expect(wasAborted(executeTx)).to.be.false
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[7])
+    const balAfterExecute = await config.web3.eth.getBalance(accounts[7])
 
-        expect(parseInt(balBeforeClaim))
-        .to.be.above(parseInt(balAfterClaim))
+    expect(balAfterExecute).to.equal(balAfterClaim)
 
-        /// Now we execute from a different account
-        const executeAt = requestData.schedule.windowStart + requestData.schedule.reservedWindowSize 
+    // Wait until after the window and try to cancel
+    await waitUntilBlock(0, (await config.web3.eth.getBlockNumber()) + 50)
 
-        await waitUntilBlock(0, executeAt)
+    await txRequest
+      .cancel({
+        from: accounts[0],
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-        const executeTx = await txRequest.execute({
-            from: accounts[2],
-            gas: 3000000,
-            gasPrice: gasPrice
-        })
-        expect(executeTx.receipt)
-        .to.exist
+    const balAfterAttemptedCancel = await config.web3.eth.getBalance(accounts[7])
 
-        expect(wasAborted(executeTx))
-        .to.be.false
+    expect(balAfterClaim)
+      .to.equal(balAfterAttemptedCancel)
+      .to.equal(balAfterExecute)
+  })
 
-        const balAfterExecute = await config.web3.eth.getBalance(accounts[7])
+  it("tests claim deposit CANNOT be refunded if before or during execution window", async () => {
+    const requestData = await RequestData.from(txRequest)
 
-        expect(balAfterExecute)
-        .to.equal(balAfterClaim)
+    const claimAt =
+      requestData.schedule.windowStart -
+      requestData.schedule.freezePeriod -
+      requestData.schedule.claimWindowSize
 
-        /// Wait until after the window and try to cancel
-        await waitUntilBlock(0, await config.web3.eth.getBlockNumber() + 50)
+    expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
-        await txRequest.cancel({
-            from: accounts[0]
-        })
-        .should.be.rejectedWith('VM Exception while processing transaction: revert')
+    await waitUntilBlock(0, claimAt)
 
-        const balAfterAttemptedCancel = await config.web3.eth.getBalance(accounts[7])
+    const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
 
-        expect(balAfterClaim)
-        .to.equal(balAfterAttemptedCancel)
-        .to.equal(balAfterExecute)
-    })  
+    const claimTx = await txRequest.claim({
+      from: accounts[9],
+      value: 2 * requestData.paymentData.bounty,
+    })
+    expect(claimTx.receipt).to.exist
 
-    it('tests claim deposit CANNOT be refunded if before or during execution window', async () => {
+    const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
 
-        const requestData = await RequestData.from(txRequest)
+    await requestData.refresh()
 
-        const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - requestData.schedule.claimWindowSize
+    expect(requestData.claimData.claimedBy).to.equal(accounts[9])
 
-        expect(claimAt)
-        .to.be.above(await config.web3.eth.getBlockNumber())
+    expect(parseInt(balBeforeClaim, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
-        await waitUntilBlock(0, claimAt)
+    expect(requestData.meta.isCancelled).to.be.false
 
-        const balBeforeClaim = await config.web3.eth.getBalance(accounts[9])
+    const cancelAt = claimAt + requestData.schedule.claimWindowSize + 2
+    await waitUntilBlock(0, cancelAt)
 
-        const claimTx = await txRequest.claim({
-            from: accounts[9],
-            value: 2 * requestData.paymentData.payment
-        })
-        expect(claimTx.receipt)
-        .to.exist 
+    await txRequest
+      .cancel({
+        from: accounts[0],
+      })
+      .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-        const balAfterClaim = await config.web3.eth.getBalance(accounts[9])
+    await requestData.refresh()
 
-        await requestData.refresh()
+    expect(requestData.meta.isCancelled).to.be.false
 
-        expect(requestData.claimData.claimedBy)
-        .to.equal(accounts[9])
+    const balAfterAttemptedCancel = await config.web3.eth.getBalance(accounts[9])
 
-        expect(parseInt(balBeforeClaim))
-        .to.be.above(parseInt(balAfterClaim))
-
-        expect(requestData.meta.isCancelled)
-        .to.be.false
-
-        const cancelAt = claimAt + requestData.schedule.claimWindowSize + 2
-        await waitUntilBlock(0, cancelAt)
-
-        const cancelTx = await txRequest.cancel({
-            from: accounts[0]
-        })
-        .should.be.rejectedWith('VM Exception while processing transaction: revert')
-
-        await requestData.refresh()
-
-        expect(requestData.meta.isCancelled)
-        .to.be.false 
-
-        const balAfterAttemptedCancel = await config.web3.eth.getBalance(accounts[9])
-
-        expect(balAfterClaim)
-        .to.equal(balAfterAttemptedCancel)
-    })  
-
+    expect(balAfterClaim).to.equal(balAfterAttemptedCancel)
+  })
 })

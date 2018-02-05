@@ -71,7 +71,7 @@ over in order.
 * ``uint8 windowSize``: The number of blocks after ``windowSize`` during which the transaction will still be executable.
 * ``uint windowStart``: The first block number that the transaction will be executable.
 * ``uint gasPrice``: The gas price which must be sent by the executing party to execute the transaction.
-* ``uint donation``: The donation amount included in the transaction.
+* ``uint fee``: The fee amount included in the transaction.
 * ``uint payment``: The payment included in the transaction.
 
 

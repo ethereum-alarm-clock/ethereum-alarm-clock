@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
 import "contracts/Library/RequestLib.sol";
 import "contracts/Library/RequestScheduleLib.sol";
@@ -13,11 +13,11 @@ contract TransactionRequest is TransactionRequestInterface {
     /*
      *  addressArgs[0] - meta.createdBy
      *  addressArgs[1] - meta.owner
-     *  addressArgs[2] - paymentData.donationBenefactor
+     *  addressArgs[2] - paymentData.feeRecipient
      *  addressArgs[3] - txnData.toAddress
      *
-     *  uintArgs[0]  - paymentData.donation
-     *  uintArgs[1]  - paymentData.payment
+     *  uintArgs[0]  - paymentData.fee
+     *  uintArgs[1]  - paymentData.bounty
      *  uintArgs[2]  - schedule.claimWindowSize
      *  uintArgs[3]  - schedule.freezePeriod
      *  uintArgs[4]  - schedule.reservedWindowSize
@@ -111,12 +111,12 @@ contract TransactionRequest is TransactionRequestInterface {
         txnRequest.refundClaimDeposit();
     }
 
-    function sendDonation() public returns (bool) {
-        return txnRequest.sendDonation();
+    function sendFee() public returns (bool) {
+        return txnRequest.sendFee();
     }
 
-    function sendPayment() public returns (bool) {
-        return txnRequest.sendPayment();
+    function sendBounty() public returns (bool) {
+        return txnRequest.sendBounty();
     }
 
     function sendOwnerEther() public returns (bool) {

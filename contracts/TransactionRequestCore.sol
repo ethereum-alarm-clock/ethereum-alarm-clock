@@ -4,7 +4,7 @@ import "contracts/Library/RequestLib.sol";
 import "contracts/Library/RequestScheduleLib.sol";
 import "contracts/Interface/TransactionRequestInterface.sol";
 
-contract TransactionRequest is TransactionRequestInterface {
+contract TransactionRequestCore is TransactionRequestInterface {
     using RequestLib for RequestLib.Request;
     using RequestScheduleLib for RequestScheduleLib.ExecutionWindow;
 
@@ -29,7 +29,7 @@ contract TransactionRequest is TransactionRequestInterface {
      *  uintArgs[10] - txnData.gasPrice
      *  uintArgs[11] - claimData.requiredDeposit
      */
-    function TransactionRequest(
+    function initialize(
         address[4]  addressArgs,
         uint[12]    uintArgs,
         bytes       callData
@@ -63,10 +63,10 @@ contract TransactionRequest is TransactionRequestInterface {
     /*
      *  Data accessor functions.
      */
-     
+
     // Declaring this function `view`, although it creates a compiler warning, is
     // necessary to return values from it.
-    function requestData() 
+    function requestData()
         public view returns (address[6], bool[3], uint[15], uint8[1])
     {
         if (txnRequest.serialize()) {
@@ -81,7 +81,7 @@ contract TransactionRequest is TransactionRequestInterface {
         }
     }
 
-    function callData() 
+    function callData()
         public view returns (bytes data)
     {
         data = txnRequest.txnData.callData;

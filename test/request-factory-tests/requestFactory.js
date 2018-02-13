@@ -8,7 +8,7 @@ const { expect } = require("chai")
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestLib = artifacts.require("./RequestLib.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -69,8 +69,15 @@ contract("Request factory", async (accounts) => {
     const requestTracker = await RequestTracker.deployed()
     expect(requestTracker.address).to.exist
 
+    // We need a transaction request core for the factory
+    const transactionRequestCore = await TransactionRequestCore.deployed()
+    expect(transactionRequestCore.address).to.exist
+
     // Pass the request tracker to the factory
-    const requestFactory = await RequestFactory.new(requestTracker.address)
+    const requestFactory = await RequestFactory.new(
+        requestTracker.address,
+        transactionRequestCore.address
+    )
     expect(requestFactory.address).to.exist
 
     // Create a request with the same args we validated
@@ -95,12 +102,13 @@ contract("Request factory", async (accounts) => {
       ],
       testCallData
     )
+    expect(createTx.receipt).to.exist
 
     const logRequestCreated = createTx.logs.find(e => e.event === "RequestCreated")
     expect(logRequestCreated.args.request).to.exist
 
     // Now let's create a transactionRequest instance
-    const txRequest = await TransactionRequest.at(logRequestCreated.args.request)
+    const txRequest = await TransactionRequestCore.at(logRequestCreated.args.request)
     const requestData = await parseRequestData(txRequest)
 
     expect(requestData.meta.owner).to.equal(accounts[0])

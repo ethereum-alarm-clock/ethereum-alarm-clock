@@ -20,7 +20,7 @@ const BaseScheduler               = artifacts.require("./BaseScheduler.sol"),
       SchedulerInterface          = artifacts.require("./SchedulerInterface.sol"),
       SchedulerLib                = artifacts.require("./SchedulerLib.sol"),
       TimestampScheduler          = artifacts.require("./TimestampScheduler.sol"),
-      TransactionRequest          = artifacts.require("./TransactionRequest.sol"),
+      TransactionRequestCore      = artifacts.require("./TransactionRequestCore.sol"),
       TransactionRequestInterface = artifacts.require("./TransactionRequestInterface.sol");
 
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol");
@@ -74,22 +74,20 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
         deployer.link(GroveLib, RequestTracker)
         deployer.link(MathLib, RequestTracker)
-        
+
         return deployer.deploy(RequestTracker)
     })
     .then(() => {
-        deployer.link(ClaimLib, TransactionRequest)
-        deployer.link(ExecutionLib, TransactionRequest)
-        deployer.link(MathLib, TransactionRequest)
-        deployer.link(PaymentLib, TransactionRequest)
-        deployer.link(RequestMetaLib, TransactionRequest)
-        deployer.link(RequestLib, TransactionRequest)
-        deployer.link(RequestScheduleLib, TransactionRequest)
-        deployer.link(SafeMath, TransactionRequest)
+        deployer.link(ClaimLib, TransactionRequestCore)
+        deployer.link(ExecutionLib, TransactionRequestCore)
+        deployer.link(MathLib, TransactionRequestCore)
+        deployer.link(PaymentLib, TransactionRequestCore)
+        deployer.link(RequestMetaLib, TransactionRequestCore)
+        deployer.link(RequestLib, TransactionRequestCore)
+        deployer.link(RequestScheduleLib, TransactionRequestCore)
+        deployer.link(SafeMath, TransactionRequestCore)
 
-    /// Because the constructor includes a `bytes` parameter we cannot deploy this contract directly.
-    //     return deployer.deploy(TransactionRequest)
-    return Promise.resolve('haha')
+        return deployer.deploy(TransactionRequestCore)
     })
     .then(() => {
         deployer.link(ClaimLib, RequestFactory)
@@ -101,7 +99,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         deployer.link(RequestTracker, RequestFactory)
         // deployer.link(TransactionRequest, RequestFactory)
         deployer.link(SafeMath, RequestFactory)
-        return deployer.deploy(RequestFactory, RequestTracker.address)
+        return deployer.deploy(RequestFactory, RequestTracker.address, TransactionRequestCore.address)
     })
     .then(() => {
         deployer.link(RequestScheduleLib, BaseScheduler)
@@ -151,7 +149,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
             safeMath: SafeMath.address,
             schedulerLib: SchedulerLib.address,
             timestampScheduler: TimestampScheduler.address,
-            // transactionRequest: TransactionRequest.address,
+            transactionRequestCore: TransactionRequestCore.address,
             transactionRecorder: TransactionRecorder.address
         }
 //         Object.keys(contracts).forEach((key) => {

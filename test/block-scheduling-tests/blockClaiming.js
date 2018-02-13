@@ -5,7 +5,7 @@ require("chai")
 const { expect } = require("chai")
 
 // Contracts
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
 // Brings in config.web3 (v1.0.0)
@@ -34,7 +34,8 @@ contract("Block claiming", async (accounts) => {
     const requiredDeposit = config.web3.utils.toWei("20", "kwei") // 1 kwei = 10e3 wei, ie this is 20000 wei
 
     // Instantiate a TransactionRequest with temporal unit 1 - aka block
-    txRequest = await TransactionRequest.new(
+    txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         Owner, // created by
         Owner, // owner

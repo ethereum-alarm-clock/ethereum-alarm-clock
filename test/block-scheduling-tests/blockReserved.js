@@ -5,7 +5,7 @@ require("chai")
 const { expect } = require("chai")
 
 // Contracts
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
 // Brings in config.web3 (v1.0.0)
@@ -26,7 +26,8 @@ contract("Block reserved window", (accounts) => {
     const gasPrice = config.web3.utils.toWei("12", "gwei")
     const requiredDeposit = config.web3.utils.toWei("66", "kwei")
 
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // created by
         accounts[0], // owner

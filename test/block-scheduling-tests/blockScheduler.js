@@ -10,7 +10,7 @@ const PaymentLib = artifacts.require("./PaymentLib.sol")
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -44,7 +44,13 @@ contract("Block scheduling", (accounts) => {
     requestTracker = await RequestTracker.deployed()
     expect(requestTracker.address).to.exist
 
-    requestFactory = await RequestFactory.new(requestTracker.address)
+    const transactionRequestCore = await TransactionRequestCore.deployed()
+    expect(transactionRequestCore.address).to.exist
+
+    requestFactory = await RequestFactory.new(
+        requestTracker.address,
+        transactionRequestCore.address
+    )
     blockScheduler = await BlockScheduler.new(
       requestFactory.address,
       "0xecc9c5fff8937578141592e7E62C2D2E364311b8"
@@ -115,7 +121,7 @@ contract("Block scheduling", (accounts) => {
 
     expect(logNewRequest.args.request).to.exist
 
-    const txRequest = await TransactionRequest.at(logNewRequest.args.request)
+    const txRequest = await TransactionRequestCore.at(logNewRequest.args.request)
     const requestData = await RequestData.from(txRequest)
 
     // Test that the endowment was sent to the txRequest

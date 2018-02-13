@@ -9,7 +9,7 @@ const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -35,8 +35,14 @@ contract("Timestamp scheduling", (accounts) => {
     requestTracker = await RequestTracker.new()
     expect(requestTracker.address).to.exist
 
+    const transactionRequestCore = await TransactionRequestCore.deployed()
+    expect(transactionRequestCore.address).to.exist
+
     // Request factory
-    requestFactory = await RequestFactory.new(requestTracker.address)
+    requestFactory = await RequestFactory.new(
+        requestTracker.address,
+        transactionRequestCore.address
+    )
     expect(requestFactory.address).to.exist
 
     // Timestamp scheduler
@@ -83,7 +89,7 @@ contract("Timestamp scheduling", (accounts) => {
 
     expect(logNewRequest.args.request).to.exist
 
-    const txRequest = await TransactionRequest.at(logNewRequest.args.request)
+    const txRequest = await TransactionRequestCore.at(logNewRequest.args.request)
     const requestData = await RequestData.from(txRequest)
 
     // Test that the endowment was sent to txRequest

@@ -2,22 +2,21 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const expect = require("chai").expect
+const { expect } = require("chai")
 
 // Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
-const ethUtil = require("ethereumjs-util")
 const {
   RequestData,
   parseRequestData,
   parseAbortData,
   wasAborted,
 } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
@@ -40,7 +39,7 @@ contract("Timestamp execution", async (accounts) => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const { timestamp } = curBlock
 
-    const windowStart = timestamp + DAY
+    const windowStart = timestamp + 10 * DAY
 
     // / Deploy a fresh transactionRecorder
     txRecorder = await TransactionRecorder.new()
@@ -50,7 +49,8 @@ contract("Timestamp execution", async (accounts) => {
     ).to.exist
 
     // / Make a transactionRequest
-    txRequest = await TransactionRequest.new(
+    txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner
@@ -82,9 +82,12 @@ contract("Timestamp execution", async (accounts) => {
       requestData.schedule.freezePeriod -
       requestData.schedule.claimWindowSize
 
+    const secondsToWait = firstClaimStamp -
+      (await config.web3.eth.getBlock("latest")).timestamp
+
     await waitUntilBlock(
-      firstClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp,
-      0
+      secondsToWait,
+      1
     )
 
     const claimTx = await txRequest.claim({

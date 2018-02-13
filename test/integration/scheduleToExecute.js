@@ -10,7 +10,7 @@ const BlockScheduler = artifacts.require("./BlockScheduler.sol")
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 const ethUtil = require("ethereumjs-util")
 
@@ -38,7 +38,13 @@ contract("Schedule to execution flow", (accounts) => {
     requestTracker = await RequestTracker.new()
     expect(requestTracker.address).to.exist
 
-    requestFactory = await RequestFactory.new(requestTracker.address)
+    const transactionRequestCore = await TransactionRequestCore.deployed()
+    expect(transactionRequestCore.address).to.exist
+
+    requestFactory = await RequestFactory.new(
+        requestTracker.address,
+        transactionRequestCore.address
+    )
     expect(requestFactory.address).to.exist
 
     blockScheduler = await BlockScheduler.new(
@@ -78,7 +84,7 @@ contract("Schedule to execution flow", (accounts) => {
     const NewRequest = scheduleTx.logs.find(e => e.event === "NewRequest")
     expect(NewRequest.args.request).to.exist
 
-    txRequest = await TransactionRequest.at(NewRequest.args.request)
+    txRequest = await TransactionRequestCore.at(NewRequest.args.request)
     expect(txRequest.address).to.exist
   })
 

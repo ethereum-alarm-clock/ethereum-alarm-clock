@@ -5,7 +5,7 @@ require("chai")
 const { expect } = require("chai")
 
 // Contracts
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
 // Bring in config.web3 (v1.0.0)
@@ -38,7 +38,8 @@ contract("Block execution", async (accounts) => {
     txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
 
-    txRequest = await TransactionRequest.new(
+    txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         Owner, // createdBy
         Owner, // owner

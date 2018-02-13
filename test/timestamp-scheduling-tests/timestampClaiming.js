@@ -6,7 +6,7 @@ const { expect } = require("chai")
 
 // Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3
 const config = require("../../config")
@@ -46,7 +46,8 @@ contract("Timestamp claiming", async (accounts) => {
     const requiredDeposit = config.web3.utils.toWei("25", "kwei")
 
     // Instantiate a TransactionRequest with temporal unit 2 - aka timestamp
-    txRequest = await TransactionRequest.new(
+    txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner

@@ -6,7 +6,7 @@ const { expect } = require("chai")
 
 // Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -31,7 +31,8 @@ contract("tests execution rejected if cancelled", async (accounts) => {
 
     const txRecorder = await TransactionRecorder.new()
 
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         Owner, // createdBy
         Owner, // owner

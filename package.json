@@ -1,6 +1,6 @@
 {
     "name": "ethereum-alarm-clock",
-    "version": "1.0.0",
+    "version": "0.9.3",
     "description": "Service to schedule Ethereum transactions that will be executed in the future.",
     "main": "index.js",
     "directories": {
@@ -22,6 +22,7 @@
     },
     "homepage": "https://github.com/chronologic/ethereum-alarm-clock#readme",
     "dependencies": {
+        "@optionality.io/clone-factory": "^0.1.2",
         "@parity/api": "^2.1.14",
         "@types/chalk": "^2.2.0",
         "async": "^2.6.0",

@@ -5,14 +5,14 @@ require("chai")
 const { expect } = require("chai")
 
 const SimpleToken = artifacts.require("./SimpleToken.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
 const { RequestData, wasAborted } = require("../dataHelpers.js")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
 
-contract("TransactionRequest proxy function", (accounts) => {
+contract("TransactionRequestCore proxy function", (accounts) => {
   const claimWindowSize = 25 // blocks
   const freezePeriod = 5 // blocks
   const reservedWindowSize = 10 // blocks
@@ -26,7 +26,8 @@ contract("TransactionRequest proxy function", (accounts) => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 38 + 10 + 5
 
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner
@@ -86,7 +87,8 @@ contract("TransactionRequest proxy function", (accounts) => {
     const tokenContract = await SimpleToken.new(123454321)
     const buyTokensSig = config.web3.utils.sha3("buyTokens()").slice(0, 10)
 
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner

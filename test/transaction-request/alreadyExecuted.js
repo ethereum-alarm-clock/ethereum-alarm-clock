@@ -6,7 +6,7 @@ const { expect } = require("chai")
 
 // Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -40,7 +40,8 @@ contract("Test already executed", async (accounts) => {
     const windowStart = timestamp + DAY
 
     // / Make a transactionRequest
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner

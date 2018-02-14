@@ -1,0 +1,79 @@
+Init code
+---------
+
+0  | 34 <- CALLVALUE                Push the callvalue onto the stack [ callvalue ]
+1  | 60 <- PUSH1                    Push 0x44 the offset of the JUMPDEST given the revert label
+2  | 42 <- 0x42 `revert`            -> [ callvalue, 0x42 ]
+3  | 57 <- JUMPI                    Jumpi(0x42, callvalue) Jumps to `revert` if callvalue > 0 [ ]
+4  | 60 <- PUSH1                    Push 0x38 the bytes length of the contract code
+5  | 38 <- 0x38 `codeend-code`      -> [ 38 ]
+6  | 80 <- DUP1                     Duplicate last stack item [ 38, 38 ]
+7  | 60 <- PUSH1                    Push 0x10 the bytes which represent the offset of code start (see the 16th opcode)
+8  | 10 <- 0x10 `code`              -> [ 38, 38, 10 ]
+9  | 60 <- PUSH1                    Push 0x00 onto the stack
+10 | 00 <- 0x00                     -> [ 38, 38, 10, 00 ]
+11 | 39 <- CODECOPY                 Codecopy(0x00, 0x10, 0x38) Copy 0x38 bytes of code from position 0x10 (16) to memory 0x0 -> [ 38 ]
+12 | 60 <- PUSH1                    Push 0x00 onto the stack
+13 | 00 <- 0xOO                     -> [ 38, 00 ]
+14 | f3 <- RETURN                   Return(0x00, 0x38) [ ] Return the new code in the contract (which does not include the constructor).
+15 | 00 <- STOP                     Stop Call
+
+Contract code
+-------------
+
+16 | 36 <- CALLDATASIZE             Push the calldatasize in bytes to the stack [ calldatasize ]
+17 | 60 <- PUSH1                    Push 0x00 to the stack
+18 | 00 <- 0x00                     -> [ calldatasize, 00 ]
+19 | 60 <- PUSH1                    Push 0xFF to the stack
+20 | ff <- 0xFF                     -> [ calldatasize, 00, FF ]
+21 | 37 <- CALLDATACOPY             Calldatacopy(0xFF, 0x00, calldatasize) Copy `calldatasize` bytes at position 0x00 to memory at position 0xFF -> [ ]
+22 | 60 <- PUSH1                    Push 0x00 to the stack
+23 | 00 <- 0x00                     -> [ 00 ]
+24 | 80 <- DUP1                     Duplicate last byte on stack -> [ 00, 00 ]
+25 | 36 <- CALLDATASIZE             Push calldatasize to the stack -> [ 00, 00, calldatasize ]
+26 | 60 <- PUSH1                    Push 0xFF to the stack
+27 | ff <- 0xFF                     -> [ 00, 00, calldatasize, FF]
+28 | 73 <- PUSH20                   Push 20 bytes to the stack
+29 | be <- start 20 bytes
+30 | ef
+31 | be
+32 | ef
+33 | be
+34 | ef
+35 | be
+36 | ef
+37 | be
+38 | ef
+39 | be
+40 | ef
+41 | be
+42 | ef
+43 | be
+44 | ef
+45 | be
+46 | ef
+47 | be
+48 | ef <- end 20 bytes             -> [ 00, 00, calldatasize, FF, BE, EF, ..., EF ]
+49 | 5a <- GAS                      Push available gas to the stack -> [ 00, 00, calldatasize, FF, BE, EF, ..., EF, gas ]
+50 | f4 <- DELEGATECALL             DelegateCall(gas, 0xBEEF...EF, 0xFF, calldatasize, 0x00, 0x00) Call contract at 0xBEEF...EF with input at memory location 0xFF for `calldatasize` bytes using `gas` gas. Returns 0 on error and 1 on success -> [ 0||1 ]
+51 | 15 <- ISZERO                   Checks if last item on stack is 0 and returns 1 if true -> [ 0||1, iszero ]
+52 | 60 <- PUSH1                    Push the offset of revert destination based on start of the code
+53 | 32 <- `revert-code`            -> [ 0||1, iszero, 32 ]
+54 | 57 <- JUMPI                    JUMPI(0x32, iszero(0||1)) Jump to the revert destination if the return value is === 0 (delegatecall failed) -> [ ]
+55 | 3d <- RETURNDATASIZE           Push `returndatasize` onto the stack -> [ returndatasize ]
+56 | 80 <- DUP1                     Duplicate -> [ returndatasize, returndatasize ]
+57 | 60 <- PUSH1                    Push 0x00 onto the stack
+58 | 00 <- 0x00                     -> [ returndatasize, returndatasize, 00 ]
+59 | 60 <- PUSH1                    Push 0xFF onto the stack
+60 | ff <- 0xFF                     -> [ returndatasize, returndatasize, 00, FF ]
+61 | 3e <- RETURNDATACOPY           Returndatacopy(0xFF, 0x00, returndatasize) Copies `returndatasize` bytes from 0x00 to memory at 0xFF -> [ returndatasize ]
+62 | 60 <- PUSH1                    Push 0xFF onto the stack
+63 | ff <- 0xFF                     -> [ returndatasize, FF ]
+64 | f3 <- RETURN                   Return(0xFF, returndatasize) Returns the memory at location 0xFF of length `returndatasize` -> [ ]
+65 | 00 <- STOP                     Stop Call
+66 | 5b <- JUMPDEST `revert`
+67 | 60 <- PUSH1                    Push 0x00 onto the stack
+68 | 00 <- 0x00                     -> [ 00 ]
+69 | 80 <- DUP1                     Duplicate -> [ 00, 00 ]
+70 | fd <- REVERT                   Revert(0x00, 0x00) -> [ ]
+71 | 00 <- STOP                     Stop Call

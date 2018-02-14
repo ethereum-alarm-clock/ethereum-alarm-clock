@@ -5,7 +5,7 @@ require("chai")
 const { expect } = require("chai")
 
 // Contracts
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -33,7 +33,8 @@ contract("Exceptions", async (accounts) => {
     const curBlockNum = await config.web3.eth.getBlockNumber()
     const windowStart = curBlockNum + 38
 
-    transactionRequest = await TransactionRequest.new(
+    transactionRequest = await TransactionRequestCore.new()
+    await transactionRequest.initialize(
       [
         Owner, // createdBy
         Owner, // owner

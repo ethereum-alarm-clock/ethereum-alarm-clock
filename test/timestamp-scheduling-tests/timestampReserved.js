@@ -6,7 +6,7 @@ const { expect } = require("chai")
 
 // / Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
-const TransactionRequest = artifacts.require("./TransactionRequest.sol")
+const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // / Brings in config.web3 (v1.0.0)
 const config = require("../../config")
@@ -35,7 +35,8 @@ contract("Timestamp reserved window", async (accounts) => {
     const gasPrice = config.web3.utils.toWei("37", "gwei")
     const requiredDeposit = config.web3.utils.toWei("60", "kwei")
 
-    const txRequest = await TransactionRequest.new(
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
       [
         accounts[0], // createdBy
         accounts[0], // owner

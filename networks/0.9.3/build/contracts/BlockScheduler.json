@@ -1,0 +1,739 @@
+{
+  "contractName": "BlockScheduler",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_toAddress",
+          "type": "address"
+        },
+        {
+          "name": "_callData",
+          "type": "bytes"
+        },
+        {
+          "name": "_uintArgs",
+          "type": "uint256[8]"
+        }
+      ],
+      "name": "schedule",
+      "outputs": [
+        {
+          "name": "newRequest",
+          "type": "address"
+        }
+      ],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "temporalUnit",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "feeRecipient",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "factoryAddress",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "futureTransaction",
+      "outputs": [
+        {
+          "name": "toAddress",
+          "type": "address"
+        },
+        {
+          "name": "callData",
+          "type": "bytes"
+        },
+        {
+          "name": "callGas",
+          "type": "uint256"
+        },
+        {
+          "name": "callValue",
+          "type": "uint256"
+        },
+        {
+          "name": "windowSize",
+          "type": "uint256"
+        },
+        {
+          "name": "windowStart",
+          "type": "uint256"
+        },
+        {
+          "name": "gasPrice",
+          "type": "uint256"
+        },
+        {
+          "name": "fee",
+          "type": "uint256"
+        },
+        {
+          "name": "bounty",
+          "type": "uint256"
+        },
+        {
+          "name": "requiredDeposit",
+          "type": "uint256"
+        },
+        {
+          "name": "reservedWindowSize",
+          "type": "uint256"
+        },
+        {
+          "name": "freezePeriod",
+          "type": "uint256"
+        },
+        {
+          "name": "claimWindowSize",
+          "type": "uint256"
+        },
+        {
+          "name": "temporalUnit",
+          "type": "uint8"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "name": "_factoryAddress",
+          "type": "address"
+        },
+        {
+          "name": "_feeRecipient",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "request",
+          "type": "address"
+        }
+      ],
+      "name": "NewRequest",
+      "type": "event"
+    }
+  ],
+  "bytecode": "0x6060604052341561000f57600080fd5b604051604080610f378339810160405280805190602001909190805190602001909190505060008273ffffffffffffffffffffffffffffffffffffffff161415151561005a57600080fd5b6001600060146101000a81548160ff0219169083600281111561007957fe5b0217905550816000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555080600f60006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505050610e27806101106000396000f30060606040526004361061006d576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630801b6541461006f5780633c8a072e1461014d5780634690484014610184578063966dae0e146101d9578063e666bbcb1461022e575b005b61010b600480803573ffffffffffffffffffffffffffffffffffffffff1690602001909190803590602001908201803590602001908080601f0160208091040260200160405190810160405280939291908181526020018383808284378201915050505050509190806101000190600880602002604051908101604052809291908260086020028082843782019150505050509190505061036e565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561015857600080fd5b610160610767565b6040518082600281111561017057fe5b60ff16815260200191505060405180910390f35b341561018f57600080fd5b61019761077a565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34156101e457600080fd5b6101ec6107a0565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561023957600080fd5b6102416107c5565b604051808f73ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001806020018e81526020018d81526020018c81526020018b81526020018a81526020018981526020018881526020018781526020018681526020018581526020018481526020018360028111156102c957fe5b60ff16815260200182810382528f8181546001816001161561010002031660029004815260200191508054600181600116156101000203166002900480156103525780601f1061032757610100808354040283529160200191610352565b820191906000526020600020905b81548152906001019060200180831161033557829003601f168201915b50509f5050505050505050505050505050505060405180910390f35b60006001600281111561037d57fe5b600060149054906101000a900460ff16600281111561039857fe5b141561043557600173__SchedulerLib__________________________6314c84e5d90916000604051602001526040518263ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018082815260200191505060206040518083038186803b151561041457600080fd5b6102c65a03f4151561042557600080fd5b50505060405180519050506104ff565b60028081111561044157fe5b600060149054906101000a900460ff16600281111561045c57fe5b14156104f957600173__SchedulerLib__________________________63e9d2437790916000604051602001526040518263ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018082815260200191505060206040518083038186803b15156104d857600080fd5b6102c65a03f415156104e957600080fd5b50505060405180519050506104fe565b600080fd5b5b83600160000160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055508260018001908051906020019061055b929190610d56565b5081600060088110151561056b57fe5b602002015160016002018190555081600160088110151561058857fe5b60200201516001600301819055508160026008811015156105a557fe5b60200201516001600401819055508160036008811015156105c257fe5b60200201516001600501819055508160046008811015156105df57fe5b60200201516001600601819055508160056008811015156105fc57fe5b602002015160016007018190555081600660088110151561061957fe5b602002015160016008018190555081600760088110151561063657fe5b6020020151600160090181905550600060149054906101000a900460ff166001600d0160006101000a81548160ff0219169083600281111561067457fe5b02179055506106d26000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff16600f60009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16600161084b9092919063ffffffff16565b905060008173ffffffffffffffffffffffffffffffffffffffff16141515156106fa57600080fd5b7f2749295aa7ffdbd4d16719dc03d592cd081eebd9bb790ceedce201a40675fc0381604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a18090509392505050565b600060149054906101000a900460ff1681565b600f60009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60018060000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1690806001019080600201549080600301549080600401549080600501549080600601549080600701549080600801549080600901549080600a01549080600b01549080600c01549080600d0160009054906101000a900460ff1690508e565b600080600084915073__MathLib_______________________________637ae2b5c773__PaymentLib____________________________635ee345e489600801548a600701548b600201548c600301548d6006015473__RequestLib____________________________6345104b166000604051602001526040518163ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040160206040518083038186803b151561090857600080fd5b6102c65a03f4151561091957600080fd5b505050604051805190506000604051602001526040518763ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180878152602001868152602001858152602001848152602001838152602001828152602001965050505050505060206040518083038186803b151561099e57600080fd5b6102c65a03f415156109af57600080fd5b505050604051805190503073ffffffffffffffffffffffffffffffffffffffff16316000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b1515610a3057600080fd5b6102c65a03f41515610a4157600080fd5b5050506040518051905090508173ffffffffffffffffffffffffffffffffffffffff1663d7ceab4c826060604051908101604052803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018873ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018a60000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815250610180604051908101604052808b6007015481526020018b6008015481526020018b600c015481526020018b600b015481526020018b600a015481526020018b600d0160009054906101000a900460ff166002811115610b8a57fe5b81526020018b6004015481526020018b6005015481526020018b6002015481526020018b6003015481526020018b6006015481526020018b600901548152508a6001016000604051602001526040518563ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018084600360200280838360005b83811015610c2c578082015181840152602081019050610c11565b5050505090500183600c60200280838360005b83811015610c5a578082015181840152602081019050610c3f565b5050505090500180602001828103825283818154600181600116156101000203166002900481526020019150805460018160011615610100020316600290048015610ce65780601f10610cbb57610100808354040283529160200191610ce6565b820191906000526020600020905b815481529060010190602001808311610cc957829003601f168201915b50509450505050506020604051808303818588803b1515610d0657600080fd5b6125ee5a03f11515610d1757600080fd5b5050505060405180519050925060008373ffffffffffffffffffffffffffffffffffffffff1614151515610d4a57600080fd5b82925050509392505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f10610d9757805160ff1916838001178555610dc5565b82800160010185558215610dc5579182015b82811115610dc4578251825591602001919060010190610da9565b5b509050610dd29190610dd6565b5090565b610df891905b80821115610df4576000816000905550600101610ddc565b5090565b905600a165627a7a7230582085463db2708d30b06e1578c4f1350b924cd1438ecabfbaa2ac31ab4e7ba051470029",
+  "deployedBytecode": "0x60606040526004361061006d576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630801b6541461006f5780633c8a072e1461014d5780634690484014610184578063966dae0e146101d9578063e666bbcb1461022e575b005b61010b600480803573ffffffffffffffffffffffffffffffffffffffff1690602001909190803590602001908201803590602001908080601f0160208091040260200160405190810160405280939291908181526020018383808284378201915050505050509190806101000190600880602002604051908101604052809291908260086020028082843782019150505050509190505061036e565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561015857600080fd5b610160610767565b6040518082600281111561017057fe5b60ff16815260200191505060405180910390f35b341561018f57600080fd5b61019761077a565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34156101e457600080fd5b6101ec6107a0565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561023957600080fd5b6102416107c5565b604051808f73ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001806020018e81526020018d81526020018c81526020018b81526020018a81526020018981526020018881526020018781526020018681526020018581526020018481526020018360028111156102c957fe5b60ff16815260200182810382528f8181546001816001161561010002031660029004815260200191508054600181600116156101000203166002900480156103525780601f1061032757610100808354040283529160200191610352565b820191906000526020600020905b81548152906001019060200180831161033557829003601f168201915b50509f5050505050505050505050505050505060405180910390f35b60006001600281111561037d57fe5b600060149054906101000a900460ff16600281111561039857fe5b141561043557600173__SchedulerLib__________________________6314c84e5d90916000604051602001526040518263ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018082815260200191505060206040518083038186803b151561041457600080fd5b6102c65a03f4151561042557600080fd5b50505060405180519050506104ff565b60028081111561044157fe5b600060149054906101000a900460ff16600281111561045c57fe5b14156104f957600173__SchedulerLib__________________________63e9d2437790916000604051602001526040518263ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018082815260200191505060206040518083038186803b15156104d857600080fd5b6102c65a03f415156104e957600080fd5b50505060405180519050506104fe565b600080fd5b5b83600160000160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055508260018001908051906020019061055b929190610d56565b5081600060088110151561056b57fe5b602002015160016002018190555081600160088110151561058857fe5b60200201516001600301819055508160026008811015156105a557fe5b60200201516001600401819055508160036008811015156105c257fe5b60200201516001600501819055508160046008811015156105df57fe5b60200201516001600601819055508160056008811015156105fc57fe5b602002015160016007018190555081600660088110151561061957fe5b602002015160016008018190555081600760088110151561063657fe5b6020020151600160090181905550600060149054906101000a900460ff166001600d0160006101000a81548160ff0219169083600281111561067457fe5b02179055506106d26000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff16600f60009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16600161084b9092919063ffffffff16565b905060008173ffffffffffffffffffffffffffffffffffffffff16141515156106fa57600080fd5b7f2749295aa7ffdbd4d16719dc03d592cd081eebd9bb790ceedce201a40675fc0381604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a18090509392505050565b600060149054906101000a900460ff1681565b600f60009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60018060000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1690806001019080600201549080600301549080600401549080600501549080600601549080600701549080600801549080600901549080600a01549080600b01549080600c01549080600d0160009054906101000a900460ff1690508e565b600080600084915073__MathLib_______________________________637ae2b5c773__PaymentLib____________________________635ee345e489600801548a600701548b600201548c600301548d6006015473__RequestLib____________________________6345104b166000604051602001526040518163ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040160206040518083038186803b151561090857600080fd5b6102c65a03f4151561091957600080fd5b505050604051805190506000604051602001526040518763ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180878152602001868152602001858152602001848152602001838152602001828152602001965050505050505060206040518083038186803b151561099e57600080fd5b6102c65a03f415156109af57600080fd5b505050604051805190503073ffffffffffffffffffffffffffffffffffffffff16316000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b1515610a3057600080fd5b6102c65a03f41515610a4157600080fd5b5050506040518051905090508173ffffffffffffffffffffffffffffffffffffffff1663d7ceab4c826060604051908101604052803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018873ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018a60000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815250610180604051908101604052808b6007015481526020018b6008015481526020018b600c015481526020018b600b015481526020018b600a015481526020018b600d0160009054906101000a900460ff166002811115610b8a57fe5b81526020018b6004015481526020018b6005015481526020018b6002015481526020018b6003015481526020018b6006015481526020018b600901548152508a6001016000604051602001526040518563ffffffff167c01000000000000000000000000000000000000000000000000000000000281526004018084600360200280838360005b83811015610c2c578082015181840152602081019050610c11565b5050505090500183600c60200280838360005b83811015610c5a578082015181840152602081019050610c3f565b5050505090500180602001828103825283818154600181600116156101000203166002900481526020019150805460018160011615610100020316600290048015610ce65780601f10610cbb57610100808354040283529160200191610ce6565b820191906000526020600020905b815481529060010190602001808311610cc957829003601f168201915b50509450505050506020604051808303818588803b1515610d0657600080fd5b6125ee5a03f11515610d1757600080fd5b5050505060405180519050925060008373ffffffffffffffffffffffffffffffffffffffff1614151515610d4a57600080fd5b82925050509392505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f10610d9757805160ff1916838001178555610dc5565b82800160010185558215610dc5579182015b82811115610dc4578251825591602001919060010190610da9565b5b509050610dd29190610dd6565b5090565b610df891905b80821115610df4576000816000905550600101610ddc565b5090565b905600a165627a7a7230582085463db2708d30b06e1578c4f1350b924cd1438ecabfbaa2ac31ab4e7ba051470029",
+  "sourceMap": "281:654:19:-;;;472:461;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;588:3;569:15;:22;;;;561:31;;;;;;;;668:38;653:12;;:53;;;;;;;;;;;;;;;;;;;;;;;;816:15;799:14;;:32;;;;;;;;;;;;;;;;;;913:13;898:12;;:28;;;;;;;;;;;;;;;;;;472:461;;281:654;;;;;;",
+  "deployedSourceMap": "281:654:19:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1728:1026:41;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;538:51:29;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;431:27:41;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;455:29:29;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;699:55;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1728:1026:41;1889:18;953:38:29;937:54;;;;;;;;:12;;;;;;;;;;;:54;;;;;;;;;933:286;;;1007:17;:30;;;;:32;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;933:286;;;1076:41;1060:57;;;;;;;;:12;;;;;;;;;;;:57;;;;;;;;;1056:163;;;1133:17;:34;;;;:36;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1056:163;;;1200:8;;;1056:163;933:286;1961:10:41;1923:17;:27;;;:48;;;;;;;;;;;;;;;;;;2019:9;1981:17;:26;;:47;;;;;;;;;;;;:::i;:::-;;2076:9;2086:1;2076:12;;;;;;;;;;;;;2038:17;:25;;:50;;;;2136:9;2146:1;2136:12;;;;;;;;;;;;;2098:17;:27;;:50;;;;2196:9;2206:1;2196:12;;;;;;;;;;;;;2158:17;:28;;:50;;;;2256:9;2266:1;2256:12;;;;;;;;;;;;;2218:17;:29;;:50;;;;2316:9;2326:1;2316:12;;;;;;;;;;;;;2278:17;:26;;:50;;;;2376:9;2386:1;2376:12;;;;;;;;;;;;;2338:17;:21;;:50;;;;2436:9;2446:1;2436:12;;;;;;;;;;;;;2398:17;:24;;:50;;;;2496:9;2506:1;2496:12;;;;;;;;;;;;;2458:17;:33;;:50;;;;2557:12;;;;;;;;;;;2519:17;:30;;;:50;;;;;;;;;;;;;;;;;;;;;;;;2593:56;2620:14;;;;;;;;;;;2636:12;;;;;;;;;;;2593:17;:26;;:56;;;;;:::i;:::-;2580:69;;2682:3;2668:10;:17;;;;2659:28;;;;;;;;2698:22;2709:10;2698:22;;;;;;;;;;;;;;;;;;;;;;2737:10;2730:17;;1728:1026;;;;;:::o;538:51:29:-;;;;;;;;;;;;;:::o;431:27:41:-;;;;;;;;;;;;;:::o;455:29:29:-;;;;;;;;;;;;;:::o;699:55::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o;4419:2073:40:-;4574:25;4616:31;4701:14;4674:15;4616:74;;4718:7;:11;4743:10;:27;4788:4;:11;;;4817:4;:8;;;4843:4;:12;;;4873:4;:14;;;4905:4;:13;;;4936:10;:33;:35;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;4743:268;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;5013:4;:12;;;4718:308;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;4701:325;;5057:7;:30;;;5094:9;5057:1182;;;;;;;;;5136:10;5057:1182;;;;;;;;5194:13;5057:1182;;;;;;;;5266:4;:14;;;;;;;;;;;;5057:1182;;;;;;;;;;;;;;;;5360:4;:8;;;5057:1182;;;;5423:4;:11;;;5057:1182;;;;5489:4;:20;;;5057:1182;;;;5562:4;:17;;;5057:1182;;;;5632:4;:23;;;5057:1182;;;;5713:4;:17;;;;;;;;;;;;5708:23;;;;;;;;5057:1182;;;;5803:4;:15;;;5057:1182;;;;5871:4;:16;;;5057:1182;;;;5940:4;:12;;;5057:1182;;;;6003:4;:14;;;5057:1182;;;;6068:4;:13;;;5057:1182;;;;6132:4;:20;;;5057:1182;;;6216:4;:13;;5057:1182;;;;;;;;;;;;;;;;;;;;;;;;;23:1:-1;8:100;33:3;30:1;27:2;8:100;;;99:1;94:3;90;84:5;80:1;75:3;71;64:6;52:2;49:1;45:3;40:15;;8:100;;;12:14;3:109;;;;;;;;;;;;;23:1;8:100;33:3;30:1;27:2;8:100;;;99:1;94:3;90;84:5;80:1;75:3;71;64:6;52:2;49:1;45:3;40:15;;8:100;;;12:14;3:109;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;5037:1202:40;;6447:3;6426:17;:24;;;;6418:33;;;;;;;;6468:17;6461:24;;4419:2073;;;;;;;:::o;281:654:19:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;;:::o;:::-;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o",
+  "source": "pragma solidity 0.4.19;\n\nimport \"contracts/Library/RequestScheduleLib.sol\";\nimport \"contracts/Scheduler/BaseScheduler.sol\";\n\n/**\n * @title BlockScheduler\n * @dev Top-level contract that exposes the API to the Ethereum Alarm Clock service and passes in blocks as temporal unit.\n */\ncontract BlockScheduler is BaseScheduler {\n\n    /**\n     * @dev Constructor\n     * @param _factoryAddress Address of the RequestFactory which creates requests for this scheduler.\n     */\n    function BlockScheduler(address _factoryAddress, address _feeRecipient) public {\n        require(_factoryAddress != 0x0);\n\n        // Default temporal unit is block number.\n        temporalUnit = RequestScheduleLib.TemporalUnit.Blocks;\n\n        // Sets the factoryAddress variable found in SchedulerInterface contract.\n        factoryAddress = _factoryAddress;\n\n        // Sets the fee recipient for these schedulers.\n        feeRecipient = _feeRecipient;\n    }\n}\n",
+  "sourcePath": "/Users/piotrkosinski/Projects/eac/contracts/Scheduler/BlockScheduler.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "/Users/piotrkosinski/Projects/eac/contracts/Scheduler/BlockScheduler.sol",
+      "exportedSymbols": {
+        "BlockScheduler": [
+          5997
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "0.4",
+            ".19"
+          ]
+        },
+        "id": 5964,
+        "name": "PragmaDirective",
+        "src": "0:23:19"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 11483,
+          "absolutePath": "contracts/Library/RequestScheduleLib.sol",
+          "file": "contracts/Library/RequestScheduleLib.sol",
+          "scope": 5998,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 5965,
+        "name": "ImportDirective",
+        "src": "25:50:19"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 12046,
+          "absolutePath": "contracts/Scheduler/BaseScheduler.sol",
+          "file": "contracts/Scheduler/BaseScheduler.sol",
+          "scope": 5998,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 5966,
+        "name": "ImportDirective",
+        "src": "76:47:19"
+      },
+      {
+        "attributes": {
+          "contractDependencies": [
+            6873,
+            12045
+          ],
+          "contractKind": "contract",
+          "documentation": "@title BlockScheduler\n@dev Top-level contract that exposes the API to the Ethereum Alarm Clock service and passes in blocks as temporal unit.",
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            5997,
+            12045,
+            6873
+          ],
+          "name": "BlockScheduler",
+          "scope": 5998
+        },
+        "children": [
+          {
+            "attributes": {
+              "arguments": [
+                null
+              ]
+            },
+            "children": [
+              {
+                "attributes": {
+                  "contractScope": null,
+                  "name": "BaseScheduler",
+                  "referencedDeclaration": 12045,
+                  "type": "contract BaseScheduler"
+                },
+                "id": 5967,
+                "name": "UserDefinedTypeName",
+                "src": "308:13:19"
+              }
+            ],
+            "id": 5968,
+            "name": "InheritanceSpecifier",
+            "src": "308:13:19"
+          },
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": true,
+              "modifiers": [
+                null
+              ],
+              "name": "BlockScheduler",
+              "payable": false,
+              "scope": 5997,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_factoryAddress",
+                      "scope": 5996,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 5969,
+                        "name": "ElementaryTypeName",
+                        "src": "496:7:19"
+                      }
+                    ],
+                    "id": 5970,
+                    "name": "VariableDeclaration",
+                    "src": "496:23:19"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_feeRecipient",
+                      "scope": 5996,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 5971,
+                        "name": "ElementaryTypeName",
+                        "src": "521:7:19"
+                      }
+                    ],
+                    "id": 5972,
+                    "name": "VariableDeclaration",
+                    "src": "521:21:19"
+                  }
+                ],
+                "id": 5973,
+                "name": "ParameterList",
+                "src": "495:48:19"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 5974,
+                "name": "ParameterList",
+                "src": "551:0:19"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "tuple()",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bool",
+                                  "typeString": "bool"
+                                }
+                              ],
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 12356,
+                              "type": "function (bool) pure",
+                              "value": "require"
+                            },
+                            "id": 5975,
+                            "name": "Identifier",
+                            "src": "561:7:19"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "commonType": {
+                                "typeIdentifier": "t_address",
+                                "typeString": "address"
+                              },
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "operator": "!=",
+                              "type": "bool"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 5970,
+                                  "type": "address",
+                                  "value": "_factoryAddress"
+                                },
+                                "id": 5976,
+                                "name": "Identifier",
+                                "src": "569:15:19"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "hexvalue": "307830",
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": true,
+                                  "lValueRequested": false,
+                                  "subdenomination": null,
+                                  "token": "number",
+                                  "type": "int_const 0",
+                                  "value": "0x0"
+                                },
+                                "id": 5977,
+                                "name": "Literal",
+                                "src": "588:3:19"
+                              }
+                            ],
+                            "id": 5978,
+                            "name": "BinaryOperation",
+                            "src": "569:22:19"
+                          }
+                        ],
+                        "id": 5979,
+                        "name": "FunctionCall",
+                        "src": "561:31:19"
+                      }
+                    ],
+                    "id": 5980,
+                    "name": "ExpressionStatement",
+                    "src": "561:31:19"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "enum RequestScheduleLib.TemporalUnit"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 6823,
+                              "type": "enum RequestScheduleLib.TemporalUnit",
+                              "value": "temporalUnit"
+                            },
+                            "id": 5981,
+                            "name": "Identifier",
+                            "src": "653:12:19"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "member_name": "Blocks",
+                              "referencedDeclaration": null,
+                              "type": "enum RequestScheduleLib.TemporalUnit"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "TemporalUnit",
+                                  "referencedDeclaration": 11124,
+                                  "type": "type(enum RequestScheduleLib.TemporalUnit)"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 11482,
+                                      "type": "type(library RequestScheduleLib)",
+                                      "value": "RequestScheduleLib"
+                                    },
+                                    "id": 5982,
+                                    "name": "Identifier",
+                                    "src": "668:18:19"
+                                  }
+                                ],
+                                "id": 5983,
+                                "name": "MemberAccess",
+                                "src": "668:31:19"
+                              }
+                            ],
+                            "id": 5984,
+                            "name": "MemberAccess",
+                            "src": "668:38:19"
+                          }
+                        ],
+                        "id": 5985,
+                        "name": "Assignment",
+                        "src": "653:53:19"
+                      }
+                    ],
+                    "id": 5986,
+                    "name": "ExpressionStatement",
+                    "src": "653:53:19"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "address"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 6821,
+                              "type": "address",
+                              "value": "factoryAddress"
+                            },
+                            "id": 5987,
+                            "name": "Identifier",
+                            "src": "799:14:19"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 5970,
+                              "type": "address",
+                              "value": "_factoryAddress"
+                            },
+                            "id": 5988,
+                            "name": "Identifier",
+                            "src": "816:15:19"
+                          }
+                        ],
+                        "id": 5989,
+                        "name": "Assignment",
+                        "src": "799:32:19"
+                      }
+                    ],
+                    "id": 5990,
+                    "name": "ExpressionStatement",
+                    "src": "799:32:19"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "address"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 11918,
+                              "type": "address",
+                              "value": "feeRecipient"
+                            },
+                            "id": 5991,
+                            "name": "Identifier",
+                            "src": "898:12:19"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 5972,
+                              "type": "address",
+                              "value": "_feeRecipient"
+                            },
+                            "id": 5992,
+                            "name": "Identifier",
+                            "src": "913:13:19"
+                          }
+                        ],
+                        "id": 5993,
+                        "name": "Assignment",
+                        "src": "898:28:19"
+                      }
+                    ],
+                    "id": 5994,
+                    "name": "ExpressionStatement",
+                    "src": "898:28:19"
+                  }
+                ],
+                "id": 5995,
+                "name": "Block",
+                "src": "551:382:19"
+              }
+            ],
+            "id": 5996,
+            "name": "FunctionDefinition",
+            "src": "472:461:19"
+          }
+        ],
+        "id": 5997,
+        "name": "ContractDefinition",
+        "src": "281:654:19"
+      }
+    ],
+    "id": 5998,
+    "name": "SourceUnit",
+    "src": "0:936:19"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {
+    "42": {
+      "events": {
+        "0xc008bc849b42227c61d5063a1313ce509a6e99211bfd59e827e417be6c65c81b": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "reason",
+              "type": "uint8"
+            }
+          ],
+          "name": "Aborted",
+          "type": "event"
+        },
+        "0xa761582a460180d55522f9f5fdc076390a1f48a7a62a8afbd45c1bb797948edb": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "rewardPayment",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "measuredGasConsumption",
+              "type": "uint256"
+            }
+          ],
+          "name": "Cancelled",
+          "type": "event"
+        },
+        "0xbcb472984264b16baa8cde752f2af002ea8ce06f35d81caee36625234edd2a46": {
+          "anonymous": false,
+          "inputs": [],
+          "name": "Claimed",
+          "type": "event"
+        },
+        "0x3e504bb8b225ad41f613b0c3c4205cdd752d1615b4d77cd1773417282fcfb5d9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "bounty",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "fee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "measuredGasConsumption",
+              "type": "uint256"
+            }
+          ],
+          "name": "Executed",
+          "type": "event"
+        }
+      },
+      "links": {
+        "SchedulerLib": "0x27a5c2cf457b8457e82887fd793b6dc5d9c45abd",
+        "PaymentLib": "0x64906a8b50da07ca19c0ec145b933fa0500c7378",
+        "RequestLib": "0xea74036bab068b83e34233d15b63c50e7edb0f7a",
+        "MathLib": "0x147d8962f12dfbaada00c78db9c5f07df536500b"
+      },
+      "address": "0x1afc19a7e642761ba2b55d2a45b32c7ef08269d1"
+    }
+  },
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-02-23T08:52:28.818Z"
+}

@@ -1,0 +1,984 @@
+{
+  "contractName": "RequestFactoryInterface",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "request",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "RequestCreated",
+      "type": "event"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "addressArgs",
+          "type": "address[3]"
+        },
+        {
+          "name": "uintArgs",
+          "type": "uint256[12]"
+        },
+        {
+          "name": "callData",
+          "type": "bytes"
+        }
+      ],
+      "name": "createRequest",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "addressArgs",
+          "type": "address[3]"
+        },
+        {
+          "name": "uintArgs",
+          "type": "uint256[12]"
+        },
+        {
+          "name": "callData",
+          "type": "bytes"
+        }
+      ],
+      "name": "createValidatedRequest",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "addressArgs",
+          "type": "address[3]"
+        },
+        {
+          "name": "uintArgs",
+          "type": "uint256[12]"
+        },
+        {
+          "name": "callData",
+          "type": "bytes"
+        },
+        {
+          "name": "endowment",
+          "type": "uint256"
+        }
+      ],
+      "name": "validateRequestParams",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool[6]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_address",
+          "type": "address"
+        }
+      ],
+      "name": "isKnownRequest",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "pragma solidity 0.4.19;\n\ncontract RequestFactoryInterface {\n\n    event RequestCreated(address request, address indexed owner);\n\n    function createRequest(address[3] addressArgs,\n                           uint[12] uintArgs,\n                           bytes callData)\n        public payable returns (address);\n\n    function createValidatedRequest(address[3] addressArgs,\n                                    uint[12] uintArgs,\n                                    bytes callData) \n        public payable returns (address);\n\n    function validateRequestParams(address[3] addressArgs,\n                                   uint[12] uintArgs,\n                                   bytes callData,\n                                   uint endowment) \n        public view returns (bool[6]);\n\n    function isKnownRequest(address _address)\n        public view returns (bool);\n}\n",
+  "sourcePath": "contracts/Interface/RequestFactoryInterface.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "contracts/Interface/RequestFactoryInterface.sol",
+      "exportedSymbols": {
+        "RequestFactoryInterface": [
+          6746
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "0.4",
+            ".19"
+          ]
+        },
+        "id": 6683,
+        "name": "PragmaDirective",
+        "src": "0:23:27"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": false,
+          "linearizedBaseContracts": [
+            6746
+          ],
+          "name": "RequestFactoryInterface",
+          "scope": 6747
+        },
+        "children": [
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "RequestCreated"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "name": "request",
+                      "scope": 6689,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 6684,
+                        "name": "ElementaryTypeName",
+                        "src": "86:7:27"
+                      }
+                    ],
+                    "id": 6685,
+                    "name": "VariableDeclaration",
+                    "src": "86:15:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "name": "owner",
+                      "scope": 6689,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 6686,
+                        "name": "ElementaryTypeName",
+                        "src": "103:7:27"
+                      }
+                    ],
+                    "id": 6687,
+                    "name": "VariableDeclaration",
+                    "src": "103:21:27"
+                  }
+                ],
+                "id": 6688,
+                "name": "ParameterList",
+                "src": "85:40:27"
+              }
+            ],
+            "id": 6689,
+            "name": "EventDefinition",
+            "src": "65:61:27"
+          },
+          {
+            "attributes": {
+              "body": null,
+              "constant": false,
+              "implemented": false,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "createRequest",
+              "payable": true,
+              "scope": 6746,
+              "stateMutability": "payable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "addressArgs",
+                      "scope": 6704,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address[3] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "address[3] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "address",
+                              "type": "address"
+                            },
+                            "id": 6690,
+                            "name": "ElementaryTypeName",
+                            "src": "155:7:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "33",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 3",
+                              "value": "3"
+                            },
+                            "id": 6691,
+                            "name": "Literal",
+                            "src": "163:1:27"
+                          }
+                        ],
+                        "id": 6692,
+                        "name": "ArrayTypeName",
+                        "src": "155:10:27"
+                      }
+                    ],
+                    "id": 6693,
+                    "name": "VariableDeclaration",
+                    "src": "155:22:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "uintArgs",
+                      "scope": 6704,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256[12] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "uint256[12] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "uint",
+                              "type": "uint256"
+                            },
+                            "id": 6694,
+                            "name": "ElementaryTypeName",
+                            "src": "206:4:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "3132",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 12",
+                              "value": "12"
+                            },
+                            "id": 6695,
+                            "name": "Literal",
+                            "src": "211:2:27"
+                          }
+                        ],
+                        "id": 6696,
+                        "name": "ArrayTypeName",
+                        "src": "206:8:27"
+                      }
+                    ],
+                    "id": 6697,
+                    "name": "VariableDeclaration",
+                    "src": "206:17:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "callData",
+                      "scope": 6704,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes storage pointer"
+                        },
+                        "id": 6698,
+                        "name": "ElementaryTypeName",
+                        "src": "252:5:27"
+                      }
+                    ],
+                    "id": 6699,
+                    "name": "VariableDeclaration",
+                    "src": "252:14:27"
+                  }
+                ],
+                "id": 6700,
+                "name": "ParameterList",
+                "src": "154:113:27"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 6704,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 6701,
+                        "name": "ElementaryTypeName",
+                        "src": "300:7:27"
+                      }
+                    ],
+                    "id": 6702,
+                    "name": "VariableDeclaration",
+                    "src": "300:7:27"
+                  }
+                ],
+                "id": 6703,
+                "name": "ParameterList",
+                "src": "299:9:27"
+              }
+            ],
+            "id": 6704,
+            "name": "FunctionDefinition",
+            "src": "132:177:27"
+          },
+          {
+            "attributes": {
+              "body": null,
+              "constant": false,
+              "implemented": false,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "createValidatedRequest",
+              "payable": true,
+              "scope": 6746,
+              "stateMutability": "payable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "addressArgs",
+                      "scope": 6719,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address[3] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "address[3] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "address",
+                              "type": "address"
+                            },
+                            "id": 6705,
+                            "name": "ElementaryTypeName",
+                            "src": "347:7:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "33",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 3",
+                              "value": "3"
+                            },
+                            "id": 6706,
+                            "name": "Literal",
+                            "src": "355:1:27"
+                          }
+                        ],
+                        "id": 6707,
+                        "name": "ArrayTypeName",
+                        "src": "347:10:27"
+                      }
+                    ],
+                    "id": 6708,
+                    "name": "VariableDeclaration",
+                    "src": "347:22:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "uintArgs",
+                      "scope": 6719,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256[12] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "uint256[12] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "uint",
+                              "type": "uint256"
+                            },
+                            "id": 6709,
+                            "name": "ElementaryTypeName",
+                            "src": "407:4:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "3132",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 12",
+                              "value": "12"
+                            },
+                            "id": 6710,
+                            "name": "Literal",
+                            "src": "412:2:27"
+                          }
+                        ],
+                        "id": 6711,
+                        "name": "ArrayTypeName",
+                        "src": "407:8:27"
+                      }
+                    ],
+                    "id": 6712,
+                    "name": "VariableDeclaration",
+                    "src": "407:17:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "callData",
+                      "scope": 6719,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes storage pointer"
+                        },
+                        "id": 6713,
+                        "name": "ElementaryTypeName",
+                        "src": "462:5:27"
+                      }
+                    ],
+                    "id": 6714,
+                    "name": "VariableDeclaration",
+                    "src": "462:14:27"
+                  }
+                ],
+                "id": 6715,
+                "name": "ParameterList",
+                "src": "346:131:27"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 6719,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 6716,
+                        "name": "ElementaryTypeName",
+                        "src": "511:7:27"
+                      }
+                    ],
+                    "id": 6717,
+                    "name": "VariableDeclaration",
+                    "src": "511:7:27"
+                  }
+                ],
+                "id": 6718,
+                "name": "ParameterList",
+                "src": "510:9:27"
+              }
+            ],
+            "id": 6719,
+            "name": "FunctionDefinition",
+            "src": "315:205:27"
+          },
+          {
+            "attributes": {
+              "body": null,
+              "constant": true,
+              "implemented": false,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "validateRequestParams",
+              "payable": false,
+              "scope": 6746,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "addressArgs",
+                      "scope": 6738,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address[3] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "address[3] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "address",
+                              "type": "address"
+                            },
+                            "id": 6720,
+                            "name": "ElementaryTypeName",
+                            "src": "557:7:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "33",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 3",
+                              "value": "3"
+                            },
+                            "id": 6721,
+                            "name": "Literal",
+                            "src": "565:1:27"
+                          }
+                        ],
+                        "id": 6722,
+                        "name": "ArrayTypeName",
+                        "src": "557:10:27"
+                      }
+                    ],
+                    "id": 6723,
+                    "name": "VariableDeclaration",
+                    "src": "557:22:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "uintArgs",
+                      "scope": 6738,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256[12] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "uint256[12] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "uint",
+                              "type": "uint256"
+                            },
+                            "id": 6724,
+                            "name": "ElementaryTypeName",
+                            "src": "616:4:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "3132",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 12",
+                              "value": "12"
+                            },
+                            "id": 6725,
+                            "name": "Literal",
+                            "src": "621:2:27"
+                          }
+                        ],
+                        "id": 6726,
+                        "name": "ArrayTypeName",
+                        "src": "616:8:27"
+                      }
+                    ],
+                    "id": 6727,
+                    "name": "VariableDeclaration",
+                    "src": "616:17:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "callData",
+                      "scope": 6738,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes storage pointer"
+                        },
+                        "id": 6728,
+                        "name": "ElementaryTypeName",
+                        "src": "670:5:27"
+                      }
+                    ],
+                    "id": 6729,
+                    "name": "VariableDeclaration",
+                    "src": "670:14:27"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "endowment",
+                      "scope": 6738,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 6730,
+                        "name": "ElementaryTypeName",
+                        "src": "721:4:27"
+                      }
+                    ],
+                    "id": 6731,
+                    "name": "VariableDeclaration",
+                    "src": "721:14:27"
+                  }
+                ],
+                "id": 6732,
+                "name": "ParameterList",
+                "src": "556:180:27"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 6738,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool[6] memory",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "type": "bool[6] storage pointer"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "bool",
+                              "type": "bool"
+                            },
+                            "id": 6733,
+                            "name": "ElementaryTypeName",
+                            "src": "767:4:27"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "36",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 6",
+                              "value": "6"
+                            },
+                            "id": 6734,
+                            "name": "Literal",
+                            "src": "772:1:27"
+                          }
+                        ],
+                        "id": 6735,
+                        "name": "ArrayTypeName",
+                        "src": "767:7:27"
+                      }
+                    ],
+                    "id": 6736,
+                    "name": "VariableDeclaration",
+                    "src": "767:7:27"
+                  }
+                ],
+                "id": 6737,
+                "name": "ParameterList",
+                "src": "766:9:27"
+              }
+            ],
+            "id": 6738,
+            "name": "FunctionDefinition",
+            "src": "526:250:27"
+          },
+          {
+            "attributes": {
+              "body": null,
+              "constant": true,
+              "implemented": false,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "isKnownRequest",
+              "payable": false,
+              "scope": 6746,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_address",
+                      "scope": 6745,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 6739,
+                        "name": "ElementaryTypeName",
+                        "src": "806:7:27"
+                      }
+                    ],
+                    "id": 6740,
+                    "name": "VariableDeclaration",
+                    "src": "806:16:27"
+                  }
+                ],
+                "id": 6741,
+                "name": "ParameterList",
+                "src": "805:18:27"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 6745,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 6742,
+                        "name": "ElementaryTypeName",
+                        "src": "853:4:27"
+                      }
+                    ],
+                    "id": 6743,
+                    "name": "VariableDeclaration",
+                    "src": "853:4:27"
+                  }
+                ],
+                "id": 6744,
+                "name": "ParameterList",
+                "src": "852:6:27"
+              }
+            ],
+            "id": 6745,
+            "name": "FunctionDefinition",
+            "src": "782:77:27"
+          }
+        ],
+        "id": 6746,
+        "name": "ContractDefinition",
+        "src": "25:836:27"
+      }
+    ],
+    "id": 6747,
+    "name": "SourceUnit",
+    "src": "0:862:27"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-02-23T08:52:28.826Z"
+}

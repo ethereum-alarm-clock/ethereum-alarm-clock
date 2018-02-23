@@ -1,0 +1,216 @@
+{
+  "contractName": "RequestMetaLib",
+  "abi": [],
+  "bytecode": "0x60606040523415600e57600080fd5b603580601b6000396000f3006060604052600080fd00a165627a7a723058206eb49e61131d7e09bc4d94ae942675c891c8a16b738bec8bc2b5166bea6ff4900029",
+  "deployedBytecode": "0x6060604052600080fd00a165627a7a723058206eb49e61131d7e09bc4d94ae942675c891c8a16b738bec8bc2b5166bea6ff4900029",
+  "sourceMap": "133:516:38:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "133:516:38:-;;;;;",
+  "source": "pragma solidity 0.4.19;\n\n/**\n * @title RequestMetaLib\n * @dev Small library holding all the metadata about a TransactionRequest.\n */\nlibrary RequestMetaLib {\n\n    struct RequestMeta {\n        address owner;              /// The address that created this request.\n\n        address createdBy;          /// The address of the RequestFactory which created this request.\n\n        bool isCancelled;           /// Was the TransactionRequest cancelled?\n        \n        bool wasCalled;             /// Was the TransactionRequest called?\n\n        bool wasSuccessful;         /// Was the return value from the TransactionRequest execution successful?\n    }\n\n}\n",
+  "sourcePath": "contracts/Library/RequestMetaLib.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "contracts/Library/RequestMetaLib.sol",
+      "exportedSymbols": {
+        "RequestMetaLib": [
+          11114
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "0.4",
+            ".19"
+          ]
+        },
+        "id": 11102,
+        "name": "PragmaDirective",
+        "src": "0:23:38"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "library",
+          "documentation": "@title RequestMetaLib\n@dev Small library holding all the metadata about a TransactionRequest.",
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            11114
+          ],
+          "name": "RequestMetaLib",
+          "scope": 11115
+        },
+        "children": [
+          {
+            "attributes": {
+              "canonicalName": "RequestMetaLib.RequestMeta",
+              "name": "RequestMeta",
+              "scope": 11114,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "owner",
+                  "scope": 11113,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "address",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "address",
+                      "type": "address"
+                    },
+                    "id": 11103,
+                    "name": "ElementaryTypeName",
+                    "src": "192:7:38"
+                  }
+                ],
+                "id": 11104,
+                "name": "VariableDeclaration",
+                "src": "192:13:38"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "createdBy",
+                  "scope": 11113,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "address",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "address",
+                      "type": "address"
+                    },
+                    "id": 11105,
+                    "name": "ElementaryTypeName",
+                    "src": "272:7:38"
+                  }
+                ],
+                "id": 11106,
+                "name": "VariableDeclaration",
+                "src": "272:17:38"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "isCancelled",
+                  "scope": 11113,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "bool",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "bool",
+                      "type": "bool"
+                    },
+                    "id": 11107,
+                    "name": "ElementaryTypeName",
+                    "src": "375:4:38"
+                  }
+                ],
+                "id": 11108,
+                "name": "VariableDeclaration",
+                "src": "375:16:38"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "wasCalled",
+                  "scope": 11113,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "bool",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "bool",
+                      "type": "bool"
+                    },
+                    "id": 11109,
+                    "name": "ElementaryTypeName",
+                    "src": "462:4:38"
+                  }
+                ],
+                "id": 11110,
+                "name": "VariableDeclaration",
+                "src": "462:14:38"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "wasSuccessful",
+                  "scope": 11113,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "bool",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "bool",
+                      "type": "bool"
+                    },
+                    "id": 11111,
+                    "name": "ElementaryTypeName",
+                    "src": "538:4:38"
+                  }
+                ],
+                "id": 11112,
+                "name": "VariableDeclaration",
+                "src": "538:18:38"
+              }
+            ],
+            "id": 11113,
+            "name": "StructDefinition",
+            "src": "163:483:38"
+          }
+        ],
+        "id": 11114,
+        "name": "ContractDefinition",
+        "src": "133:516:38"
+      }
+    ],
+    "id": 11115,
+    "name": "SourceUnit",
+    "src": "0:650:38"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {
+    "42": {
+      "events": {},
+      "links": {},
+      "address": "0x013fbac1dfe24ad664419a8a1eb808bfd7e525d6"
+    }
+  },
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-02-23T08:52:28.825Z"
+}

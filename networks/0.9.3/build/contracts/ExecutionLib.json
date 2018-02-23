@@ -1,0 +1,1241 @@
+{
+  "contractName": "ExecutionLib",
+  "abi": [],
+  "bytecode": "0x60606040523415600e57600080fd5b603580601b6000396000f3006060604052600080fd00a165627a7a723058209ee73a76987e121bf2088cb34feac42261635000cf8c3efecb7e628f6795684b0029",
+  "deployedBytecode": "0x6060604052600080fd00a165627a7a723058209ee73a76987e121bf2088cb34feac42261635000cf8c3efecb7e628f6795684b0029",
+  "sourceMap": "122:1937:33:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "122:1937:33:-;;;;;",
+  "source": "pragma solidity 0.4.19;\n\n/**\n * @title ExecutionLib\n * @dev Contains the logic for executing a scheduled transaction.\n */\nlibrary ExecutionLib {\n\n    struct ExecutionData {\n        address toAddress;                  /// The destination of the transaction.\n        bytes callData;                     /// The bytecode that will be sent with the transaction.\n        uint callValue;                     /// The wei value that will be sent with the transaction.\n        uint callGas;                       /// The amount of gas to be sent with the transaction.\n        uint gasPrice;                      /// The gasPrice that should be set for the transaction.\n    }\n\n    /**\n     * @dev Send the transaction according to the parameters outlined in ExecutionData.\n     * @param self The ExecutionData object.\n     */\n    function sendTransaction(ExecutionData storage self)\n        internal returns (bool)\n    {\n        /// Should never actually reach this require check, but here in case.\n        require( self.gasPrice == tx.gasprice );\n        return self.toAddress.call.value(self.callValue)\n                                  .gas(self.callGas)\n                                  (self.callData);\n    }\n\n\n    /**\n     * Returns the maximum possible gas consumption that a transaction request\n     * may consume.  The EXTRA_GAS value represents the overhead involved in\n     * request execution.\n     */\n    function CALL_GAS_CEILING(uint EXTRA_GAS) \n        internal view returns (uint)\n    {\n        return block.gaslimit - EXTRA_GAS;\n    }\n\n    /*\n     * @dev Validation: ensure that the callGas is not above the total possible gas\n     * for a call.\n     */\n     function validateCallGas(uint callGas, uint EXTRA_GAS)\n        internal view returns (bool)\n    {\n        return callGas < CALL_GAS_CEILING(EXTRA_GAS);\n    }\n\n    /*\n     * @dev Validation: ensure that the toAddress is not set to the empty address.\n     */\n     function validateToAddress(address toAddress)\n        internal pure returns (bool)\n    {\n        return toAddress != 0x0;\n    }\n}\n",
+  "sourcePath": "contracts/Library/ExecutionLib.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "contracts/Library/ExecutionLib.sol",
+      "exportedSymbols": {
+        "ExecutionLib": [
+          7161
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "0.4",
+            ".19"
+          ]
+        },
+        "id": 7077,
+        "name": "PragmaDirective",
+        "src": "0:23:33"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "library",
+          "documentation": "@title ExecutionLib\n@dev Contains the logic for executing a scheduled transaction.",
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            7161
+          ],
+          "name": "ExecutionLib",
+          "scope": 7162
+        },
+        "children": [
+          {
+            "attributes": {
+              "canonicalName": "ExecutionLib.ExecutionData",
+              "name": "ExecutionData",
+              "scope": 7161,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "toAddress",
+                  "scope": 7088,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "address",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "address",
+                      "type": "address"
+                    },
+                    "id": 7078,
+                    "name": "ElementaryTypeName",
+                    "src": "181:7:33"
+                  }
+                ],
+                "id": 7079,
+                "name": "VariableDeclaration",
+                "src": "181:17:33"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "callData",
+                  "scope": 7088,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "bytes storage pointer",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "bytes",
+                      "type": "bytes storage pointer"
+                    },
+                    "id": 7080,
+                    "name": "ElementaryTypeName",
+                    "src": "265:5:33"
+                  }
+                ],
+                "id": 7081,
+                "name": "VariableDeclaration",
+                "src": "265:14:33"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "callValue",
+                  "scope": 7088,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "uint256",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "uint",
+                      "type": "uint256"
+                    },
+                    "id": 7082,
+                    "name": "ElementaryTypeName",
+                    "src": "366:4:33"
+                  }
+                ],
+                "id": 7083,
+                "name": "VariableDeclaration",
+                "src": "366:14:33"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "callGas",
+                  "scope": 7088,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "uint256",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "uint",
+                      "type": "uint256"
+                    },
+                    "id": 7084,
+                    "name": "ElementaryTypeName",
+                    "src": "468:4:33"
+                  }
+                ],
+                "id": 7085,
+                "name": "VariableDeclaration",
+                "src": "468:12:33"
+              },
+              {
+                "attributes": {
+                  "constant": false,
+                  "name": "gasPrice",
+                  "scope": 7088,
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "type": "uint256",
+                  "value": null,
+                  "visibility": "internal"
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "uint",
+                      "type": "uint256"
+                    },
+                    "id": 7086,
+                    "name": "ElementaryTypeName",
+                    "src": "567:4:33"
+                  }
+                ],
+                "id": 7087,
+                "name": "VariableDeclaration",
+                "src": "567:13:33"
+              }
+            ],
+            "id": 7088,
+            "name": "StructDefinition",
+            "src": "150:515:33"
+          },
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "sendTransaction",
+              "payable": false,
+              "scope": 7161,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "self",
+                      "scope": 7119,
+                      "stateVariable": false,
+                      "storageLocation": "storage",
+                      "type": "struct ExecutionLib.ExecutionData storage pointer",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "contractScope": null,
+                          "name": "ExecutionData",
+                          "referencedDeclaration": 7088,
+                          "type": "struct ExecutionLib.ExecutionData storage pointer"
+                        },
+                        "id": 7089,
+                        "name": "UserDefinedTypeName",
+                        "src": "845:13:33"
+                      }
+                    ],
+                    "id": 7090,
+                    "name": "VariableDeclaration",
+                    "src": "845:26:33"
+                  }
+                ],
+                "id": 7091,
+                "name": "ParameterList",
+                "src": "844:28:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 7119,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 7092,
+                        "name": "ElementaryTypeName",
+                        "src": "899:4:33"
+                      }
+                    ],
+                    "id": 7093,
+                    "name": "VariableDeclaration",
+                    "src": "899:4:33"
+                  }
+                ],
+                "id": 7094,
+                "name": "ParameterList",
+                "src": "898:6:33"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "tuple()",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bool",
+                                  "typeString": "bool"
+                                }
+                              ],
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 12356,
+                              "type": "function (bool) pure",
+                              "value": "require"
+                            },
+                            "id": 7095,
+                            "name": "Identifier",
+                            "src": "997:7:33"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "commonType": {
+                                "typeIdentifier": "t_uint256",
+                                "typeString": "uint256"
+                              },
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "operator": "==",
+                              "type": "bool"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "gasPrice",
+                                  "referencedDeclaration": 7087,
+                                  "type": "uint256"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 7090,
+                                      "type": "struct ExecutionLib.ExecutionData storage pointer",
+                                      "value": "self"
+                                    },
+                                    "id": 7096,
+                                    "name": "Identifier",
+                                    "src": "1006:4:33"
+                                  }
+                                ],
+                                "id": 7097,
+                                "name": "MemberAccess",
+                                "src": "1006:13:33"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "gasprice",
+                                  "referencedDeclaration": null,
+                                  "type": "uint256"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 12363,
+                                      "type": "tx",
+                                      "value": "tx"
+                                    },
+                                    "id": 7098,
+                                    "name": "Identifier",
+                                    "src": "1023:2:33"
+                                  }
+                                ],
+                                "id": 7099,
+                                "name": "MemberAccess",
+                                "src": "1023:11:33"
+                              }
+                            ],
+                            "id": 7100,
+                            "name": "BinaryOperation",
+                            "src": "1006:28:33"
+                          }
+                        ],
+                        "id": 7101,
+                        "name": "FunctionCall",
+                        "src": "997:39:33"
+                      }
+                    ],
+                    "id": 7102,
+                    "name": "ExpressionStatement",
+                    "src": "997:39:33"
+                  },
+                  {
+                    "attributes": {
+                      "functionReturnParameters": 7094
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "bool",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bytes_storage",
+                                  "typeString": "bytes storage ref"
+                                }
+                              ],
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "isStructConstructorCall": false,
+                              "lValueRequested": false,
+                              "names": [
+                                null
+                              ],
+                              "type": "function () payable returns (bool)",
+                              "type_conversion": false
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": [
+                                    {
+                                      "typeIdentifier": "t_uint256",
+                                      "typeString": "uint256"
+                                    }
+                                  ],
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "gas",
+                                  "referencedDeclaration": null,
+                                  "type": "function (uint256) returns (function () payable returns (bool))"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": false,
+                                      "isStructConstructorCall": false,
+                                      "lValueRequested": false,
+                                      "names": [
+                                        null
+                                      ],
+                                      "type": "function () payable returns (bool)",
+                                      "type_conversion": false
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "argumentTypes": [
+                                            {
+                                              "typeIdentifier": "t_uint256",
+                                              "typeString": "uint256"
+                                            }
+                                          ],
+                                          "isConstant": false,
+                                          "isLValue": false,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "member_name": "value",
+                                          "referencedDeclaration": null,
+                                          "type": "function (uint256) returns (function () payable returns (bool))"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "argumentTypes": null,
+                                              "isConstant": false,
+                                              "isLValue": false,
+                                              "isPure": false,
+                                              "lValueRequested": false,
+                                              "member_name": "call",
+                                              "referencedDeclaration": null,
+                                              "type": "function () payable returns (bool)"
+                                            },
+                                            "children": [
+                                              {
+                                                "attributes": {
+                                                  "argumentTypes": null,
+                                                  "isConstant": false,
+                                                  "isLValue": true,
+                                                  "isPure": false,
+                                                  "lValueRequested": false,
+                                                  "member_name": "toAddress",
+                                                  "referencedDeclaration": 7079,
+                                                  "type": "address"
+                                                },
+                                                "children": [
+                                                  {
+                                                    "attributes": {
+                                                      "argumentTypes": null,
+                                                      "overloadedDeclarations": [
+                                                        null
+                                                      ],
+                                                      "referencedDeclaration": 7090,
+                                                      "type": "struct ExecutionLib.ExecutionData storage pointer",
+                                                      "value": "self"
+                                                    },
+                                                    "id": 7103,
+                                                    "name": "Identifier",
+                                                    "src": "1053:4:33"
+                                                  }
+                                                ],
+                                                "id": 7104,
+                                                "name": "MemberAccess",
+                                                "src": "1053:14:33"
+                                              }
+                                            ],
+                                            "id": 7105,
+                                            "name": "MemberAccess",
+                                            "src": "1053:19:33"
+                                          }
+                                        ],
+                                        "id": 7106,
+                                        "name": "MemberAccess",
+                                        "src": "1053:25:33"
+                                      },
+                                      {
+                                        "attributes": {
+                                          "argumentTypes": null,
+                                          "isConstant": false,
+                                          "isLValue": true,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "member_name": "callValue",
+                                          "referencedDeclaration": 7083,
+                                          "type": "uint256"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "argumentTypes": null,
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 7090,
+                                              "type": "struct ExecutionLib.ExecutionData storage pointer",
+                                              "value": "self"
+                                            },
+                                            "id": 7107,
+                                            "name": "Identifier",
+                                            "src": "1079:4:33"
+                                          }
+                                        ],
+                                        "id": 7108,
+                                        "name": "MemberAccess",
+                                        "src": "1079:14:33"
+                                      }
+                                    ],
+                                    "id": 7109,
+                                    "name": "FunctionCall",
+                                    "src": "1053:41:33"
+                                  }
+                                ],
+                                "id": 7110,
+                                "name": "MemberAccess",
+                                "src": "1053:80:33"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "callGas",
+                                  "referencedDeclaration": 7085,
+                                  "type": "uint256"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 7090,
+                                      "type": "struct ExecutionLib.ExecutionData storage pointer",
+                                      "value": "self"
+                                    },
+                                    "id": 7111,
+                                    "name": "Identifier",
+                                    "src": "1134:4:33"
+                                  }
+                                ],
+                                "id": 7112,
+                                "name": "MemberAccess",
+                                "src": "1134:12:33"
+                              }
+                            ],
+                            "id": 7113,
+                            "name": "FunctionCall",
+                            "src": "1053:94:33"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "member_name": "callData",
+                              "referencedDeclaration": 7081,
+                              "type": "bytes storage ref"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 7090,
+                                  "type": "struct ExecutionLib.ExecutionData storage pointer",
+                                  "value": "self"
+                                },
+                                "id": 7114,
+                                "name": "Identifier",
+                                "src": "1183:4:33"
+                              }
+                            ],
+                            "id": 7115,
+                            "name": "MemberAccess",
+                            "src": "1183:13:33"
+                          }
+                        ],
+                        "id": 7116,
+                        "name": "FunctionCall",
+                        "src": "1053:144:33"
+                      }
+                    ],
+                    "id": 7117,
+                    "name": "Return",
+                    "src": "1046:151:33"
+                  }
+                ],
+                "id": 7118,
+                "name": "Block",
+                "src": "909:295:33"
+              }
+            ],
+            "id": 7119,
+            "name": "FunctionDefinition",
+            "src": "820:384:33"
+          },
+          {
+            "attributes": {
+              "constant": true,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "CALL_GAS_CEILING",
+              "payable": false,
+              "scope": 7161,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "EXTRA_GAS",
+                      "scope": 7132,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 7120,
+                        "name": "ElementaryTypeName",
+                        "src": "1435:4:33"
+                      }
+                    ],
+                    "id": 7121,
+                    "name": "VariableDeclaration",
+                    "src": "1435:14:33"
+                  }
+                ],
+                "id": 7122,
+                "name": "ParameterList",
+                "src": "1434:16:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 7132,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 7123,
+                        "name": "ElementaryTypeName",
+                        "src": "1483:4:33"
+                      }
+                    ],
+                    "id": 7124,
+                    "name": "VariableDeclaration",
+                    "src": "1483:4:33"
+                  }
+                ],
+                "id": 7125,
+                "name": "ParameterList",
+                "src": "1482:6:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "functionReturnParameters": 7125
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "commonType": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          },
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "-",
+                          "type": "uint256"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "member_name": "gaslimit",
+                              "referencedDeclaration": null,
+                              "type": "uint256"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 12345,
+                                  "type": "block",
+                                  "value": "block"
+                                },
+                                "id": 7126,
+                                "name": "Identifier",
+                                "src": "1510:5:33"
+                              }
+                            ],
+                            "id": 7127,
+                            "name": "MemberAccess",
+                            "src": "1510:14:33"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 7121,
+                              "type": "uint256",
+                              "value": "EXTRA_GAS"
+                            },
+                            "id": 7128,
+                            "name": "Identifier",
+                            "src": "1527:9:33"
+                          }
+                        ],
+                        "id": 7129,
+                        "name": "BinaryOperation",
+                        "src": "1510:26:33"
+                      }
+                    ],
+                    "id": 7130,
+                    "name": "Return",
+                    "src": "1503:33:33"
+                  }
+                ],
+                "id": 7131,
+                "name": "Block",
+                "src": "1493:50:33"
+              }
+            ],
+            "id": 7132,
+            "name": "FunctionDefinition",
+            "src": "1409:134:33"
+          },
+          {
+            "attributes": {
+              "constant": true,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "validateCallGas",
+              "payable": false,
+              "scope": 7161,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "callGas",
+                      "scope": 7148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 7133,
+                        "name": "ElementaryTypeName",
+                        "src": "1693:4:33"
+                      }
+                    ],
+                    "id": 7134,
+                    "name": "VariableDeclaration",
+                    "src": "1693:12:33"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "EXTRA_GAS",
+                      "scope": 7148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 7135,
+                        "name": "ElementaryTypeName",
+                        "src": "1707:4:33"
+                      }
+                    ],
+                    "id": 7136,
+                    "name": "VariableDeclaration",
+                    "src": "1707:14:33"
+                  }
+                ],
+                "id": 7137,
+                "name": "ParameterList",
+                "src": "1692:30:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 7148,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 7138,
+                        "name": "ElementaryTypeName",
+                        "src": "1754:4:33"
+                      }
+                    ],
+                    "id": 7139,
+                    "name": "VariableDeclaration",
+                    "src": "1754:4:33"
+                  }
+                ],
+                "id": 7140,
+                "name": "ParameterList",
+                "src": "1753:6:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "functionReturnParameters": 7140
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "commonType": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          },
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "<",
+                          "type": "bool"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 7134,
+                              "type": "uint256",
+                              "value": "callGas"
+                            },
+                            "id": 7141,
+                            "name": "Identifier",
+                            "src": "1781:7:33"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "isStructConstructorCall": false,
+                              "lValueRequested": false,
+                              "names": [
+                                null
+                              ],
+                              "type": "uint256",
+                              "type_conversion": false
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": [
+                                    {
+                                      "typeIdentifier": "t_uint256",
+                                      "typeString": "uint256"
+                                    }
+                                  ],
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 7132,
+                                  "type": "function (uint256) view returns (uint256)",
+                                  "value": "CALL_GAS_CEILING"
+                                },
+                                "id": 7142,
+                                "name": "Identifier",
+                                "src": "1791:16:33"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 7136,
+                                  "type": "uint256",
+                                  "value": "EXTRA_GAS"
+                                },
+                                "id": 7143,
+                                "name": "Identifier",
+                                "src": "1808:9:33"
+                              }
+                            ],
+                            "id": 7144,
+                            "name": "FunctionCall",
+                            "src": "1791:27:33"
+                          }
+                        ],
+                        "id": 7145,
+                        "name": "BinaryOperation",
+                        "src": "1781:37:33"
+                      }
+                    ],
+                    "id": 7146,
+                    "name": "Return",
+                    "src": "1774:44:33"
+                  }
+                ],
+                "id": 7147,
+                "name": "Block",
+                "src": "1764:61:33"
+              }
+            ],
+            "id": 7148,
+            "name": "FunctionDefinition",
+            "src": "1668:157:33"
+          },
+          {
+            "attributes": {
+              "constant": true,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "validateToAddress",
+              "payable": false,
+              "scope": 7161,
+              "stateMutability": "pure",
+              "superFunction": null,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "toAddress",
+                      "scope": 7160,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 7149,
+                        "name": "ElementaryTypeName",
+                        "src": "1957:7:33"
+                      }
+                    ],
+                    "id": 7150,
+                    "name": "VariableDeclaration",
+                    "src": "1957:17:33"
+                  }
+                ],
+                "id": 7151,
+                "name": "ParameterList",
+                "src": "1956:19:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "",
+                      "scope": 7160,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 7152,
+                        "name": "ElementaryTypeName",
+                        "src": "2007:4:33"
+                      }
+                    ],
+                    "id": 7153,
+                    "name": "VariableDeclaration",
+                    "src": "2007:4:33"
+                  }
+                ],
+                "id": 7154,
+                "name": "ParameterList",
+                "src": "2006:6:33"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "functionReturnParameters": 7154
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "commonType": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          },
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "!=",
+                          "type": "bool"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 7150,
+                              "type": "address",
+                              "value": "toAddress"
+                            },
+                            "id": 7155,
+                            "name": "Identifier",
+                            "src": "2034:9:33"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "307830",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "number",
+                              "type": "int_const 0",
+                              "value": "0x0"
+                            },
+                            "id": 7156,
+                            "name": "Literal",
+                            "src": "2047:3:33"
+                          }
+                        ],
+                        "id": 7157,
+                        "name": "BinaryOperation",
+                        "src": "2034:16:33"
+                      }
+                    ],
+                    "id": 7158,
+                    "name": "Return",
+                    "src": "2027:23:33"
+                  }
+                ],
+                "id": 7159,
+                "name": "Block",
+                "src": "2017:40:33"
+              }
+            ],
+            "id": 7160,
+            "name": "FunctionDefinition",
+            "src": "1930:127:33"
+          }
+        ],
+        "id": 7161,
+        "name": "ContractDefinition",
+        "src": "122:1937:33"
+      }
+    ],
+    "id": 7162,
+    "name": "SourceUnit",
+    "src": "0:2060:33"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {
+    "42": {
+      "events": {},
+      "links": {},
+      "address": "0xb23658842939e581b77245e0032ebac83dba9e57"
+    }
+  },
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-02-23T08:52:28.821Z"
+}

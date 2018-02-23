@@ -29,13 +29,13 @@ module.exports = function (deployer) {
   console.log(`${"-".repeat(30)}
 NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 
-  deployer.deploy(GroveLib, { gas: 2500000 }  )
+  deployer.deploy(GroveLib, { gas: 2500000 })
     .then(() => deployer.deploy([
-        [MathLib, {gas: 250000}],
-        [IterTools, {gas: 250000}],
-        [ExecutionLib, {gas: 250000}],
-        [RequestMetaLib,{gas: 250000}],
-        [SafeMath, {gas: 250000}]
+      [MathLib, { gas: 250000 }],
+      [IterTools, { gas: 250000 }],
+      [ExecutionLib, { gas: 250000 }],
+      [RequestMetaLib, { gas: 250000 }],
+      [SafeMath, { gas: 250000 }]
     ]))
     .then(() => {
       deployer.link(SafeMath, ClaimLib)
@@ -128,9 +128,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 
       return deployer.deploy(TimestampScheduler, RequestFactory.address, 0xecc9c5fff8937578141592e7E62C2D2E364311b8, { gas: 1500000 })
     })
-    .then(() => {
-        return deployer.deploy(TransactionRecorder, {gas: 750000})
-    })
+    .then(() => deployer.deploy(TransactionRecorder, { gas: 750000 }))
     .then(() => {
       const contracts = {
         baseScheduler: BaseScheduler.address,
@@ -153,12 +151,13 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         transactionRecorder: TransactionRecorder.address
       }
 
-    fs.writeFileSync('contracts.json', JSON.stringify(contracts))
-    
-    fs.unlinkSync('contracts.info')
-    Object.keys(contracts).forEach((key) => {
+      fs.writeFileSync('contracts.json', JSON.stringify(contracts))
+
+      if (fs.existsSync('contracts.info')) { fs.unlinkSync('contracts.info') }
+
+      Object.keys(contracts).forEach((key) => {
         fs.appendFileSync('contracts.info', `${key}, ${contracts[key]}\n`)
-    })
+      })
 
       //         console.log(`CONTRACTS SUCCESSFULLY DEPLOYED
       // ${"-".repeat(30)}

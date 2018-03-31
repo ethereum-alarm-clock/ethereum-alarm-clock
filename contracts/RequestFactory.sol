@@ -1,7 +1,6 @@
 pragma solidity ^0.4.21;
 
 import "contracts/Interface/RequestFactoryInterface.sol";
-import "contracts/Interface/RequestTrackerInterface.sol";
 import "contracts/TransactionRequestCore.sol";
 import "contracts/Library/RequestLib.sol";
 import "contracts/IterTools.sol";
@@ -14,18 +13,13 @@ import "contracts/CloneFactory.sol";
 contract RequestFactory is RequestFactoryInterface, CloneFactory {
     using IterTools for bool[6];
 
-    // RequestTracker of this contract.
-    RequestTrackerInterface public requestTracker;
     TransactionRequestCore public transactionRequestCore;
 
     function RequestFactory(
-        address _trackerAddress,
         address _transactionRequestCore
     ) public {
-        require( _trackerAddress != 0x0 );
         require( _transactionRequestCore != 0x0 );
 
-        requestTracker = RequestTrackerInterface(_trackerAddress);
         transactionRequestCore = TransactionRequestCore(_transactionRequestCore);
     }
 
@@ -76,9 +70,6 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
 
         // Log the creation.
         RequestCreated(transactionRequest, _addressArgs[0]);
-
-        // Add the transaction request to the tracker along with the `windowStart`
-        requestTracker.addRequest(transactionRequest, _uintArgs[7]);
 
         return transactionRequest;
     }

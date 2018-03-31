@@ -7,7 +7,6 @@ const { expect } = require("chai")
 // Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestLib = artifacts.require("./RequestLib.sol")
-const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3 (v1.0.0)
@@ -63,19 +62,12 @@ contract("Request factory", async (accounts) => {
 
     isValid.forEach(bool => expect(bool).to.be.true)
 
-    // Now let's set up a factory and launch the request.
-
-    // We need a request tracker for the factory
-    const requestTracker = await RequestTracker.deployed()
-    expect(requestTracker.address).to.exist
-
     // We need a transaction request core for the factory
     const transactionRequestCore = await TransactionRequestCore.deployed()
     expect(transactionRequestCore.address).to.exist
 
     // Pass the request tracker to the factory
     const requestFactory = await RequestFactory.new(
-        requestTracker.address,
         transactionRequestCore.address
     )
     expect(requestFactory.address).to.exist

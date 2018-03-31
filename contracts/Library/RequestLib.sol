@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity ^0.4.21;
 
 import "contracts/Library/ClaimLib.sol";
 import "contracts/Library/ExecutionLib.sol";
@@ -313,7 +313,7 @@ library RequestLib {
          *     else:
          *         - throw (should be impossible)
          *  
-         *  6. msg.gas == callGas
+         *  6. gasleft() == callGas
          *
          *  +--------------------+
          *  | Phase 2: Execution |
@@ -335,34 +335,34 @@ library RequestLib {
 
         // Record the gas at the beginning of the transaction so we can
         // calculate how much has been used later.
-        uint startGas = msg.gas;
+        uint startGas = gasleft();
 
         // +----------------------+
         // | Begin: Authorization |
         // +----------------------+
 
-        if (msg.gas < requiredExecutionGas(self).sub(_PRE_EXECUTION_GAS)) {
-            Aborted(uint8(AbortReason.InsufficientGas));
+        if (gasleft() < requiredExecutionGas(self).sub(_PRE_EXECUTION_GAS)) {
+            emit Aborted(uint8(AbortReason.InsufficientGas));
             return false;
         } else if (self.meta.wasCalled) {
-            Aborted(uint8(AbortReason.AlreadyCalled));
+            emit Aborted(uint8(AbortReason.AlreadyCalled));
             return false;
         } else if (self.meta.isCancelled) {
-            Aborted(uint8(AbortReason.WasCancelled));
+            emit Aborted(uint8(AbortReason.WasCancelled));
             return false;
         } else if (self.schedule.isBeforeWindow()) {
-            Aborted(uint8(AbortReason.BeforeCallWindow));
+            emit Aborted(uint8(AbortReason.BeforeCallWindow));
             return false;
         } else if (self.schedule.isAfterWindow()) {
-            Aborted(uint8(AbortReason.AfterCallWindow));
+            emit Aborted(uint8(AbortReason.AfterCallWindow));
             return false;
         } else if (self.claimData.isClaimed() &&
                    msg.sender != self.claimData.claimedBy &&
                    self.schedule.inReservedWindow()) {
-            Aborted(uint8(AbortReason.ReservedForClaimer));
+            emit Aborted(uint8(AbortReason.ReservedForClaimer));
             return false;
         } else if (self.txnData.gasPrice != tx.gasprice) {
-            Aborted(uint8(AbortReason.MismatchGasPrice));
+            emit Aborted(uint8(AbortReason.MismatchGasPrice));
             return false;
         }
 
@@ -424,7 +424,7 @@ library RequestLib {
 
         // Take down the amount of gas used so far in execution to compensate the executing agent.
         uint measuredGasConsumption = startGas
-                                      .sub(msg.gas)
+                                      .sub(gasleft())
                                       .add(_EXECUTE_EXTRA_GAS);
 
         // // +----------------------------------------------------------------------+
@@ -438,7 +438,7 @@ library RequestLib {
 
         // Log the bounty and fee. Otherwise it is non-trivial to figure
         // out how much was payed.
-        Executed(self.paymentData.bountyOwed, totalFeePayment, measuredGasConsumption);
+        emit Executed(self.paymentData.bountyOwed, totalFeePayment, measuredGasConsumption);
     
         // Attempt to send the bounty. as with `.sendFee()` it may fail and need to be caled after execution.
         self.paymentData.sendBounty();
@@ -544,7 +544,7 @@ library RequestLib {
     function cancel(Request storage self) 
         public returns (bool)
     {
-        uint startGas = msg.gas;
+        uint startGas = gasleft();
         uint rewardPayment;
         uint measuredGasConsumption;
 
@@ -571,7 +571,7 @@ library RequestLib {
 
             // Calculate the amount of gas cancelling agent used in this transaction.
             measuredGasConsumption = startGas
-                                     .sub(msg.gas)
+                                     .sub(gasleft())
                                      .add(_CANCEL_EXTRA_GAS);
             // Add their gas fees to the reward.
             rewardOwed = measuredGasConsumption
@@ -589,7 +589,7 @@ library RequestLib {
         }
 
         // Log it!
-        Cancelled(rewardPayment, measuredGasConsumption);
+        emit Cancelled(rewardPayment, measuredGasConsumption);
 
         // Send the remaining ether to the owner.
         return sendOwnerEther(self);
@@ -623,7 +623,7 @@ library RequestLib {
         require( isClaimable(self) );
 
         self.claimData.claim(self.schedule.computePaymentModifier());
-        Claimed();
+        emit Claimed();
         claimed = true;
     }
 
@@ -682,7 +682,7 @@ library RequestLib {
     {
         // Note! This does not do any checks since it is used in the execute function.
         // The public version of the function should be used for checks and in the cancel function.
-        uint ownerRefund = this.balance
+        uint ownerRefund = address(this).balance
                            .sub(self.claimData.claimDeposit)
                            .sub(self.paymentData.bountyOwed)
                            .sub(self.paymentData.feeOwed);

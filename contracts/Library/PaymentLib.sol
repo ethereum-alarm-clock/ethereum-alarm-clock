@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity ^0.4.21;
 
 import "contracts/Library/ExecutionLib.sol";
 import "contracts/Library/MathLib.sol";

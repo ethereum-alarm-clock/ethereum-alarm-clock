@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity ^0.4.21;
 
 contract TransactionRecorder {
     address owner;
@@ -14,7 +14,7 @@ contract TransactionRecorder {
     }
 
     function() payable {
-        lastCallGas = msg.gas;
+        lastCallGas = gasleft();
         lastCallData = msg.data;
         lastCaller = msg.sender;
         lastCallValue = msg.value;

@@ -75,7 +75,7 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
         requests[transactionRequest] = true;
 
         // Log the creation.
-        RequestCreated(transactionRequest, _addressArgs[0]);
+        emit RequestCreated(transactionRequest, _addressArgs[0]);
 
         // Add the transaction request to the tracker along with the `windowStart`
         requestTracker.addRequest(transactionRequest, _uintArgs[7]);
@@ -105,22 +105,22 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
 
         if (!isValid.all()) {
             if (!isValid[0]) {
-                ValidationError(uint8(Errors.InsufficientEndowment));
+                emit ValidationError(uint8(Errors.InsufficientEndowment));
             }
             if (!isValid[1]) {
-                ValidationError(uint8(Errors.ReservedWindowBiggerThanExecutionWindow));
+                emit ValidationError(uint8(Errors.ReservedWindowBiggerThanExecutionWindow));
             }
             if (!isValid[2]) {
-                ValidationError(uint8(Errors.InvalidTemporalUnit));
+                emit ValidationError(uint8(Errors.InvalidTemporalUnit));
             }
             if (!isValid[3]) {
-                ValidationError(uint8(Errors.ExecutionWindowTooSoon));
+                emit ValidationError(uint8(Errors.ExecutionWindowTooSoon));
             }
             if (!isValid[4]) {
-                ValidationError(uint8(Errors.CallGasTooHigh));
+                emit ValidationError(uint8(Errors.CallGasTooHigh));
             }
             if (!isValid[5]) {
-                ValidationError(uint8(Errors.EmptyToAddress));
+                emit ValidationError(uint8(Errors.EmptyToAddress));
             }
 
             // Try to return the ether sent with the message.  If this failed

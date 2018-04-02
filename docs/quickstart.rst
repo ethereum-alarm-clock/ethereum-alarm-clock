@@ -30,7 +30,7 @@ Block Scheduler and the Timestamp Scheduler.  The function that we are intereste
 
     function schedule(address   _toAddress,
                       bytes     _callData,
-                      uint[7]   _uintArgs)
+                      uint[8]   _uintArgs)
         doReset
         public payable returns (address);
 

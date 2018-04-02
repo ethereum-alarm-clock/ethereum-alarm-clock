@@ -5,6 +5,7 @@ import "contracts/TransactionRequestCore.sol";
 import "contracts/Library/RequestLib.sol";
 import "contracts/IterTools.sol";
 import "contracts/CloneFactory.sol";
+import "contracts/Library/RequestScheduleLib.sol";
 
 /**
  * @title RequestFactory
@@ -14,6 +15,9 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
     using IterTools for bool[6];
 
     TransactionRequestCore public transactionRequestCore;
+
+    uint constant public BLOCKS_BUCKET_SIZE = 240; //~1h
+    uint constant public TIMESTAMP_BUCKET_SIZE = 3600; //1h
 
     function RequestFactory(
         address _transactionRequestCore
@@ -69,7 +73,12 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
         requests[transactionRequest] = true;
 
         // Log the creation.
-        emit RequestCreated(transactionRequest, _addressArgs[0]);
+        emit RequestCreated(
+            transactionRequest,
+            _addressArgs[0],
+            getBucket(_uintArgs[7], RequestScheduleLib.TemporalUnit(_uintArgs[5])),
+            _uintArgs
+        );
 
         return transactionRequest;
     }
@@ -174,5 +183,26 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
         public view returns (bool isKnown)
     {
         return requests[_address];
+    }
+
+    function getBucket(uint windowStart, RequestScheduleLib.TemporalUnit unit)
+        public pure returns(int)
+    {
+        uint bucketSize;
+        /* since we want to handle both blocks and timestamps
+            and do not want to get into case where buckets overlaps
+            block buckets are going to be negative ints
+            timestamp buckets are going to be positive ints
+        */
+        int sign;
+
+        if (unit == RequestScheduleLib.TemporalUnit.Blocks) {
+            bucketSize = BLOCKS_BUCKET_SIZE;
+            sign = -1;
+        } else if (unit == RequestScheduleLib.TemporalUnit.Timestamp) {
+            bucketSize = TIMESTAMP_BUCKET_SIZE;
+            sign = 1;
+        }
+        return sign * int(windowStart - (windowStart % bucketSize));
     }
 }

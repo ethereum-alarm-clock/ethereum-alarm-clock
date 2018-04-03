@@ -30,13 +30,13 @@ under the populus-tests/ directory. However, we have ported over the suite to us
 this may be more familiar to developers who know the Ethereum tooling in Javascript. These tests can be found in 
 the [test/](test) directory.
 
-If you would like to run the test please set up your environment to use node v8.0.0, truffle v4.0.1 and the latest
+If you would like to run the test please set up your environment to use node v8.0.0, truffle v4.1.5 and the latest
 ganache-cli.
 
 ```
 nvm use 8.0.0
 npm i
-npm i -g truffle@4.0.1 
+npm i -g truffle@4.1.5 
 npm i -g ganache-cli
 ```
 
@@ -55,7 +55,7 @@ Documentation can be found on [Read the Docs](https://ethereum-alarm-clock.readt
 
 ## Using the CLI
 
-Please see the [`eac.js`](https://github.com/ethereum-alarm-clock/eac.js) repository for the commandline client.
+Please see the [`eac.js-cli`](https://github.com/ethereum-alarm-clock/eac.js-cli) repository for the commandline client.
 
 ## Deployment
 

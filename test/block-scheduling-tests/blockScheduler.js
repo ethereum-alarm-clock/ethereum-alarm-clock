@@ -112,9 +112,6 @@ contract("Block scheduling", (accounts) => {
 
     // Let's get the logs so we can find the transaction request address.
     const logNewRequest = scheduleTx.logs.find(e => e.event === "NewRequest")
-
-    console.log(scheduleTx.logs)
-
     expect(logNewRequest.args.request).to.exist
 
     const txRequest = await TransactionRequestCore.at(logNewRequest.args.request)

@@ -11,7 +11,7 @@ const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
-const { wait, waitUntilBlock } = require("@digix/tempo")(web3)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const { toBN } = config.web3.utils
 
@@ -224,7 +224,6 @@ contract("Test accounting", async (accounts) => {
     const afterBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     const Executed = executeTx.logs.find(e => e.event === "Executed")
-    const feeAmt = Executed.args.fee.toNumber()
     const bountyAmt = Executed.args.bounty.toNumber()
 
     const executeGasUsed = executeTx.receipt.gasUsed
@@ -233,9 +232,7 @@ contract("Test accounting", async (accounts) => {
     const expectedBounty =
       parseInt(claimDeposit, 10) +
       executeGasCost +
-      Math.floor(requestData.claimData.paymentModifier *
-          requestData.paymentData.bounty /
-          100)
+      Math.floor((requestData.claimData.paymentModifier * requestData.paymentData.bounty) / 100)
 
     expect(bountyAmt).to.be.at.least(expectedBounty)
 
@@ -246,7 +243,7 @@ contract("Test accounting", async (accounts) => {
       .toNumber()
     const expectedDiff =
       bountyAmt - claimDeposit - executeGasCost - claimGasCost
-    if (diff == expectedDiff) expect(diff).to.equal(expectedDiff)
+    if (diff === expectedDiff) expect(diff).to.equal(expectedDiff)
     // else console.log(diff, expectedDiff)
   })
 

@@ -9,7 +9,8 @@
     },
     "scripts": {
         "test": "truffle test test/block-scheduling-tests/* && truffle test test/request-factory-tests/* && truffle test test/timestamp-scheduling-tests/timestampClaiming.js && truffle test test/timestamp-scheduling-tests/timestampExecution.js && truffle test test/timestamp-scheduling-tests/timestampReserved.js && truffle test test/timestamp-scheduling-tests/timestampScheduler.js && truffle test test/transaction-request/* && truffle test test/others/* && truffle test test/integration/*",
-        "coverage": "./node_modules/.bin/solidity-coverage"
+        "coverage": "./node_modules/.bin/solidity-coverage",
+        "lint": "eslint ."
     },
     "repository": {
         "type": "git",
@@ -58,5 +59,8 @@
         "mocha": "^3.5.3",
         "should": "^13.1.0",
         "solidity-coverage": "^0.3.5"
-    }
+    },
+    "pre-commit": [
+        "lint"
+    ]
 }

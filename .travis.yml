@@ -4,6 +4,7 @@ language: node_js
 node_js:
   - '8.0.0'
 install:
+  - npm run lint
   - npm install -g truffle
   - truffle version
   - npm install -g ganache-cli

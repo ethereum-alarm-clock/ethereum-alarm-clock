@@ -24,7 +24,6 @@ contract("Timestamp scheduling", (accounts) => {
   const testData32 = ethUtil.bufferToHex(Buffer.from("32".padEnd(32, "AF01")))
 
   let requestFactory
-  let requestTracker
   let timestampScheduler
   let transactionRecorder
 
@@ -34,9 +33,7 @@ contract("Timestamp scheduling", (accounts) => {
     expect(transactionRequestCore.address).to.exist
 
     // Request factory
-    requestFactory = await RequestFactory.new(
-        transactionRequestCore.address
-    )
+    requestFactory = await RequestFactory.new(transactionRequestCore.address)
     expect(requestFactory.address).to.exist
 
     // Timestamp scheduler
@@ -92,7 +89,8 @@ contract("Timestamp scheduling", (accounts) => {
     // .to.equal(requestData.calcEndowment())
 
     // Sanity check
-    expect(requestData.calcEndowment()).to.equal(computeEndowment(bounty, fee, 1212121, 123454321, gasPrice))
+    const expectedEndowment = computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
+    expect(requestData.calcEndowment()).to.equal(expectedEndowment)
 
     expect(requestData.txData.toAddress).to.equal(transactionRecorder.address)
 

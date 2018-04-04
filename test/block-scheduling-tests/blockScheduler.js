@@ -42,9 +42,7 @@ contract("Block scheduling", (accounts) => {
     const transactionRequestCore = await TransactionRequestCore.deployed()
     expect(transactionRequestCore.address).to.exist
 
-    requestFactory = await RequestFactory.new(
-      transactionRequestCore.address
-    )
+    requestFactory = await RequestFactory.new(transactionRequestCore.address)
     blockScheduler = await BlockScheduler.new(
       requestFactory.address,
       "0xecc9c5fff8937578141592e7E62C2D2E364311b8"
@@ -122,7 +120,8 @@ contract("Block scheduling", (accounts) => {
     expect(parseInt(balOfTxRequest, 10)).to.equal(requestData.calcEndowment())
 
     // Sanity check
-    expect(requestData.calcEndowment()).to.equal(computeEndowment(bounty, fee, 1212121, 123454321, gasPrice))
+    const expectedEndowment = computeEndowment(bounty, fee, 1212121, 123454321, gasPrice)
+    expect(requestData.calcEndowment()).to.equal(expectedEndowment)
 
     // Sanity check
     expect(endowment.toNumber()).to.equal(requestData.calcEndowment())

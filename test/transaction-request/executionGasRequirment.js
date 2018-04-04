@@ -106,9 +106,6 @@ contract("Tests execution gas requirements", async (accounts) => {
       requestData.txData.callGas +
       (await requestLib.EXECUTION_GAS_OVERHEAD()).toNumber()
 
-    const tooLowCallGas =
-      minCallGas - (await requestLib.PRE_EXECUTION_GAS()).toNumber()
-
     const executeTx = await txRequest.execute({
       gas: minCallGas,
       gasPrice,

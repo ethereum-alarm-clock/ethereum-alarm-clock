@@ -1,4 +1,11 @@
 extends: airbnb-base
+env:
+  node: true,
+  mocha: true
+globals:
+  artifacts: true,
+  web3: true,
+  contract: true
 rules:
   semi:
     - 0

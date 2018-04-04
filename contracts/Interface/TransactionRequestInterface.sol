@@ -8,15 +8,10 @@ contract TransactionRequestInterface {
     function claim() public payable returns (bool);
 
     // Proxy function
-    function proxy(address recipient, bytes callData)
-        public payable returns (bool);
+    function proxy(address recipient, bytes callData) public payable returns (bool);
 
     // Data accessors
-    function requestData() public view returns (address[6],
-                                                bool[3],
-                                                uint[15],
-                                                uint8[1]);
-
+    function requestData() public view returns (address[6], bool[3], uint[15], uint8[1]);
     function callData() public view returns (bytes);
 
     // Pull mechanisms for payments.

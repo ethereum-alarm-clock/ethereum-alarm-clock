@@ -63,8 +63,7 @@ library PaymentLib {
      * @dev Computes the amount to send to the address that fulfilled the request
      *       with an additional modifier. This is used when the call was claimed.
      */
-    function getBountyWithModifier(PaymentData storage self,
-                                   uint8 _paymentModifier)
+    function getBountyWithModifier(PaymentData storage self, uint8 _paymentModifier)
         internal view returns (uint)
     {
         return getBounty(self).mul(_paymentModifier).div(100);
@@ -85,6 +84,7 @@ library PaymentLib {
         if (feeAmount > 0) {
             // re-entrance protection.
             self.feeOwed = 0;
+            /* solium-disable security/no-send */
             return self.feeRecipient.send(feeAmount);
         }
         return true;
@@ -126,10 +126,10 @@ library PaymentLib {
         public pure returns (uint)
     {
         return _bounty
-                .add(_fee.mul(2))
-                .add(_callGas.mul(_gasPrice))
-                .add(_gasOverhead.mul(_gasPrice))
-                .add(_callValue);
+            .add(_fee.mul(2))
+            .add(_callGas.mul(_gasPrice))
+            .add(_gasOverhead.mul(_gasPrice))
+            .add(_callValue);
     }
 
     /*
@@ -139,13 +139,7 @@ library PaymentLib {
      * - gasReimbursment
      * - callValue
      */
-    function validateEndowment(uint _endowment,
-                               uint _bounty,
-                               uint _fee,
-                               uint _callGas,
-                               uint _callValue,
-                               uint _gasPrice,
-                               uint _gasOverhead)
+    function validateEndowment(uint _endowment, uint _bounty, uint _fee, uint _callGas, uint _callValue, uint _gasPrice, uint _gasOverhead)
         public pure returns (bool)
     {
         return _endowment >= computeEndowment(

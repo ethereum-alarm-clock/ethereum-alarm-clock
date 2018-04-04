@@ -24,19 +24,19 @@ library RequestLib {
      *  put them in arrays. - Piper
      */
     struct SerializedRequest {
-        address[6]  addressValues;
-        bool[3]     boolValues;
-        uint[15]    uintValues;
-        uint8[1]    uint8Values;
+        address[6] addressValues;
+        bool[3] boolValues;
+        uint[15] uintValues;
+        uint8[1] uint8Values;
     }
 
     struct Request {
-        ExecutionLib.ExecutionData          txnData;
-        RequestMetaLib.RequestMeta          meta;
-        PaymentLib.PaymentData              paymentData;
-        ClaimLib.ClaimData                  claimData;
-        RequestScheduleLib.ExecutionWindow  schedule;
-        SerializedRequest                   serializedValues;
+        ExecutionLib.ExecutionData txnData;
+        RequestMetaLib.RequestMeta meta;
+        PaymentLib.PaymentData paymentData;
+        ClaimLib.ClaimData claimData;
+        RequestScheduleLib.ExecutionWindow schedule;
+        SerializedRequest serializedValues;
     }
 
     enum AbortReason {
@@ -71,35 +71,35 @@ library RequestLib {
         request.txnData.callData = _callData;
 
         // Address values
-        request.claimData.claimedBy =               0x0;
-        request.meta.createdBy =                    _addressArgs[0];
-        request.meta.owner =                        _addressArgs[1];
-        request.paymentData.feeRecipient =          _addressArgs[2];
-        request.paymentData.bountyBenefactor =      0x0;
-        request.txnData.toAddress =                 _addressArgs[3];
+        request.claimData.claimedBy = 0x0;
+        request.meta.createdBy = _addressArgs[0];
+        request.meta.owner = _addressArgs[1];
+        request.paymentData.feeRecipient = _addressArgs[2];
+        request.paymentData.bountyBenefactor = 0x0;
+        request.txnData.toAddress = _addressArgs[3];
 
         // Boolean values
-        request.meta.isCancelled =      false;
-        request.meta.wasCalled =        false;
-        request.meta.wasSuccessful =    false;
+        request.meta.isCancelled = false;
+        request.meta.wasCalled = false;
+        request.meta.wasSuccessful = false;
 
         // UInt values
-        request.claimData.claimDeposit =        0;
-        request.paymentData.fee =               _uintArgs[0];
-        request.paymentData.bounty =            _uintArgs[1];
-        request.paymentData.feeOwed =           0;
-        request.paymentData.bountyOwed =        0;
-        request.schedule.claimWindowSize =      _uintArgs[2];
-        request.schedule.freezePeriod =         _uintArgs[3];
-        request.schedule.reservedWindowSize =   _uintArgs[4];
+        request.claimData.claimDeposit = 0;
+        request.paymentData.fee = _uintArgs[0];
+        request.paymentData.bounty = _uintArgs[1];
+        request.paymentData.feeOwed = 0;
+        request.paymentData.bountyOwed = 0;
+        request.schedule.claimWindowSize = _uintArgs[2];
+        request.schedule.freezePeriod = _uintArgs[3];
+        request.schedule.reservedWindowSize = _uintArgs[4];
         // This must be capped at 1 or it throws an exception.
-        request.schedule.temporalUnit =         RequestScheduleLib.TemporalUnit(MathLib.min(_uintArgs[5], 2));
-        request.schedule.windowSize =           _uintArgs[6];
-        request.schedule.windowStart =          _uintArgs[7];
-        request.txnData.callGas =               _uintArgs[8];
-        request.txnData.callValue =             _uintArgs[9];
-        request.txnData.gasPrice =              _uintArgs[10];
-        request.claimData.requiredDeposit =     _uintArgs[11];
+        request.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(MathLib.min(_uintArgs[5], 2));
+        request.schedule.windowSize = _uintArgs[6];
+        request.schedule.windowStart = _uintArgs[7];
+        request.txnData.callGas = _uintArgs[8];
+        request.txnData.callValue = _uintArgs[9];
+        request.txnData.gasPrice = _uintArgs[10];
+        request.claimData.requiredDeposit = _uintArgs[11];
 
         // Uint8 values
         request.claimData.paymentModifier = 0;
@@ -178,7 +178,7 @@ library RequestLib {
             0
         ];
 
-        require( deserialize(self, addressValues, boolValues, uintValues, uint8Values, _callData) );
+        require(deserialize(self, addressValues, boolValues, uintValues, uint8Values, _callData));
 
         return true;
     }
@@ -253,34 +253,34 @@ library RequestLib {
         self.txnData.callData = _callData;
 
         // Address values
-        self.claimData.claimedBy =              _addressValues[0];
-        self.meta.createdBy =                   _addressValues[1];
-        self.meta.owner =                       _addressValues[2];
-        self.paymentData.feeRecipient =         _addressValues[3];
-        self.paymentData.bountyBenefactor =     _addressValues[4];
-        self.txnData.toAddress =                _addressValues[5];
+        self.claimData.claimedBy = _addressValues[0];
+        self.meta.createdBy = _addressValues[1];
+        self.meta.owner = _addressValues[2];
+        self.paymentData.feeRecipient = _addressValues[3];
+        self.paymentData.bountyBenefactor = _addressValues[4];
+        self.txnData.toAddress = _addressValues[5];
 
         // Boolean values
-        self.meta.isCancelled =     _boolValues[0];
-        self.meta.wasCalled =       _boolValues[1];
-        self.meta.wasSuccessful =   _boolValues[2];
+        self.meta.isCancelled = _boolValues[0];
+        self.meta.wasCalled = _boolValues[1];
+        self.meta.wasSuccessful = _boolValues[2];
 
         // UInt values
-        self.claimData.claimDeposit =       _uintValues[0];
-        self.paymentData.fee =              _uintValues[1];
-        self.paymentData.feeOwed =          _uintValues[2];
-        self.paymentData.bounty =           _uintValues[3];
-        self.paymentData.bountyOwed =       _uintValues[4];
-        self.schedule.claimWindowSize =     _uintValues[5];
-        self.schedule.freezePeriod =        _uintValues[6];
-        self.schedule.reservedWindowSize =  _uintValues[7];
-        self.schedule.temporalUnit =        RequestScheduleLib.TemporalUnit(_uintValues[8]);
-        self.schedule.windowSize =          _uintValues[9];
-        self.schedule.windowStart =         _uintValues[10];
-        self.txnData.callGas =              _uintValues[11];
-        self.txnData.callValue =            _uintValues[12];
-        self.txnData.gasPrice =             _uintValues[13];
-        self.claimData.requiredDeposit =    _uintValues[14];
+        self.claimData.claimDeposit = _uintValues[0];
+        self.paymentData.fee = _uintValues[1];
+        self.paymentData.feeOwed = _uintValues[2];
+        self.paymentData.bounty = _uintValues[3];
+        self.paymentData.bountyOwed = _uintValues[4];
+        self.schedule.claimWindowSize = _uintValues[5];
+        self.schedule.freezePeriod = _uintValues[6];
+        self.schedule.reservedWindowSize = _uintValues[7];
+        self.schedule.temporalUnit = RequestScheduleLib.TemporalUnit(_uintValues[8]);
+        self.schedule.windowSize = _uintValues[9];
+        self.schedule.windowStart = _uintValues[10];
+        self.txnData.callGas = _uintValues[11];
+        self.txnData.callValue = _uintValues[12];
+        self.txnData.gasPrice = _uintValues[13];
+        self.claimData.requiredDeposit = _uintValues[14];
 
         // Uint8 values
         self.claimData.paymentModifier = _uint8Values[0];
@@ -356,9 +356,7 @@ library RequestLib {
         } else if (self.schedule.isAfterWindow()) {
             emit Aborted(uint8(AbortReason.AfterCallWindow));
             return false;
-        } else if (self.claimData.isClaimed() &&
-                   msg.sender != self.claimData.claimedBy &&
-                   self.schedule.inReservedWindow()) {
+        } else if (self.claimData.isClaimed() && msg.sender != self.claimData.claimedBy && self.schedule.inReservedWindow()) {
             emit Aborted(uint8(AbortReason.ReservedForClaimer));
             return false;
         } else if (self.txnData.gasPrice != tx.gasprice) {
@@ -391,7 +389,7 @@ library RequestLib {
         // Compute the fee amount
         if (self.paymentData.hasFeeRecipient()) {
             self.paymentData.feeOwed = self.paymentData.getFee()
-                                       .add(self.paymentData.feeOwed);
+                .add(self.paymentData.feeOwed);
         }
 
         // Record this locally so that we can log it later.
@@ -408,24 +406,21 @@ library RequestLib {
             // If the transaction request was claimed, we add the deposit to the bounty whether
             // or not the same agent who claimed is executing.
             self.paymentData.bountyOwed = self.claimData.claimDeposit
-                                          .add(self.paymentData.bountyOwed);
+                .add(self.paymentData.bountyOwed);
             // To prevent re-entrance we zero out the claim deposit since it is now accounted for
             // in the bounty value.
             self.claimData.claimDeposit = 0;
             // Depending on when the transaction request was claimed, we apply the modifier to the
             // bounty payment and add it to the bounty already owed.
             self.paymentData.bountyOwed = self.paymentData.getBountyWithModifier(self.claimData.paymentModifier)
-                                          .add(self.paymentData.bountyOwed);
+                .add(self.paymentData.bountyOwed);
         } else {
             // Not claimed. Just add the full bounty.
-            self.paymentData.bountyOwed = self.paymentData.getBounty()
-                                          .add(self.paymentData.bountyOwed);
+            self.paymentData.bountyOwed = self.paymentData.getBounty().add(self.paymentData.bountyOwed);
         }
 
         // Take down the amount of gas used so far in execution to compensate the executing agent.
-        uint measuredGasConsumption = startGas
-                                      .sub(gasleft())
-                                      .add(_EXECUTE_EXTRA_GAS);
+        uint measuredGasConsumption = startGas.sub(gasleft()).add(_EXECUTE_EXTRA_GAS);
 
         // // +----------------------------------------------------------------------+
         // // | NOTE: All code after this must be accounted for by EXECUTE_EXTRA_GAS |
@@ -433,8 +428,8 @@ library RequestLib {
 
         // Add the gas reimbursment amount to the bounty.
         self.paymentData.bountyOwed = measuredGasConsumption
-                                      .mul(tx.gasprice)
-                                      .add(self.paymentData.bountyOwed);
+            .mul(tx.gasprice)
+            .add(self.paymentData.bountyOwed);
 
         // Log the bounty and fee. Otherwise it is non-trivial to figure
         // out how much was payed.
@@ -549,13 +544,13 @@ library RequestLib {
         uint measuredGasConsumption;
 
         // Checks if this transactionRequest can be cancelled.
-        require( isCancellable(self) );
+        require(isCancellable(self));
 
         // Set here to prevent re-entrance attacks.
         self.meta.isCancelled = true;
 
         // Refund the claim deposit (if there is one)
-        require( self.claimData.refundDeposit() );
+        require(self.claimData.refundDeposit());
 
         // Send a reward to the cancelling agent if they are not the owner.
         // This is to incentivize the cancelling of expired transaction requests.
@@ -567,16 +562,16 @@ library RequestLib {
             // Create the rewardOwed variable, it is one-hundredth
             // of the bounty.
             uint rewardOwed = self.paymentData.bountyOwed
-                              .add(self.paymentData.bounty.div(100));
+                .add(self.paymentData.bounty.div(100));
 
             // Calculate the amount of gas cancelling agent used in this transaction.
             measuredGasConsumption = startGas
-                                     .sub(gasleft())
-                                     .add(_CANCEL_EXTRA_GAS);
-            // Add their gas fees to the reward.
+                .sub(gasleft())
+                .add(_CANCEL_EXTRA_GAS);
+            // Add their gas fees to the reward.W
             rewardOwed = measuredGasConsumption
-                         .mul(tx.gasprice)
-                         .add(rewardOwed);
+                .mul(tx.gasprice)
+                .add(rewardOwed);
 
             // Take note of the rewardPayment to log it.
             rewardPayment = rewardOwed;
@@ -603,12 +598,12 @@ library RequestLib {
         internal view returns (bool)
     {
         // Require not claimed and not cancelled.
-        require( !self.claimData.isClaimed() );
-        require( !self.meta.isCancelled );
+        require(!self.claimData.isClaimed());
+        require(!self.meta.isCancelled);
 
         // Require that it's in the claim window and the value sent is over the required deposit.
-        require( self.schedule.inClaimWindow() );
-        require( msg.value >= self.claimData.requiredDeposit );
+        require(self.schedule.inClaimWindow());
+        require(msg.value >= self.claimData.requiredDeposit);
         return true;
     }
 
@@ -620,7 +615,7 @@ library RequestLib {
     function claim(Request storage self) 
         internal returns (bool claimed)
     {
-        require( isClaimable(self) );
+        require(isClaimable(self));
 
         self.claimData.claim(self.schedule.computePaymentModifier());
         emit Claimed();
@@ -633,7 +628,7 @@ library RequestLib {
     function refundClaimDeposit(Request storage self)
         public returns (bool)
     {
-        require( self.meta.isCancelled || self.schedule.isAfterWindow() );
+        require(self.meta.isCancelled || self.schedule.isAfterWindow());
         return self.claimData.refundDeposit();
     }
 
@@ -683,9 +678,10 @@ library RequestLib {
         // Note! This does not do any checks since it is used in the execute function.
         // The public version of the function should be used for checks and in the cancel function.
         uint ownerRefund = address(this).balance
-                           .sub(self.claimData.claimDeposit)
-                           .sub(self.paymentData.bountyOwed)
-                           .sub(self.paymentData.feeOwed);
+            .sub(self.claimData.claimDeposit)
+            .sub(self.paymentData.bountyOwed)
+            .sub(self.paymentData.feeOwed);
+        /* solium-disable security/no-send */
         return self.meta.owner.send(ownerRefund);
     }
 }

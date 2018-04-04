@@ -99,8 +99,9 @@ contract TransactionRequestCore is TransactionRequestInterface {
     function proxy(address _to, bytes _data)
         public payable returns (bool success)
     {
-        require(txnRequest.meta.owner == msg.sender
-                && txnRequest.schedule.isAfterWindow());
+        require(txnRequest.meta.owner == msg.sender && txnRequest.schedule.isAfterWindow());
+        
+        /* solium-disable-next-line */
         return _to.call.value(msg.value)(_data);
     }
 

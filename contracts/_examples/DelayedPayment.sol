@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import 'contracts/Interface/SchedulerInterface.sol';
+import "contracts/Interface/SchedulerInterface.sol";
 
 /// Example of using the Scheduler from a smart contract to delay a payment.
 contract DelayedPayment {
@@ -14,7 +14,7 @@ contract DelayedPayment {
         address _scheduler,
         uint    _numBlocks,
         address _recipient
-    ) {
+    )  public {
         scheduler = SchedulerInterface(_scheduler);
         lockedUntil = block.number + _numBlocks;
         recipient = _recipient;
@@ -35,7 +35,7 @@ contract DelayedPayment {
         );
     }
 
-    function () {
+    function ()  public {
         if (this.balance > 0) {
             payout();
         } else {

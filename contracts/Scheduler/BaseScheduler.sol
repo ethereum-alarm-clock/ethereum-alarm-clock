@@ -44,23 +44,22 @@ contract BaseScheduler is SchedulerInterface {
         doReset
         public payable returns (address newRequest)
     {
-        futureTransaction.toAddress         = _toAddress;
-        futureTransaction.callData          = _callData;
-        futureTransaction.callGas           = _uintArgs[0];
-        futureTransaction.callValue         = _uintArgs[1];
-        futureTransaction.windowSize        = _uintArgs[2];
-        futureTransaction.windowStart       = _uintArgs[3];
-        futureTransaction.gasPrice          = _uintArgs[4];
-        futureTransaction.fee               = _uintArgs[5];
-        futureTransaction.bounty            = _uintArgs[6];
-        futureTransaction.requiredDeposit   = _uintArgs[7];
-
-        futureTransaction.temporalUnit      = temporalUnit;
+        futureTransaction.toAddress = _toAddress;
+        futureTransaction.callData = _callData;
+        futureTransaction.callGas = _uintArgs[0];
+        futureTransaction.callValue = _uintArgs[1];
+        futureTransaction.windowSize = _uintArgs[2];
+        futureTransaction.windowStart = _uintArgs[3];
+        futureTransaction.gasPrice = _uintArgs[4];
+        futureTransaction.fee = _uintArgs[5];
+        futureTransaction.bounty = _uintArgs[6];
+        futureTransaction.requiredDeposit = _uintArgs[7];
+        futureTransaction.temporalUnit = temporalUnit;
 
         newRequest = futureTransaction.schedule(factoryAddress, feeRecipient);
-        require( newRequest != 0x0 );
+        require(newRequest != 0x0);
 
-        NewRequest(newRequest);
+        emit NewRequest(newRequest);
         return newRequest;
     }
 }

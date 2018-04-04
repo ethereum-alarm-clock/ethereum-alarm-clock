@@ -8,7 +8,6 @@ const { expect } = require("chai")
 // Contracts
 const BlockScheduler = artifacts.require("./BlockScheduler.sol")
 const RequestFactory = artifacts.require("./RequestFactory.sol")
-const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
@@ -35,14 +34,10 @@ contract("Schedule to execution flow", (accounts) => {
     txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
 
-    requestTracker = await RequestTracker.new()
-    expect(requestTracker.address).to.exist
-
     const transactionRequestCore = await TransactionRequestCore.deployed()
     expect(transactionRequestCore.address).to.exist
 
     requestFactory = await RequestFactory.new(
-        requestTracker.address,
         transactionRequestCore.address
     )
     expect(requestFactory.address).to.exist

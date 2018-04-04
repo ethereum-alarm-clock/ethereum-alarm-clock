@@ -7,13 +7,12 @@ const { expect } = require("chai")
 // Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const RequestLib = artifacts.require("./RequestLib.sol")
-const RequestTracker = artifacts.require("./RequestTracker.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
-const { parseRequestData } = require("../dataHelpers.js")
+const { parseRequestData, calculateBlockBucket } = require("../dataHelpers.js")
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
@@ -39,7 +38,8 @@ contract("Request factory", async (accounts) => {
     const temporalUnit = 1
     const callValue = 123456789
     const callGas = 1000000
-    const requiredDeposit = config.web3.utils.toWei("45", "kwei")
+    const gasPrice = 1000000
+    const requiredDeposit = 1000000
     const testCallData = "this-is-call-data"
 
     // Validate the data with the RequestLib
@@ -63,22 +63,30 @@ contract("Request factory", async (accounts) => {
 
     isValid.forEach(bool => expect(bool).to.be.true)
 
-    // Now let's set up a factory and launch the request.
-
-    // We need a request tracker for the factory
-    const requestTracker = await RequestTracker.deployed()
-    expect(requestTracker.address).to.exist
-
     // We need a transaction request core for the factory
     const transactionRequestCore = await TransactionRequestCore.deployed()
     expect(transactionRequestCore.address).to.exist
 
     // Pass the request tracker to the factory
     const requestFactory = await RequestFactory.new(
-        requestTracker.address,
         transactionRequestCore.address
     )
     expect(requestFactory.address).to.exist
+
+    const params = [
+      fee,
+      bounty,
+      claimWindowSize,
+      freezePeriod,
+      reservedWindowSize,
+      temporalUnit,
+      windowSize,
+      windowStart,
+      callGas,
+      callValue,
+      gasPrice,
+      requiredDeposit
+    ]
 
     // Create a request with the same args we validated
     const createTx = await requestFactory.createRequest(
@@ -87,25 +95,19 @@ contract("Request factory", async (accounts) => {
         accounts[1], // fee recipient
         accounts[2], // to
       ],
-      [
-        fee,
-        bounty,
-        claimWindowSize,
-        freezePeriod,
-        reservedWindowSize,
-        temporalUnit,
-        windowSize,
-        windowStart,
-        callGas,
-        callValue,
-        requiredDeposit,
-      ],
+      params,
       testCallData
     )
     expect(createTx.receipt).to.exist
 
     const logRequestCreated = createTx.logs.find(e => e.event === "RequestCreated")
+
     expect(logRequestCreated.args.request).to.exist
+    expect(logRequestCreated.args.params.length).to.equal(12)
+    logRequestCreated.args.params.forEach((el, idx) => expect(el.toNumber()).to.equal(params[idx]))
+
+    const bucket = calculateBlockBucket(windowStart)
+    expect(logRequestCreated.args.bucket.toNumber()).to.equal(bucket.toNumber())
 
     // Now let's create a transactionRequest instance
     const txRequest = await TransactionRequestCore.at(logRequestCreated.args.request)

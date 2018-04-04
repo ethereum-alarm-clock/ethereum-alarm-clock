@@ -193,6 +193,7 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
             and do not want to get into case where buckets overlaps
             block buckets are going to be negative ints
             timestamp buckets are going to be positive ints
+            we'll overflow after 2**255-1 blocks instead of 2**256-1 since we encoding this on int256
         */
         int sign;
 
@@ -202,6 +203,8 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
         } else if (unit == RequestScheduleLib.TemporalUnit.Timestamp) {
             bucketSize = TIMESTAMP_BUCKET_SIZE;
             sign = 1;
+        } else {
+            throw;
         }
         return sign * int(windowStart - (windowStart % bucketSize));
     }

@@ -29,7 +29,6 @@ contract("Block scheduling", (accounts) => {
   let blockScheduler
   let paymentLib
   let requestFactory
-  let requestTracker
   let transactionRecorder
 
   // ///////////
@@ -44,7 +43,7 @@ contract("Block scheduling", (accounts) => {
     expect(transactionRequestCore.address).to.exist
 
     requestFactory = await RequestFactory.new(
-        transactionRequestCore.address
+      transactionRequestCore.address
     )
     blockScheduler = await BlockScheduler.new(
       requestFactory.address,
@@ -113,6 +112,8 @@ contract("Block scheduling", (accounts) => {
 
     // Let's get the logs so we can find the transaction request address.
     const logNewRequest = scheduleTx.logs.find(e => e.event === "NewRequest")
+
+    console.log(scheduleTx.logs)
 
     expect(logNewRequest.args.request).to.exist
 

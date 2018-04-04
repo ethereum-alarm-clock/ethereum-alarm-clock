@@ -1,3 +1,5 @@
+const BigNumber = require('bignumber.js')
+
 const wasAborted = (executeTx) => {
   const Aborted = executeTx.logs.find(e => e.event === "Aborted")
   return !!Aborted
@@ -22,6 +24,20 @@ const parseAbortData = (executeTx) => {
   const reasons = abortedNums.map(num => reason[num])
 
   return reasons
+}
+
+const calculateTimestampBucket = (start) => {
+  const s = new BigNumber(start)
+  const mod = s.mod(3600)
+
+  return s.minus(mod)
+}
+
+const calculateBlockBucket = (start) => {
+  const s = new BigNumber(start)
+  const mod = s.mod(240)
+
+  return s.minus(mod).times(-1)
 }
 
 const computeEndowment = (bounty, fee, callGas, callValue, gasPrice) => (
@@ -187,3 +203,5 @@ module.exports.RequestData = RequestData
 module.exports.parseRequestData = parseRequestData
 module.exports.parseAbortData = parseAbortData
 module.exports.wasAborted = wasAborted
+module.exports.calculateBlockBucket = calculateBlockBucket
+module.exports.calculateTimestampBucket = calculateTimestampBucket

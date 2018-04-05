@@ -1,17 +1,14 @@
 pragma solidity ^0.4.21;
 
-import 'contracts/zeppelin/SafeMath.sol';
+import "contracts/zeppelin/SafeMath.sol";
 
 library ClaimLib {
     using SafeMath for uint;
 
     struct ClaimData {
         address claimedBy;          // The address that has claimed the txRequest.
-
         uint claimDeposit;          // The deposit amount that was put down by the claimer.
-
         uint requiredDeposit;       // The required deposit to claim the txRequest.
-
         uint8 paymentModifier;      // An integer constrained between 0-100 that will be applied to the
                                     // request payment as a percentage.
     }
@@ -55,7 +52,7 @@ library ClaimLib {
             uint depositAmount;
             depositAmount = self.claimDeposit;
             self.claimDeposit = 0;
-            
+            /* solium-disable security/no-send */
             return self.claimedBy.send(depositAmount);
         }
         return true;

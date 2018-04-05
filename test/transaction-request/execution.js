@@ -112,7 +112,7 @@ contract("Execution", async (accounts) => {
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
     // The min required gas is txnData.callGas + GAS_OVERHEAD (180000)
-    const gas = requestData.txData.callGas + 180000 - 5000
+    const gas = (requestData.txData.callGas + 180000) - 5000
     // console.log(gas)
     // console.log(gas + 5000)
     // TODO: Investigate this further ^^^^

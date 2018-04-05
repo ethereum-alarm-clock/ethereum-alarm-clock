@@ -344,16 +344,16 @@ contract("Cancelling", async (accounts) => {
 
     await waitUntilBlock(0, cancelAt)
 
-    const balanceBeforeCancel = await config.web3.eth.getBalance(accounts[1])
-    const contractBalanceBefore = await config.web3.eth.getBalance(txRequest.address)
+    // const balanceBeforeCancel = await config.web3.eth.getBalance(accounts[1])
+    // const contractBalanceBefore = await config.web3.eth.getBalance(txRequest.address)
 
     const cancelTx = await txRequest.cancel({
       from: Owner, // TODO: this throws if set to another account
     })
     expect(cancelTx.receipt).to.exist
 
-    const balanceAfterCancel = await config.web3.eth.getBalance(accounts[1])
-    const contractBalanceAfter = await config.web3.eth.getBalance(txRequest.address)
+    // const balanceAfterCancel = await config.web3.eth.getBalance(accounts[1])
+    // const contractBalanceAfter = await config.web3.eth.getBalance(txRequest.address)
 
     expect((await parseRequestData(txRequest)).meta.isCancelled).to.be.true
 

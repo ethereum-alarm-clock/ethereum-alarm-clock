@@ -12,7 +12,7 @@ const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Note - these tests were checked very well and should never be wrong.
 // If they start failing - look in the contracts.
-contract("Request factory", async (accounts) => {
+contract("Request factory", async () => {
   describe("getBucket()", async () => {
     let transactionRequestCore
     let requestFactory
@@ -34,7 +34,7 @@ contract("Request factory", async (accounts) => {
       const intMax = new BigNumber(2).pow(255).minus(1)
       const now = new BigNumber(2).pow(256).minus(1)
       const bucket = await requestFactory.getBucket(now, 2)
-      
+
       const expected = intMax.plus(1).times(-2).plus(calculateTimestampBucket(now)) // overflows
 
       expect(bucket.equals(expected)).to.be.true

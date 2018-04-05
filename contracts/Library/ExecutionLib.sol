@@ -22,10 +22,9 @@ library ExecutionLib {
         internal returns (bool)
     {
         /// Should never actually reach this require check, but here in case.
-        require( self.gasPrice == tx.gasprice );
-        return self.toAddress.call.value(self.callValue)
-                                  .gas(self.callGas)
-                                  (self.callData);
+        require(self.gasPrice == tx.gasprice);
+        /* solium-disable security/no-call-value */
+        return self.toAddress.call.value(self.callValue).gas(self.callGas)(self.callData);
     }
 
 
@@ -44,7 +43,7 @@ library ExecutionLib {
      * @dev Validation: ensure that the callGas is not above the total possible gas
      * for a call.
      */
-     function validateCallGas(uint callGas, uint EXTRA_GAS)
+    function validateCallGas(uint callGas, uint EXTRA_GAS)
         internal view returns (bool)
     {
         return callGas < CALL_GAS_CEILING(EXTRA_GAS);
@@ -53,7 +52,7 @@ library ExecutionLib {
     /*
      * @dev Validation: ensure that the toAddress is not set to the empty address.
      */
-     function validateToAddress(address toAddress)
+    function validateToAddress(address toAddress)
         internal pure returns (bool)
     {
         return toAddress != 0x0;

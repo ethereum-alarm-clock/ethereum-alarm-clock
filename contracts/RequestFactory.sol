@@ -21,8 +21,10 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
 
     function RequestFactory(
         address _transactionRequestCore
-    ) public {
-        require( _transactionRequestCore != 0x0 );
+    ) 
+        public 
+    {
+        require(_transactionRequestCore != 0x0);
 
         transactionRequestCore = TransactionRequestCore(_transactionRequestCore);
     }
@@ -123,11 +125,9 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
                 emit ValidationError(uint8(Errors.EmptyToAddress));
             }
 
-            // Try to return the ether sent with the message.  If this failed
-            // then revert() to force it to be returned
-            if (!msg.sender.send(msg.value)) {
-                revert();
-            }
+            // Try to return the ether sent with the message
+            msg.sender.transfer(msg.value);
+            
             return 0x0;
         }
 
@@ -204,7 +204,7 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
             bucketSize = TIMESTAMP_BUCKET_SIZE;
             sign = 1;
         } else {
-            throw;
+            revert();
         }
         return sign * int(windowStart - (windowStart % bucketSize));
     }

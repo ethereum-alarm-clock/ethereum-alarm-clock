@@ -239,12 +239,12 @@ contract("Block claiming", async (accounts) => {
     const requestData = await RequestData.from(txRequest)
 
     const claimAt =
-      requestData.schedule.windowStart -
+      (requestData.schedule.windowStart -
       requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize +
-      Math.floor(requestData.schedule.claimWindowSize * 2 / 3)
+      requestData.schedule.claimWindowSize) +
+      Math.floor((requestData.schedule.claimWindowSize * 2) / 3)
 
-    const expectedPaymentModifier = Math.floor(100 * 2 / 3)
+    const expectedPaymentModifier = Math.floor((100 * 2) / 3)
 
     expect(requestData.claimData.paymentModifier).to.equal(0)
 

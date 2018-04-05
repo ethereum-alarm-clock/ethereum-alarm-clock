@@ -38,8 +38,7 @@ contract("Timestamp execution", async (accounts) => {
   beforeEach(async () => {
     const curBlock = await config.web3.eth.getBlock("latest")
     const { timestamp } = curBlock
-
-    const windowStart = timestamp + 10 * DAY
+    const windowStart = timestamp + (DAY * 10)
 
     // / Deploy a fresh transactionRecorder
     txRecorder = await TransactionRecorder.new()

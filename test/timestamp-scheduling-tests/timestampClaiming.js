@@ -19,26 +19,18 @@ contract("Timestamp claiming", async (accounts) => {
   const MINUTE = 60 // seconds
   const HOUR = 60 * MINUTE
   const DAY = 24 * HOUR
-
-  // Variables we set before each test
-  let txRecorder
-  let txRequest
-
-  let timestamp
-
   const gasPrice = config.web3.utils.toWei("45", "gwei")
-
-  // Constant variables we need in each test
   const claimWindowSize = 5 * MINUTE
   const freezePeriod = 2 * MINUTE
   const reservedWindowSize = 1 * MINUTE
   const executionWindow = 2 * MINUTE
 
+  let txRecorder
+  let txRequest
+
   // The set up before each test
   beforeEach(async () => {
-    const curBlock = await config.web3.eth.getBlock("latest")
-    timestamp = curBlock.timestamp
-
+    const { timestamp } = await config.web3.eth.getBlock("latest")
     const windowStart = timestamp + DAY
 
     txRecorder = await TransactionRecorder.new()
@@ -163,10 +155,8 @@ contract("Timestamp claiming", async (accounts) => {
 
     expect(lastClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
-    await waitUntilBlock(
-      lastClaimStamp - (await config.web3.eth.getBlock("latest")).timestamp + 1,
-      1
-    )
+    const currentTimestamp = (await config.web3.eth.getBlock("latest")).timestamp
+    await waitUntilBlock((lastClaimStamp - currentTimestamp) + 1, 1)
 
     await txRequest
       .claim({
@@ -248,14 +238,11 @@ contract("Timestamp claiming", async (accounts) => {
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[1])
 
-    await waitUntilBlock(
-      requestData.schedule.windowStart -
-        (await config.web3.eth.getBlock("latest")).timestamp +
-        requestData.schedule.reservedWindowSize,
-      1
-    )
+    const currentTimestamp = (await config.web3.eth.getBlock("latest")).timestamp
+    await waitUntilBlock((requestData.schedule.windowStart - currentTimestamp) +
+      requestData.schedule.reservedWindowSize, 1)
 
-    const executeTx = await txRequest.execute({
+    await txRequest.execute({
       from: accounts[1],
       gas: 3000000,
       gasPrice,
@@ -270,12 +257,10 @@ contract("Timestamp claiming", async (accounts) => {
     const requestData = await RequestData.from(txRequest)
 
     const claimAt =
-      requestData.schedule.windowStart -
+      (requestData.schedule.windowStart -
       requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize +
-      Math.floor(requestData.schedule.claimWindowSize * 2 / 3)
-
-    const expectedPaymentModifier = Math.floor(100 * 2 / 3)
+      requestData.schedule.claimWindowSize) +
+      Math.floor((requestData.schedule.claimWindowSize * 2) / 3)
 
     expect(requestData.claimData.paymentModifier).to.equal(0)
 

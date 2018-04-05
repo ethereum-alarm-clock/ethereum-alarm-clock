@@ -73,8 +73,8 @@ library RequestScheduleLib {
         internal view returns (uint8)
     {        
         uint paymentModifier = (getNow(self).sub(firstClaimBlock(self)))
-                                .mul(100)
-                                .div(self.claimWindowSize); 
+            .mul(100)
+            .div(self.claimWindowSize); 
         assert(paymentModifier <= 100); 
 
         return uint8(paymentModifier);
@@ -162,11 +162,7 @@ library RequestScheduleLib {
     {
         /// Checks that the firstClaimBlock is in the past or now.
         /// Checks that now is before the start of the freezePeriod.
-        if (firstClaimBlock(self) <= getNow(self)
-            && getNow(self) < freezeStart(self)) {
-                return true;
-        }
-        return false;
+        return firstClaimBlock(self) <= getNow(self) && getNow(self) < freezeStart(self);
     }
 
     /*
@@ -197,8 +193,7 @@ library RequestScheduleLib {
      * @param _windowSize The size of the execution window.
      * @return True if the reservedWindowSize is within the windowSize.
      */
-    function validateReservedWindowSize(uint _reservedWindowSize,
-                                        uint _windowSize)
+    function validateReservedWindowSize(uint _reservedWindowSize, uint _windowSize)
         public pure returns (bool)
     {
         return _reservedWindowSize <= _windowSize;
@@ -211,9 +206,7 @@ library RequestScheduleLib {
      * @param _windowStart The time in the future which represents the start of the execution window.
      * @return True if the windowStart is at least freezePeriod amount of time in the future.
      */
-    function validateWindowStart(TemporalUnit _temporalUnit,
-                                 uint _freezePeriod,
-                                 uint _windowStart) 
+    function validateWindowStart(TemporalUnit _temporalUnit, uint _freezePeriod, uint _windowStart) 
         public view returns (bool)
     {
         return _getNow(_temporalUnit).add(_freezePeriod) <= _windowStart;
@@ -225,10 +218,9 @@ library RequestScheduleLib {
     function validateTemporalUnit(uint _temporalUnitAsUInt) 
         public pure returns (bool)
     {
-        return (_temporalUnitAsUInt != uint(TemporalUnit.Null) 
-                && (_temporalUnitAsUInt == uint(TemporalUnit.Blocks)
-                    || _temporalUnitAsUInt == uint(TemporalUnit.Timestamp))
+        return (_temporalUnitAsUInt != uint(TemporalUnit.Null) &&
+            (_temporalUnitAsUInt == uint(TemporalUnit.Blocks) ||
+            _temporalUnitAsUInt == uint(TemporalUnit.Timestamp))
         );
     }
-
 }

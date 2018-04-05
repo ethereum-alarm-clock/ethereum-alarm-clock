@@ -68,9 +68,7 @@ contract("Request factory", async (accounts) => {
     expect(transactionRequestCore.address).to.exist
 
     // Pass the request tracker to the factory
-    const requestFactory = await RequestFactory.new(
-        transactionRequestCore.address
-    )
+    const requestFactory = await RequestFactory.new(transactionRequestCore.address)
     expect(requestFactory.address).to.exist
 
     const params = [

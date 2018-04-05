@@ -24,7 +24,6 @@ contract("Schedule to execution flow", (accounts) => {
 
   let blockScheduler
   let requestFactory
-  let requestTracker
   let txRecorder
   let txRequest
 
@@ -37,9 +36,7 @@ contract("Schedule to execution flow", (accounts) => {
     const transactionRequestCore = await TransactionRequestCore.deployed()
     expect(transactionRequestCore.address).to.exist
 
-    requestFactory = await RequestFactory.new(
-        transactionRequestCore.address
-    )
+    requestFactory = await RequestFactory.new(transactionRequestCore.address)
     expect(requestFactory.address).to.exist
 
     blockScheduler = await BlockScheduler.new(
@@ -98,7 +95,7 @@ contract("Schedule to execution flow", (accounts) => {
 
     expect(requestData.schedule.windowStart).to.equal(windowStart)
 
-    expect(requestData.txData.gasPrice).to.equal(parseInt(gasPrice))
+    expect(requestData.txData.gasPrice).to.equal(parseInt(gasPrice, 10))
 
     expect(requestData.paymentData.fee).to.equal(98765)
 

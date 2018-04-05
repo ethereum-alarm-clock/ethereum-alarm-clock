@@ -11,6 +11,7 @@ const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
 const { RequestData, wasAborted } = require("../dataHelpers.js")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
+const simpleTokenAbi = require("./SimpleToken.json").abi
 
 contract("TransactionRequestCore proxy function", (accounts) => {
   const claimWindowSize = 25 // blocks
@@ -55,7 +56,7 @@ contract("TransactionRequestCore proxy function", (accounts) => {
     const requestData = await RequestData.from(txRequest)
 
     const duringExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize - 2
+      (requestData.schedule.windowStart + requestData.schedule.windowSize) - 2
 
     await waitUntilBlock(0, duringExecutionWindow)
 
@@ -125,16 +126,18 @@ contract("TransactionRequestCore proxy function", (accounts) => {
     expect(executeTx.receipt).to.exist
     expect(wasAborted(executeTx)).to.be.false
 
-    expect((await tokenContract.balanceOf(txRequest.address)).toNumber()).to.equal(12345 * 30) // callValue * rate
+    const balance = (await tokenContract.balanceOf(txRequest.address)).toNumber()
+    expect(balance).to.equal(12345 * 30) // callValue * rate
 
     const afterExecutionWindow =
       requestData.schedule.windowStart + requestData.schedule.windowSize + 2
 
     await waitUntilBlock(0, afterExecutionWindow)
 
-    const t = new config.web3.eth.Contract(require("./SimpleToken.json").abi)
+    const t = new config.web3.eth.Contract(simpleTokenAbi)
     const encodedData = t.methods.transfer(accounts[8], 30000).encodeABI()
     // / This data was generated locally using the method above^^
+    /* eslint-disable max-len */
     // const encoded_data = '0xa9059cbb000000000000000000000000737b4d5a9f46839501719b5d388b7c487b55957a0000000000000000000000000000000000000000000000000000000000007530'
 
     // / NOTE the method below vv SHOULD work but generates the wrong data string for some reason

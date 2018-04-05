@@ -9,11 +9,11 @@ contract TransactionRecorder {
     bytes public lastCallData = "";
     uint public lastCallGas;
 
-    function TransactionRecorder() {
+    function TransactionRecorder()  public {
         owner = msg.sender;
     }
 
-    function() payable {
+    function() payable  public {
         lastCallGas = gasleft();
         lastCallData = msg.data;
         lastCaller = msg.sender;

@@ -11,7 +11,32 @@ import "contracts/Library/SchedulerLib.sol";
 contract BaseScheduler is SchedulerInterface {
     using SchedulerLib for SchedulerLib.FutureTransaction;
 
-    address public feeRecipient;       // Recipient of the fee.
+    // The RequestFactory which produces requests for this scheduler.
+    address public factoryAddress;
+
+    // The TemporalUnit (Block or Timestamp) for this scheduler.
+    RequestScheduleLib.TemporalUnit public temporalUnit;
+
+    // The address which will be sent the fee payments.
+    address public feeRecipient;
+
+    // Storage of the transaction parameters.
+    SchedulerLib.FutureTransaction public futureTransaction;
+
+    /*
+     * When applied to a function, causes the local futureTransaction to
+     * get reset to it's defaults on each function call.
+     */
+    modifier doReset {
+        if (temporalUnit == RequestScheduleLib.TemporalUnit.Blocks) {
+            futureTransaction.resetAsBlock();
+        } else if (temporalUnit == RequestScheduleLib.TemporalUnit.Timestamp) {
+            futureTransaction.resetAsTimestamp();
+        } else {
+            revert();
+        }
+        _;
+    }
 
     /*
      * @dev Fallback function to be able to receive ether. This can occur

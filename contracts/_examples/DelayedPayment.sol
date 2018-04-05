@@ -35,7 +35,7 @@ contract DelayedPayment {
         );
     }
 
-    function ()  public {
+    function () public {
         if (this.balance > 0) {
             payout();
         } else {
@@ -56,5 +56,4 @@ contract DelayedPayment {
     {
         return block.number;
     }
-
 }

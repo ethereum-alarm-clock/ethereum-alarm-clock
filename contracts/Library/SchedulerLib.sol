@@ -150,7 +150,7 @@ library SchedulerLib {
                 self.callValue,
                 self.gasPrice,
                 RequestLib.EXECUTION_GAS_OVERHEAD() //180000, line 459 RequestLib
-        ), this.balance);
+        ), address(this).balance);
 
         newRequestAddress = factory.createValidatedRequest.value(endowment)(
             [

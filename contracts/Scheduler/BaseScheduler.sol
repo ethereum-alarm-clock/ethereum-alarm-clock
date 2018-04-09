@@ -62,7 +62,7 @@ contract BaseScheduler is SchedulerInterface {
             RequestLib.EXECUTION_GAS_OVERHEAD()
         );
 
-        require(msg.value > endowment);
+        require(msg.value >= endowment);
 
         if (temporalUnit == RequestScheduleLib.TemporalUnit.Blocks) {
             newRequest = factory.createValidatedRequest.value(msg.value)(

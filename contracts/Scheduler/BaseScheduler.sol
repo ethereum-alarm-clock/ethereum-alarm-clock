@@ -113,6 +113,11 @@ contract BaseScheduler is SchedulerInterface {
             revert();
         }
 
+        uint leftover = address(this).balance;
+        if (leftover > 0) {
+            msg.sender.transfer(leftover);
+        }
+
         require(newRequest != 0x0);
         emit NewRequest(newRequest);
         return newRequest;

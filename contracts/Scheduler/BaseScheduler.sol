@@ -62,8 +62,10 @@ contract BaseScheduler is SchedulerInterface {
             RequestLib.EXECUTION_GAS_OVERHEAD()
         );
 
+        require(msg.value > endowment);
+
         if (temporalUnit == RequestScheduleLib.TemporalUnit.Blocks) {
-            newRequest = factory.createValidatedRequest.value(endowment)(
+            newRequest = factory.createValidatedRequest.value(msg.value)(
                 [
                     msg.sender,                 // meta.owner
                     feeRecipient,               // paymentData.feeRecipient
@@ -86,7 +88,7 @@ contract BaseScheduler is SchedulerInterface {
                 _callData
             );
         } else if (temporalUnit == RequestScheduleLib.TemporalUnit.Timestamp) {
-            newRequest = factory.createValidatedRequest.value(endowment)(
+            newRequest = factory.createValidatedRequest.value(msg.value)(
                 [
                     msg.sender,                 // meta.owner
                     feeRecipient,               // paymentData.feeRecipient
@@ -111,11 +113,6 @@ contract BaseScheduler is SchedulerInterface {
         } else {
             // unsupported temporal unit
             revert();
-        }
-
-        uint leftover = address(this).balance;
-        if (leftover > 0) {
-            msg.sender.transfer(leftover);
         }
 
         require(newRequest != 0x0);

@@ -1,17 +1,25 @@
 pragma solidity ^0.4.21;
 
+import "contracts/Interface/RequestFactoryInterface.sol";
 import "contracts/Interface/SchedulerInterface.sol";
+
+import "contracts/Library/PaymentLib.sol";
+import "contracts/Library/RequestLib.sol";
 import "contracts/Library/RequestScheduleLib.sol";
-import "contracts/Library/SchedulerLib.sol";
 
 /**
  * @title BaseScheduler
  * @dev The foundational contract which provides the API for scheduling future transactions on the Alarm Client.
  */
 contract BaseScheduler is SchedulerInterface {
-    using SchedulerLib for SchedulerLib.FutureTransaction;
+    // The RequestFactory which produces requests for this scheduler.
+    address public factoryAddress;
 
-    address public feeRecipient;       // Recipient of the fee.
+    // The TemporalUnit (Block or Timestamp) for this scheduler.
+    RequestScheduleLib.TemporalUnit public temporalUnit;
+
+    // The address which will be sent the fee payments.
+    address public feeRecipient;
 
     /*
      * @dev Fallback function to be able to receive ether. This can occur
@@ -41,24 +49,73 @@ contract BaseScheduler is SchedulerInterface {
         bytes     _callData,
         uint[8]   _uintArgs
     )
-        doReset
         public payable returns (address newRequest)
     {
-        futureTransaction.toAddress = _toAddress;
-        futureTransaction.callData = _callData;
-        futureTransaction.callGas = _uintArgs[0];
-        futureTransaction.callValue = _uintArgs[1];
-        futureTransaction.windowSize = _uintArgs[2];
-        futureTransaction.windowStart = _uintArgs[3];
-        futureTransaction.gasPrice = _uintArgs[4];
-        futureTransaction.fee = _uintArgs[5];
-        futureTransaction.bounty = _uintArgs[6];
-        futureTransaction.requiredDeposit = _uintArgs[7];
-        futureTransaction.temporalUnit = temporalUnit;
+        RequestFactoryInterface factory = RequestFactoryInterface(factoryAddress);
 
-        newRequest = futureTransaction.schedule(factoryAddress, feeRecipient);
+        uint endowment = PaymentLib.computeEndowment(
+            _uintArgs[6], //bounty
+            _uintArgs[5], //fee
+            _uintArgs[0], //callGas
+            _uintArgs[1], //callValue
+            _uintArgs[4], //gasPrice
+            RequestLib.EXECUTION_GAS_OVERHEAD()
+        );
+
+        require(msg.value >= endowment);
+
+        if (temporalUnit == RequestScheduleLib.TemporalUnit.Blocks) {
+            newRequest = factory.createValidatedRequest.value(msg.value)(
+                [
+                    msg.sender,                 // meta.owner
+                    feeRecipient,               // paymentData.feeRecipient
+                    _toAddress                  // txnData.toAddress
+                ],
+                [
+                    _uintArgs[5],               // paymentData.fee
+                    _uintArgs[6],               // paymentData.bounty
+                    255,                        // scheduler.claimWindowSize
+                    10,                         // scheduler.freezePeriod
+                    16,                         // scheduler.reservedWindowSize
+                    uint(temporalUnit),         // scheduler.temporalUnit (1: block, 2: timestamp)
+                    _uintArgs[2],               // scheduler.windowSize
+                    _uintArgs[3],               // scheduler.windowStart
+                    _uintArgs[0],               // txnData.callGas
+                    _uintArgs[1],               // txnData.callValue
+                    _uintArgs[4],               // txnData.gasPrice
+                    _uintArgs[7]                // claimData.requiredDeposit
+                ],
+                _callData
+            );
+        } else if (temporalUnit == RequestScheduleLib.TemporalUnit.Timestamp) {
+            newRequest = factory.createValidatedRequest.value(msg.value)(
+                [
+                    msg.sender,                 // meta.owner
+                    feeRecipient,               // paymentData.feeRecipient
+                    _toAddress                  // txnData.toAddress
+                ],
+                [
+                    _uintArgs[5],               // paymentData.fee
+                    _uintArgs[6],               // paymentData.bounty
+                    60 minutes,                 // scheduler.claimWindowSize
+                    3 minutes,                  // scheduler.freezePeriod
+                    5 minutes,                  // scheduler.reservedWindowSize
+                    uint(temporalUnit),         // scheduler.temporalUnit (1: block, 2: timestamp)
+                    _uintArgs[2],               // scheduler.windowSize
+                    _uintArgs[3],               // scheduler.windowStart
+                    _uintArgs[0],               // txnData.callGas
+                    _uintArgs[1],               // txnData.callValue
+                    _uintArgs[4],               // txnData.gasPrice
+                    _uintArgs[7]                // claimData.requiredDeposit
+                ],
+                _callData
+            );
+        } else {
+            // unsupported temporal unit
+            revert();
+        }
+
         require(newRequest != 0x0);
-
         emit NewRequest(newRequest);
         return newRequest;
     }

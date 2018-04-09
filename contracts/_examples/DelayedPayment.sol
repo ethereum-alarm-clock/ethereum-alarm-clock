@@ -56,5 +56,4 @@ contract DelayedPayment {
     {
         return block.number;
     }
-
 }

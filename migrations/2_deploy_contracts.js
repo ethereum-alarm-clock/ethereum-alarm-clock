@@ -14,7 +14,6 @@ const RequestLib = artifacts.require("./RequestLib.sol")
 const RequestMetaLib = artifacts.require("./RequestMetaLib.sol")
 const RequestScheduleLib = artifacts.require("./RequestScheduleLib.sol")
 const SafeMath = artifacts.require("./SafeMath.sol")
-// const SchedulerLib = artifacts.require("./SchedulerLib.sol")
 const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
@@ -57,14 +56,6 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 
       return deployer.deploy(RequestLib, { gas: 3000000 })
     })
-    // .then(() => {
-    //   deployer.link(MathLib, SchedulerLib)
-    //   deployer.link(PaymentLib, SchedulerLib)
-    //   deployer.link(RequestLib, SchedulerLib)
-    //   deployer.link(SafeMath, SchedulerLib)
-
-    //   return deployer.deploy(SchedulerLib, { gas: 500000 })
-    // })
     .then(() => {
       deployer.link(ClaimLib, TransactionRequestCore)
       deployer.link(ExecutionLib, TransactionRequestCore)

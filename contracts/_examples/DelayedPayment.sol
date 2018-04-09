@@ -35,8 +35,8 @@ contract DelayedPayment {
         );
     }
 
-    function () public {
-        if (this.balance > 0) {
+    function ()  public {
+        if (address(this).balance > 0) {
             payout();
         } else {
             revert();
@@ -47,7 +47,7 @@ contract DelayedPayment {
         public returns (bool)
     {
         require(getNow() >= lockedUntil);
-        recipient.transfer(this.balance);
+        recipient.transfer(address(this).balance);
         return true;
     }
 

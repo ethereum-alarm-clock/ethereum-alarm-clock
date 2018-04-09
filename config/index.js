@@ -1,5 +1,3 @@
-// const _ = require("lodash")
-// const contract = require("truffle-contract")
 const path = require("path")
 const nconf = require("nconf")
 const Web3 = require("web3")

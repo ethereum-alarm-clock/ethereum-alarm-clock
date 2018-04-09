@@ -14,7 +14,7 @@ const RequestLib = artifacts.require("./RequestLib.sol")
 const RequestMetaLib = artifacts.require("./RequestMetaLib.sol")
 const RequestScheduleLib = artifacts.require("./RequestScheduleLib.sol")
 const SafeMath = artifacts.require("./SafeMath.sol")
-const SchedulerLib = artifacts.require("./SchedulerLib.sol")
+// const SchedulerLib = artifacts.require("./SchedulerLib.sol")
 const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
@@ -57,14 +57,14 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 
       return deployer.deploy(RequestLib, { gas: 3000000 })
     })
-    .then(() => {
-      deployer.link(MathLib, SchedulerLib)
-      deployer.link(PaymentLib, SchedulerLib)
-      deployer.link(RequestLib, SchedulerLib)
-      deployer.link(SafeMath, SchedulerLib)
+    // .then(() => {
+    //   deployer.link(MathLib, SchedulerLib)
+    //   deployer.link(PaymentLib, SchedulerLib)
+    //   deployer.link(RequestLib, SchedulerLib)
+    //   deployer.link(SafeMath, SchedulerLib)
 
-      return deployer.deploy(SchedulerLib, { gas: 500000 })
-    })
+    //   return deployer.deploy(SchedulerLib, { gas: 500000 })
+    // })
     .then(() => {
       deployer.link(ClaimLib, TransactionRequestCore)
       deployer.link(ExecutionLib, TransactionRequestCore)
@@ -90,14 +90,12 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
     .then(() => {
       deployer.link(RequestScheduleLib, BaseScheduler)
       deployer.link(PaymentLib, BaseScheduler)
-      deployer.link(SchedulerLib, BaseScheduler)
       deployer.link(RequestLib, BaseScheduler)
       deployer.link(MathLib, BaseScheduler)
 
       return deployer.deploy(BaseScheduler, { gas: 1500000 })
     })
     .then(() => {
-      deployer.link(SchedulerLib, BlockScheduler)
       deployer.link(RequestScheduleLib, BlockScheduler)
       deployer.link(PaymentLib, BlockScheduler)
       deployer.link(RequestLib, BlockScheduler)
@@ -111,7 +109,6 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
       )
     })
     .then(() => {
-      deployer.link(SchedulerLib, TimestampScheduler)
       deployer.link(RequestScheduleLib, TimestampScheduler)
       deployer.link(PaymentLib, TimestampScheduler)
       deployer.link(RequestLib, TimestampScheduler)
@@ -139,7 +136,6 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         requestMetaLib: RequestMetaLib.address,
         requestScheduleLib: RequestScheduleLib.address,
         safeMath: SafeMath.address,
-        schedulerLib: SchedulerLib.address,
         timestampScheduler: TimestampScheduler.address,
         transactionRequestCore: TransactionRequestCore.address,
         transactionRecorder: TransactionRecorder.address

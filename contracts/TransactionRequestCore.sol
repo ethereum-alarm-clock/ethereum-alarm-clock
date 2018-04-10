@@ -123,4 +123,8 @@ contract TransactionRequestCore is TransactionRequestInterface {
     function sendOwnerEther() public returns (bool) {
         return txnRequest.sendOwnerEther();
     }
+
+    function sendOwnerEther(address recipient) public returns (bool) {
+        return txnRequest.sendOwnerEther(recipient);
+    }
 }

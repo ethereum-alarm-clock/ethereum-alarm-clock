@@ -18,8 +18,8 @@ coverage
 coverage/*
 
 alarm_client/*
-deployed.info
-deployed.json
+contracts.info
+contracts.json
 gas.txt
 notes.txt
 

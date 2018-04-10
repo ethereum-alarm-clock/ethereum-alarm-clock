@@ -659,7 +659,7 @@ library RequestLib {
         return false;
     }
 
-    function canSendOwnerEther(Request storage self) internal constant view returns(bool) {
+    function canSendOwnerEther(Request storage self) internal view returns(bool) {
         return self.meta.isCancelled || self.schedule.isAfterWindow() || self.meta.wasCalled;
     }
 

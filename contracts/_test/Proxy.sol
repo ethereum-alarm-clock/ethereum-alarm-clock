@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "contracts/interface/SchedulerInterface.sol";
-import "contracts/interface/TransactionRequestInterface.sol";
+import "contracts/Interface/SchedulerInterface.sol";
+import "contracts/Interface/TransactionRequestInterface.sol";
 
 contract Proxy {
     SchedulerInterface public scheduler;

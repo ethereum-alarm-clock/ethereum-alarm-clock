@@ -36,7 +36,7 @@ contract("PaymentLib", () => {
     const bounty = new BigNumber(web3.utils.toWei("250", "finney"))
 
     const expectedEndowment = bounty
-      .plus(fee.mul(2))
+      .plus(fee)
       .plus(callGas.mul(gasPrice))
       .plus(gasPrice.mul(180000))
       .plus(callValue)
@@ -63,7 +63,7 @@ contract("PaymentLib", () => {
     const bounty = new BigNumber(web3.utils.toWei("250", "finney"))
 
     const expectedEndowment = bounty
-      .plus(fee.mul(2))
+      .plus(fee)
       .plus(callGas.mul(gasPrice))
       .plus(gasPrice.mul(180000))
       .plus(callValue)

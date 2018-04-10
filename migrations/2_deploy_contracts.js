@@ -35,14 +35,13 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
       return deployer.deploy(ClaimLib, { gas: 250000 })
     })
     .then(() => {
-      deployer.link(ExecutionLib, PaymentLib)
-      deployer.link(MathLib, PaymentLib)
       deployer.link(SafeMath, PaymentLib)
 
       return deployer.deploy(PaymentLib, { gas: 250000 })
     })
     .then(() => {
       deployer.link(SafeMath, RequestScheduleLib)
+
       return deployer.deploy(RequestScheduleLib, { gas: 250000 })
     })
     .then(() => {

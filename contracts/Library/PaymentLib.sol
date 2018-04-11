@@ -1,7 +1,5 @@
 pragma solidity ^0.4.21;
 
-import "contracts/Library/ExecutionLib.sol";
-import "contracts/Library/MathLib.sol";
 import "contracts/zeppelin/SafeMath.sol";
 
 /**
@@ -126,7 +124,7 @@ library PaymentLib {
         public pure returns (uint)
     {
         return _bounty
-            .add(_fee.mul(2))
+            .add(_fee)
             .add(_callGas.mul(_gasPrice))
             .add(_gasOverhead.mul(_gasPrice))
             .add(_callValue);

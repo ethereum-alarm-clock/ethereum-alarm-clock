@@ -19,4 +19,5 @@ contract TransactionRequestInterface {
     function sendFee() public returns (bool);
     function sendBounty() public returns (bool);
     function sendOwnerEther() public returns (bool);
+    function sendOwnerEther(address recipient) public returns (bool);
 }

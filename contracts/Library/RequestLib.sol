@@ -439,7 +439,7 @@ library RequestLib {
         self.paymentData.sendBounty();
 
         // If any ether is left, send it back to the owner of the transaction request.
-        _sendOwnerEther(self);
+        _sendOwnerEther(self, self.meta.owner);
 
         // +-----------------+
         // | End: Accounting |
@@ -659,6 +659,23 @@ library RequestLib {
         return false;
     }
 
+    function canSendOwnerEther(Request storage self) internal view returns(bool) {
+        return self.meta.isCancelled || self.schedule.isAfterWindow() || self.meta.wasCalled;
+    }
+
+    /**
+     * Send owner ether. Wrapper over the real function that performs an extra 
+     * check to see if it's after execution window (and thus the first transaction failed)
+     */
+    function sendOwnerEther(Request storage self, address recipient)
+        public returns (bool)
+    {
+        if(canSendOwnerEther(self) && msg.sender == self.meta.owner) {
+            return _sendOwnerEther(self, recipient);
+        }
+        return false;
+    }
+
     /**
      * Send owner ether. Wrapper over the real function that performs an extra 
      * check to see if it's after execution window (and thus the first transaction failed)
@@ -666,13 +683,13 @@ library RequestLib {
     function sendOwnerEther(Request storage self)
         public returns (bool)
     {
-        if( self.meta.isCancelled || self.schedule.isAfterWindow() ) {
-            return _sendOwnerEther(self);
+        if(canSendOwnerEther(self)) {
+            return _sendOwnerEther(self, self.meta.owner);
         }
         return false;
     }
 
-    function _sendOwnerEther(Request storage self) 
+    function _sendOwnerEther(Request storage self, address recipient) 
         internal returns (bool)
     {
         // Note! This does not do any checks since it is used in the execute function.
@@ -682,6 +699,6 @@ library RequestLib {
             .sub(self.paymentData.bountyOwed)
             .sub(self.paymentData.feeOwed);
         /* solium-disable security/no-send */
-        return self.meta.owner.send(ownerRefund);
+        return recipient.send(ownerRefund);
     }
 }

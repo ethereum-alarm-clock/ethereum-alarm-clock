@@ -18,7 +18,7 @@ const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
-module.exports = (deployer) => {
+module.exports = (deployer, network) => {
   console.log(`${"-".repeat(30)}
 NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
 
@@ -131,17 +131,16 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         transactionRecorder: TransactionRecorder.address
       }
 
-      fs.writeFileSync('contracts.json', JSON.stringify(contracts))
+      if (network) {
+        const contractsFile = `${network}.json`
+        const contractsInfoFile = `${network}.info`
+        fs.writeFileSync(contractsFile, JSON.stringify(contracts))
 
-      if (fs.existsSync('contracts.info')) { fs.unlinkSync('contracts.info') }
+        if (fs.existsSync(contractsInfoFile)) { fs.unlinkSync(contractsInfoFile) }
 
-      Object.keys(contracts).forEach((key) => {
-        fs.appendFileSync('contracts.info', `${key}, ${contracts[key]}\n`)
-      })
-
-      //         console.log(`CONTRACTS SUCCESSFULLY DEPLOYED
-      // ${"-".repeat(30)}
-      // see deployed.info for addresses of all contracts
-      //         `)
+        Object.keys(contracts).forEach((key) => {
+          fs.appendFileSync(contractsInfoFile, `${key}, ${contracts[key]}\n`)
+        })
+      }
     })
 }

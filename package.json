@@ -11,7 +11,8 @@
         "test": "truffle test",
         "coverage": "./node_modules/.bin/solidity-coverage",
         "lint": "./node_modules/eslint/bin/eslint.js .",
-        "solium": "./node_modules/solium/bin/solium.js -d contracts --fix"
+        "solium": "./node_modules/solium/bin/solium.js -d contracts --fix",
+        "clean": "truffle networks --clean"
     },
     "repository": {
         "type": "git",
@@ -43,6 +44,7 @@
         "solidity-coverage": "^0.4.15"
     },
     "pre-commit": [
+        "clean",
         "lint",
         "solium"
     ]

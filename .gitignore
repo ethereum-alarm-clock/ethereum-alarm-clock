@@ -4,7 +4,6 @@
 .genesis.json
 .vscode
 
-./build/
 dist/
 chains/
 nContracts/

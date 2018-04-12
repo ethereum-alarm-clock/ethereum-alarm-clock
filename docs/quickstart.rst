@@ -31,7 +31,6 @@ Block Scheduler and the Timestamp Scheduler.  The function that we are intereste
     function schedule(address   _toAddress,
                       bytes     _callData,
                       uint[8]   _uintArgs)
-        doReset
         public payable returns (address);
 
 
@@ -39,9 +38,7 @@ Block Scheduler and the Timestamp Scheduler.  The function that we are intereste
 including the ``schedule()`` function that we will use in the contract we write. 
 
 function ``schedule`` which will
-return the address of the newly created :class:`TransactionRequest` contract.  We will import this 
-contract into the contract we write so to ensure that our contract will be 
-compliant with the official API of the EAC.
+return the address of the newly created :class:`TransactionRequestInterface` contract.
 
 Now lets write a simple contract that can use the scheduling service.
 
@@ -50,17 +47,15 @@ Now lets write a simple contract that can use the scheduling service.
     :language: solidity 
 
 
-The contract above is designed to lock away whatever ether it is given for
+The contract above is designed to lock away and then send to ``receiver`` whatever ether it is given for
 ``numBlocks`` blocks.  In its constructor, it makes a call to the
 ``schedule`` method on the ``scheduler`` contract.  We would pass in 
 the address of the scheduler we would want to interact with as the first 
 parameter of the constructor.  For instance, if we wanted to use the Block
-Scheduler that is deployed on the Ropsten test net we would use address 
-``0x96363aea9265913afb8a833ba6185a62f089bcef``.  
+Scheduler that is deployed on the Kovan test net we would use address 
+``0x1afc19a7e642761ba2b55d2a45b32c7ef08269d1``.  
 
-The function only takes 3 parameters at deployment, with the 7 parameters 
-being into the schedule function being set by the developer of the smart 
-contract.  The schedule function takes 7 arguments, each of which we will go 
+The schedule function takes 10 arguments, each of which we will go 
 over in order.
 
 
@@ -70,10 +65,13 @@ over in order.
 * ``uint callValue``: The amount of ether (in wei) that will be sent with the transaction.
 * ``uint8 windowSize``: The number of blocks after ``windowSize`` during which the transaction will still be executable.
 * ``uint windowStart``: The first block number that the transaction will be executable.
-* ``uint gasPrice``: The gas price which must be sent by the executing party to execute the transaction.
-* ``uint fee``: The fee amount included in the transaction.
-* ``uint payment``: The payment included in the transaction.
+* ``uint gasPrice``: The gas price (in wei) which must be sent by the executing party to execute the transaction.
+* ``uint fee``: The fee amount (in wei) included in the transaction for protocol maintainers.
+* ``uint bounty``: The payment (in wei)included in the transaction to incentivse the executing arguments
+* ``uint deposit``: (optional) Required amount of ether (in wei) to be staked by executing agents 
 
+The ``0.1 ether`` amount passed as value to ``schedule`` method pays for gas, fee and bounty. The remaining amount of ether
+will be returned automatically to the deployed :class:`DelayedPayment`.
 
 Let's look at the other function on this contract.  For those unfamiliar with solidity,
 the function without a name is known as the fallback function.  The fallback 
@@ -83,8 +81,9 @@ will trigger the fallback function.  In this case, we explicitly pass an empty s
 as the ``callData`` variable so that the scheduled transaction will trigger this 
 function when it is executed.
 
-When the fallback function is executed, if the contract has a balance (which it does 
-since we sent it 2 ether on deployment) it will route the call into the ``payout()`` function.
+In this example we are locking the sent ether in :class:`DelayedPayment` contract and using
+scheduling to trigger the fallback function. When the fallback function is executed,
+it will route the call into the ``payout()`` function.
 The ``payout()`` function will check the current block number and check if it is not 
 below the ``lockedUntil`` time or else it reverts the transaction.  After it 
 checks that the current block number is greater than or equal to the lockedUntil 

@@ -7,4 +7,6 @@ pragma solidity ^0.4.21;
 contract SchedulerInterface {
     function schedule(address _toAddress, bytes _callData, uint[8] _uintArgs)
         public payable returns (address);
+    function computeEndowment(uint _bounty, uint _fee, uint _callGas, uint _callValue, uint _gasPrice)
+        public pure returns (uint);
 }

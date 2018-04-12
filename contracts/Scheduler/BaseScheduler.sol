@@ -53,13 +53,12 @@ contract BaseScheduler is SchedulerInterface {
     {
         RequestFactoryInterface factory = RequestFactoryInterface(factoryAddress);
 
-        uint endowment = PaymentLib.computeEndowment(
+        uint endowment = computeEndowment(
             _uintArgs[6], //bounty
             _uintArgs[5], //fee
             _uintArgs[0], //callGas
             _uintArgs[1], //callValue
-            _uintArgs[4], //gasPrice
-            RequestLib.EXECUTION_GAS_OVERHEAD()
+            _uintArgs[4]  //gasPrice
         );
 
         require(msg.value >= endowment);
@@ -118,5 +117,24 @@ contract BaseScheduler is SchedulerInterface {
         require(newRequest != 0x0);
         emit NewRequest(newRequest);
         return newRequest;
+    }
+
+    function computeEndowment(
+        uint _bounty,
+        uint _fee,
+        uint _callGas,
+        uint _callValue,
+        uint _gasPrice
+    )
+        public pure returns (uint)
+    {
+        return PaymentLib.computeEndowment(
+            _bounty,
+            _fee,
+            _callGas,
+            _callValue,
+            _gasPrice,
+            RequestLib.EXECUTION_GAS_OVERHEAD()
+        )
     }
 }

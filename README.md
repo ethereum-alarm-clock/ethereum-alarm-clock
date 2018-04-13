@@ -53,6 +53,8 @@ can do this by running the command `rm -rf build/`.
 
 Documentation can be found on [Read the Docs](https://ethereum-alarm-clock.readthedocs.io/en/latest/).
 
+We are in progress of migrating the documentation to the [Wiki](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/wiki).
+
 ## Using the CLI
 
 Please see the [`eac.js-cli`](https://github.com/ethereum-alarm-clock/eac.js-cli) repository for the commandline client.

@@ -186,7 +186,7 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
     }
 
     function getBucket(uint windowStart, RequestScheduleLib.TemporalUnit unit)
-        public pure returns(int)
+        public view returns(int)
     {
         uint bucketSize;
         /* since we want to handle both blocks and timestamps

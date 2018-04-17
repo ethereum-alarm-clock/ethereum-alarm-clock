@@ -670,6 +670,7 @@ library RequestLib {
     function sendOwnerEther(Request storage self, address recipient)
         public returns (bool)
     {
+        require(recipient != 0x0);
         if(canSendOwnerEther(self) && msg.sender == self.meta.owner) {
             return _sendOwnerEther(self, recipient);
         }

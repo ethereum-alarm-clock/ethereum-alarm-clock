@@ -37,7 +37,7 @@ contract Proxy {
     }
 
     function sendOwnerEther(address _receipient) public {
-        if (msg.sender == owner) {
+        if (msg.sender == owner && _receipient != 0x0) {
             TransactionRequestInterface(scheduledTransaction).sendOwnerEther(_receipient);
         }   
     }

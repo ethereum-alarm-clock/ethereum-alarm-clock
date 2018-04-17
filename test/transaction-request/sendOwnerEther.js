@@ -81,6 +81,13 @@ contract("TransactionRequestCore", async (accounts) => {
     expect(scheduledTransactionBalance).to.equal(remainingScheduledTransactionBalance)
   })
 
+  it("should fail to send remaining funds to null account", async () => {
+    await proxy.sendOwnerEther('')
+
+    const scheduledTransactionBalance = await getBalance(scheduledTransactionAddress)
+    expect(scheduledTransactionBalance).to.equal(remainingScheduledTransactionBalance)
+  })
+
   it("should succeed to send remaining funds to the account", async () => {
     await proxy.sendOwnerEther(wallet)
 

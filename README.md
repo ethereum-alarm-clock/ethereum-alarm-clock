@@ -30,11 +30,10 @@ under the populus-tests/ directory. However, we have ported over the suite to us
 this may be more familiar to developers who know the Ethereum tooling in Javascript. These tests can be found in 
 the [test/](test) directory.
 
-If you would like to run the test please set up your environment to use node v8.0.0, truffle v4.1.5 and the latest
-ganache-cli.
+If you would like to run the test please set up your environment to use node v8 (lts/carbon), truffle v4.1.5 and the latest ganache-cli.
 
 ```
-nvm use 8.0.0
+nvm use lts/carbon
 npm i
 npm i -g truffle@4.1.5 
 npm i -g ganache-cli

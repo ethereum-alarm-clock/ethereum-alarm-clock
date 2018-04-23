@@ -67,7 +67,7 @@ contract("Request factory", async (accounts) => {
     endowment = transactionRequest.endowment,
     properties,
     to = accounts[2]
-  }) => {
+  } = {}) => {
     const paramsForValidation = await createValidationParams(properties)
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], to],
@@ -178,7 +178,6 @@ contract("Request factory", async (accounts) => {
     // Lastly, we just make sure that the transaction request
     // address is a known request for the factory.
     expect(await requestFactory.isKnownRequest(NULL_ADDR)).to.be.false // sanity check
-
     expect(await requestFactory.isKnownRequest(txRequest.address)).to.be.true
   })
 
@@ -235,5 +234,44 @@ contract("Request factory", async (accounts) => {
 
     expect(isValid[5]).to.be.false
     isValid.slice(0, 5).forEach(bool => expect(bool).to.be.true)
+  })
+
+  it("should not allow to reinitialize the scheduled transaction", async () => {
+    const { paramsForValidation } = await validate()
+
+    const params = paramsForValidation
+    params.push(transactionRequest.gasPrice)
+    params.push(transactionRequest.requiredDeposit)
+
+    // Create a request with the same args we validated
+    const createTx = await requestFactory.createRequest(
+      [
+        accounts[0],
+        accounts[1], // fee recipient
+        accounts[2], // to
+      ],
+      params,
+      transactionRequest.testCallData
+    )
+
+    const logRequestCreated = createTx.logs.find(e => e.event === "RequestCreated")
+    const txRequest = await TransactionRequestCore.at(logRequestCreated.args.request)
+
+    let requestData = await parseRequestData(txRequest)
+    expect(requestData.txData.toAddress).to.equal(accounts[2])
+
+    await txRequest.initialize(
+      [
+        accounts[0],
+        accounts[0],
+        accounts[1], // fee recipient
+        accounts[3], // hijacking recipient
+      ],
+      params,
+      transactionRequest.testCallData
+    ).should.be.rejectedWith("VM Exception while processing transaction: revert")
+
+    requestData = await parseRequestData(txRequest)
+    expect(requestData.txData.toAddress).to.equal(accounts[2])
   })
 })

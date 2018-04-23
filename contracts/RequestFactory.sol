@@ -101,7 +101,6 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
         bool[6] memory isValid = validateRequestParams(
             _addressArgs,
             _uintArgs,
-            _callData,
             msg.value
         );
 
@@ -158,7 +157,6 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
     function validateRequestParams(
         address[3]  _addressArgs,
         uint[12]    _uintArgs,
-        bytes       _callData,
         uint        _endowment
     )
         public view returns (bool[6])
@@ -171,7 +169,6 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
                 _addressArgs[2]   // txnData.toAddress
             ],
             _uintArgs,
-            _callData,
             _endowment
         );
     }

@@ -57,7 +57,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment calculate actual endowment
     )
 
@@ -196,7 +195,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       1 // endowment ATTENTION THIS IS TOO SMALL, HENCE WHY IT FAILS
     )
 
@@ -237,7 +235,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment
     )
 
@@ -280,7 +277,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment
     )
 
@@ -324,7 +320,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment
     )
 
@@ -366,7 +361,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment
     )
 
@@ -413,7 +407,6 @@ contract("Request factory", async (accounts) => {
         callGas,
         callValue,
       ],
-      "this-is-call-data",
       config.web3.utils.toWei("10") // endowment
     )
 

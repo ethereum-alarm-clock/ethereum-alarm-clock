@@ -72,7 +72,6 @@ contract("Request factory", async (accounts) => {
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], to],
       paramsForValidation,
-      transactionRequest.testCallData,
       endowment
     )
 

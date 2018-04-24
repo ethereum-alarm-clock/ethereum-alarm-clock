@@ -73,16 +73,7 @@ contract TransactionRequestCore is TransactionRequestInterface {
     function requestData()
         public view returns (address[6], bool[3], uint[15], uint8[1])
     {
-        if (txnRequest.serialize()) {
-            return (
-                txnRequest.serializedValues.addressValues,
-                txnRequest.serializedValues.boolValues,
-                txnRequest.serializedValues.uintValues,
-                txnRequest.serializedValues.uint8Values
-            );
-        } else {
-            revert();
-        }
+        return txnRequest.serialize();
     }
 
     function callData()

@@ -126,7 +126,7 @@ contract BaseScheduler is SchedulerInterface {
         uint _callValue,
         uint _gasPrice
     )
-        public pure returns (uint)
+        public view returns (uint)
     {
         return PaymentLib.computeEndowment(
             _bounty,
@@ -134,7 +134,7 @@ contract BaseScheduler is SchedulerInterface {
             _callGas,
             _callValue,
             _gasPrice,
-            RequestLib.EXECUTION_GAS_OVERHEAD()
+            RequestLib.getEXECUTION_GAS_OVERHEAD()
         );
     }
 }

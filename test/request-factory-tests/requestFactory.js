@@ -72,7 +72,6 @@ contract("Request factory", async (accounts) => {
     const isValid = await requestLib.validate(
       [accounts[0], accounts[0], accounts[1], to],
       paramsForValidation,
-      transactionRequest.testCallData,
       endowment
     )
 
@@ -186,7 +185,6 @@ contract("Request factory", async (accounts) => {
     const { isValid } = await validate({ endowment: 1 })
 
     expect(isValid[0]).to.be.false
-
     isValid.slice(1).forEach(bool => expect(bool).to.be.true)
   })
 

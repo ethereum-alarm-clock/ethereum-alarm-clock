@@ -62,6 +62,8 @@ Please see the [`eac.js-cli`](https://github.com/ethereum-alarm-clock/eac.js-cli
 
 The EAC contracts are deployed on both the Kovan and Ropsten testnets at the addresses below.
 
+Deployed version is [`0.9.3`](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/releases/tag/0.9.3)
+
 ```
 Kovan
 

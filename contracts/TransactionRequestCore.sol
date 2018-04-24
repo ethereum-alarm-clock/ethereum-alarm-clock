@@ -9,6 +9,7 @@ contract TransactionRequestCore is TransactionRequestInterface {
     using RequestScheduleLib for RequestScheduleLib.ExecutionWindow;
 
     RequestLib.Request txnRequest;
+    bool private initialized = false;
 
     /*
      *  addressArgs[0] - meta.createdBy
@@ -36,7 +37,10 @@ contract TransactionRequestCore is TransactionRequestInterface {
     )
         public payable
     {
+        require(!initialized);
+
         txnRequest.initialize(addressArgs, uintArgs, callData);
+        initialized = true;
     }
 
     /*

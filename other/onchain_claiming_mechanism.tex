@@ -1,0 +1,96 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools}
+\title{The on-chain claiming mechanism economics}
+\author{Piotr Kosiński\\ChronoLogic}
+\begin{document}
+\maketitle
+\section{Introduction}
+This article describes the economic model for on-chain claiming mechanism used by Ethereum Alarm Clock protocol. This mechanism has been implemented to improve the economics of running the TimeNode (executing agent), especially given the network of TimeNodes $n$.
+\section{Claiming mechanism}
+Claiming mechanism can be described as follows:
+For any transaction $Tx$ that has been deployed to the network and is expected to be executed by 1 of $n$ nodes in the network. The process of execution is divided into two steps:
+\textbf{claiming} and \textbf{execution}. Claiming is a process of reserving the transaction for further execution.
+
+\subsection{Claiming}
+\begin{itemize}
+\item can happen before execution
+\item every node has the same chance to successfully claim $Tx$
+\item claiming requires a $Deposit$ to be locked by claimant
+\item $Deposit$ is lost by claimant when execution won't happen within \textit{exclusive execution window}
+\item every node can fail on claiming when $Tx$ was already claimed
+\item claiming requires sending transaction that has cost described as $C_{c}$ when success and $C_{f}$ when failure
+\item payment modifier $P_{mod}(t)=\begin{cases}
+0 & \quad \text{at beginning of claiming window}\\
+1 & \quad \text{at end of claiming window}
+\end{cases}$ 
+\item claiming is optional
+\end{itemize}
+
+\subsection{Execution}
+\begin{itemize}
+\item successful execution has reward described as $TimeBounty$ 
+\item execution cost is reimbursed by the scheduler when successful
+\item execution cost has cost described as $C_{e}$ when not successful
+\item $Deposit$ locked by the claimant can be acquired by a node when the claimant failed to execute
+\end{itemize}
+
+\subsection{Expected payout definition}
+Let's define the expected payout for node as
+\[
+P=P_{s}+P_{f}+P_{nf}
+\]
+where
+\\
+
+$P_{s}$ is expected payout after successful claiming and execution
+\\
+
+$P_{f}$ is expected payout after successful claiming and missed execution
+\\
+
+$P_{nf}$ is expected payout after other node losing the deposit
+\\
+
+\subsubsection{Network with $n=1$ nodes}
+For network of nodes with $n=1$ we can define expected payouts as:
+\[
+P_{s}=P_{mod} \times TimeBounty-C_{C} 
+\]
+\[
+P_{f}=-C_{C}-Deposit
+\]
+\[
+P_{nf}=TimeBounty-C_{C}
+\]
+\subsubsection{Network with $n>1$ nodes}
+For that case the expected reward will be $\frac{TimeBounty}{n}$ assuming that probability of successful claiming is equal for all nodes. Also in case of failing transaction node will pay the $C_{Tx}$
+\[
+P_{s}=\frac{P_{mod} \times TimeBounty-C_{C}}{n} - (n-1) \times C_{Tx}
+\]
+\[
+P_{f}=-C_{C}-Deposit
+\]
+\[
+P_{nf}=\frac{TimeBounty-C_{C}}{n} - (n-1) \times C_{Tx}
+\]
+
+In order to improve the cost of failing transactions let's introduce a mechanism $X$ that prevents sending transaction that expect to fail, the accuracy of mechanism $X$ is defined as $A_{X} \in [0;1]$
+
+\[
+P_{s}(A_{X})=\frac{P_{mod} \times TimeBounty-C_{C}}{n} - (1-A_{X}) \times (n-1) \times C_{Tx}
+\]
+\[
+P_{f}=-C_{C}-Deposit
+\]
+\[
+P_{nf}(A_{X})=\frac{TimeBounty-C_{C}}{n} - (1-A_{X}) \times (n-1) \times C_{Tx}
+\]
+
+The last part is to introduce $P_{ld} \in [0;1]$ as probability of TimeNode loosing the $Deposit$
+
+\[
+P(A_{X}, P_{ld})=P_{s}(A_{X}) \times (1-P_{ld}) + (P_{f}(A_{X})+P_{nf}(A_{X})) \times P_{ld}
+\]
+\section{Simulations}
+\end{document}

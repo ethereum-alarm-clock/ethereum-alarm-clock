@@ -2,12 +2,16 @@
   \usepackage[utf8]{inputenc}
   \usepackage{mathtools}
   \usepackage{listings}
-  \usepackage{verbatimbox}
+  \usepackage{graphicx}
+  \usepackage{url}
   \title{The on-chain claiming mechanism economics}
-  \author{Piotr Kosiński\thanks{Thanks to Vijay Kandy, Piper Merriam}\\ChronoLogic}
-  \date{\today\\Draft}
+  \author{Piotr Kosiński\thanks{Thanks to Vijay Kandy, Piper Merriam, Logan Saether for the contribution.}\\ChronoLogic}
+  \date{\today\\v1.0}
   \begin{document}
   \maketitle
+  \begin{abstract}
+    Running a service like a TimeNode can be profitable for the operators, however, given the many variables that influence its payout,  it's not trivial to estimate the expected profits. The proposed model and simulation code has been created to address that problem.
+  \end{abstract}
   \section{Introduction}
   This article describes the economic model for on-chain claiming mechanism used by the Ethereum Alarm Clock protocol. This mechanism has been implemented in order to improve the economics of running the \textbf{TimeNode}\footnote{TimeNode is an off-chain executing agent that scans the blockchain for new scheduled transactions and attempts the execution}. 
   
@@ -18,6 +22,11 @@
   Claiming mechanism can be described as follows:
   For any transaction $Tx$ that has been deployed to the network and is expected to be executed by 1 of $n$ nodes in the network. The process of execution is divided into two steps:
   \textbf{claiming} and \textbf{execution}. Claiming is a process of reserving the transaction for further execution.
+  \begin{figure}
+    \includegraphics[width=\linewidth]{timeranges.png}
+    \caption{Scheduled transaction life cycle}
+    \label{fig:boat1}
+  \end{figure}
   
   \subsection{Claiming}
   \begin{itemize}
@@ -144,6 +153,7 @@
   
   The variable controlled by the TimeNode operator is $P_{mod}$ which is the major component. Low enough $P_{mod}$ allows TimeNode to claim transaction before others, still, in order to be profitable using low $P_{mod} $, the TimeNode running cost has to be low.     
   
+  The TimeNode market has many characteristics of the perfect competition market\footnote{\url{http://www.economicsonline.co.uk/Business_economics/Perfect_competition.html}}: there is perfect information, no barriers to entry, they deliver the same service, TimeNode are the price takers. Based on that, long-term we may get in the situation where marginal cost is equal average cost. 
   \appendix
   \section{Simulation source code}
   \lstinputlisting[language=R, caption=Siml.R]{onchain_claiming_mechanism.R}

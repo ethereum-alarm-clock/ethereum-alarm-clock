@@ -16,8 +16,8 @@ P_f <- function(C_c, deposit) {
   -C_c - deposit
 }
 
-P_nf <- function(timebounty, C_c, n, A_x, C_tx) {
-  bounty(timebounty, C_c, n) - tx_cost(A_x, n, C_tx)
+P_nf <- function(timebounty, deposit, n, A_x, C_tx) {
+  (timebounty + deposit) / n - tx_cost(A_x, n, C_tx)
 }
 
 outcome <- function(p_ld,
@@ -28,7 +28,7 @@ outcome <- function(p_ld,
                     timebounty,
                     C_c,
                     deposit) {
-  P_s(P_mod, timebounty, C_c, n, A_x, C_tx) * (1 - p_ld) + (P_f(C_c, deposit) + P_nf(timebounty, C_c, n, A_x, C_tx)) * p_ld
+  P_s(P_mod, timebounty, C_c, n, A_x, C_tx) * (1 - p_ld) + (P_f(C_c, deposit) + P_nf(timebounty, deposit, n, A_x, C_tx)) * p_ld
 }
 
 #Normal distrubutions

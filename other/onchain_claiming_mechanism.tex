@@ -6,7 +6,7 @@
   \usepackage{url}
   \title{The on-chain claiming mechanism economics}
   \author{Piotr Kosiński\thanks{Thanks to Vijay Kandy, Piper Merriam, Logan Saether for the contribution.}\\ChronoLogic}
-  \date{\today\\v1.0}
+  \date{\today\\v1.1}
   \begin{document}
   \maketitle
   \begin{abstract}
@@ -88,7 +88,7 @@
   P_{f}=-C_{C}-Deposit
   \]
   \[
-  P_{nf}=\frac{TimeBounty-C_{C}}{n} - (n-1) \times C_{Tx}
+  P_{nf}=\frac{TimeBounty+Deposit}{n} - (n-1) \times C_{Tx}
   \]
   
   In order to improve the cost of failing transactions let's introduce a mechanism $X$ that prevents sending the transaction that will fail, the accuracy of mechanism $X$ is defined as $A_{X} \in [0;1]$
@@ -100,7 +100,7 @@
   P_{f}=-C_{C}-Deposit
   \]
   \[
-  P_{nf}(A_{X})=\frac{TimeBounty-C_{C}}{n} - (1-A_{X}) \times (n-1) \times C_{Tx}
+  P_{nf}(A_{X})=\frac{TimeBounty+Deposit}{n} - (1-A_{X}) \times (n-1) \times C_{Tx}
   \]
   
   The last part is to introduce $P_{ld} \in [0;1]$ as probability of TimeNode loosing the $Deposit$
@@ -134,13 +134,14 @@
   \end{align*}
   Results using these parameters are:
   \begin{verbatim}
-     p_mod      res num_of_tx
-  16  0.75 1164.673       858
-  17  0.80 2442.108       409
-  18  0.85 3957.999       252
-  19  0.90 5381.834       185
-  20  0.95 6967.551       143
-  21  1.00 8388.889       119
+       p_mod       res  tx
+    15  0.70  1428.250 700
+    16  0.75  3178.094 314
+    17  0.80  4450.974 224
+    18  0.85  5951.569 168
+    19  0.90  7394.698 135
+    20  0.95  8980.225 111
+    21  1.00 10402.272  96
   \end{verbatim}
   Results data frame contains 3 columns:
   \begin{itemize}

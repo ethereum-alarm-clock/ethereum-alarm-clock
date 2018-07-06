@@ -56,7 +56,7 @@ We are in progress of migrating the documentation to the [Wiki](https://github.c
 
 ## Using the CLI
 
-Please see the [`eac.js-cli`](https://github.com/ethereum-alarm-clock/eac.js-cli) repository for the commandline client.
+Please see the [`cli`](https://github.com/ethereum-alarm-clock/cli) repository for the commandline client.
 
 ## Deployment
 

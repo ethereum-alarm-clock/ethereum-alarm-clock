@@ -58,7 +58,7 @@ contract("Delayed payment", (accounts) => {
 
     const scheduledPaymentBalance = await getBalance(await payment.payment())
     expect(scheduledPaymentBalance).to.equals(0, "scheduledPaymentBalance should be 0")
-    
+
     const paymentContractBalance = await getBalance(payment.address)
     expect(paymentContractBalance).to.equals(0, "paymentContractBalance should be 0")
   })

@@ -26,12 +26,13 @@
     },
     "homepage": "https://github.com/chronologic/ethereum-alarm-clock#readme",
     "dependencies": {
-        "@optionality.io/clone-factory": "^0.1.2",
+        "@optionality.io/clone-factory": "0.1.6",
         "ethereumjs-util": "^5.1.2",
         "nconf": "^0.8.4",
         "solc": "^0.4.21",
         "solium": "^1.1.6",
-        "web3": "^1.0.0-beta.18"
+        "web3": "^1.0.0-beta.18",
+        "websocket": "^1.0.26"
     },
     "devDependencies": {
         "@digix/tempo": "^0.2.0",

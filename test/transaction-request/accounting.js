@@ -387,6 +387,91 @@ contract("Test accounting", async (accounts) => {
     expect(requestData.claimData.claimedBy).to.equal(NULL_ADDRESS)
   })
 
+  it("tests that only the set gasPrice is returned to executor, not the tx.gasprice", async () => {
+    const curBlock = await config.web3.eth.getBlock("latest")
+    const { timestamp } = curBlock
+
+    const windowStart = timestamp + DAY
+
+    // / Make a transactionRequest
+    const txRequest = await TransactionRequestCore.new()
+    await txRequest.initialize(
+      [
+        accounts[0], // createdBy
+        accounts[0], // owner
+        feeRecipient, // fee recipient
+        txRecorder.address, // toAddress
+      ],
+      [
+        fee, // fee
+        bounty, // bounty
+        claimWindowSize,
+        freezePeriod,
+        reservedWindowSize,
+        2, // temporalUnit
+        executionWindow,
+        windowStart,
+        2000000, // callGas
+        0, // callValue
+        gasPrice,
+        requiredDeposit,
+      ],
+      "some-call-data-goes-here",
+      { value: config.web3.utils.toWei("1") }
+    )
+    expect(txRequest.address).to.exist
+
+    const requestData = await RequestData.from(txRequest)
+
+    expect(requestData.paymentData.fee).to.equal(fee)
+
+    expect(requestData.paymentData.bounty).to.equal(bounty)
+
+    const beforeFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
+    const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
+
+    await waitUntilBlock(
+      requestData.schedule.windowStart -
+        (await config.web3.eth.getBlock("latest")).timestamp,
+      1
+    )
+
+    const moreThanRequired = parseInt(gasPrice, 10) + parseInt(config.web3.utils.toWei("10", "gwei"), 10);
+
+    const executeTx = await txRequest.execute({
+      from: accounts[1],
+      gas: 3000000,
+      gasPrice: moreThanRequired,
+    })
+    expect(executeTx.receipt).to.exist
+
+    const afterFeeBal = await config.web3.eth.getBalance(requestData.paymentData.feeRecipient)
+    const afterBountyBal = await config.web3.eth.getBalance(accounts[1])
+
+    const Executed = executeTx.logs.find(e => e.event === "Executed")
+    const feeAmt = Executed.args.fee.toNumber()
+    const bountyAmt = Executed.args.bounty.toNumber()
+
+    expect(feeAmt).to.equal(fee)
+
+    expect(toBN(afterFeeBal)
+      .sub(toBN(beforeFeeBal))
+      .toNumber()).to.equal(feeAmt)
+
+    const { gasUsed } = executeTx.receipt
+    const gasCost = parseInt(gasUsed, 10) * moreThanRequired
+    const gasReimbursement = (parseInt(gasUsed, 10) * gasPrice)
+
+    const expectedBounty = gasReimbursement + requestData.paymentData.bounty
+
+    expect(bountyAmt).to.be.above(expectedBounty)
+
+    expect(bountyAmt - expectedBounty).to.be.below(120000 * gasPrice)
+
+    expect(toBN(afterBountyBal).sub(toBN(beforeBountyBal)).toNumber())
+      .to.equal(bountyAmt - gasCost - 1)
+  })
+
   it("tests claim deposit returned even if returning it throws", async () => {
     // TODO
   })

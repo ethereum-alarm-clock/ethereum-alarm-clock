@@ -32,7 +32,7 @@ library RequestLib {
         AfterCallWindow,    //3
         ReservedForClaimer, //4
         InsufficientGas,    //5
-        MismatchGasPrice    //6
+        TooLowGasPrice    //6
     }
 
     event Aborted(uint8 reason);
@@ -252,6 +252,7 @@ library RequestLib {
          *         - throw (should be impossible)
          *  
          *  6. gasleft() == callGas
+         *  7. tx.gasprice >= txnData.gasPrice
          *
          *  +--------------------+
          *  | Phase 2: Execution |
@@ -297,8 +298,8 @@ library RequestLib {
         } else if (self.claimData.isClaimed() && msg.sender != self.claimData.claimedBy && self.schedule.inReservedWindow()) {
             emit Aborted(uint8(AbortReason.ReservedForClaimer));
             return false;
-        } else if (self.txnData.gasPrice != tx.gasprice) {
-            emit Aborted(uint8(AbortReason.MismatchGasPrice));
+        } else if (self.txnData.gasPrice > tx.gasprice) {
+            emit Aborted(uint8(AbortReason.TooLowGasPrice));
             return false;
         }
 
@@ -366,7 +367,7 @@ library RequestLib {
 
         // Add the gas reimbursment amount to the bounty.
         self.paymentData.bountyOwed = measuredGasConsumption
-            .mul(tx.gasprice)
+            .mul(self.txnData.gasPrice)
             .add(self.paymentData.bountyOwed);
 
         // Log the bounty and fee. Otherwise it is non-trivial to figure

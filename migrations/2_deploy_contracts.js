@@ -131,7 +131,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
         transactionRecorder: TransactionRecorder.address
       }
 
-      if (network) {
+      if (network && network !== "development") {
         const contractsFile = `${network}.json`
         const contractsInfoFile = `${network}.info`
         fs.writeFileSync(contractsFile, JSON.stringify(contracts))

@@ -80,7 +80,7 @@ contract("Execution", async (accounts) => {
   })
 
   // / 2
-  it("cannot execute if transaction gasPrice != txnData.gasPrice", async () => {
+  it("cannot execute if transaction gasPrice < txnData.gasPrice", async () => {
     const requestData = await RequestData.from(txRequest)
 
     expect(requestData.schedule.windowStart).to.be.above(await config.web3.eth.getBlockNumber())
@@ -91,7 +91,7 @@ contract("Execution", async (accounts) => {
     const failedExecuteTx = await txRequest.execute({
       from: accounts[5],
       gas: 3000000,
-      gasPrice: config.web3.utils.toWei("88", "gwei"),
+      gasPrice: config.web3.utils.toWei("65", "gwei"),
     })
 
     expect(await txRecorder.wasCalled()).to.be.false
@@ -100,7 +100,7 @@ contract("Execution", async (accounts) => {
 
     expect(wasAborted(failedExecuteTx)).to.be.true
 
-    expect(parseAbortData(failedExecuteTx).find(reason => reason === "MismatchGasPrice")).to.exist
+    expect(parseAbortData(failedExecuteTx).find(reason => reason === "TooLowGasPrice")).to.exist
   })
 
   // 3

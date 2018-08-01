@@ -22,7 +22,7 @@ library ExecutionLib {
         internal returns (bool)
     {
         /// Should never actually reach this require check, but here in case.
-        require(self.gasPrice == tx.gasprice);
+        require(self.gasPrice <= tx.gasprice);
         /* solium-disable security/no-call-value */
         return self.toAddress.call.value(self.callValue).gas(self.callGas)(self.callData);
     }

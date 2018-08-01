@@ -11,6 +11,7 @@
         "test": "truffle test",
         "coverage": "./node_modules/.bin/solidity-coverage",
         "lint": "./node_modules/eslint/bin/eslint.js .",
+        "lint-fix": "./node_modules/eslint/bin/eslint.js . --fix",
         "solium": "./node_modules/solium/bin/solium.js -d contracts --fix",
         "clean": "truffle networks --clean"
     },

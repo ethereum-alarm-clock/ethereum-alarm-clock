@@ -13,7 +13,7 @@ const parseAbortData = (executeTx) => {
     "AfterCallWindow", // 3
     "ReservedForClaimer", // 4
     "InsufficientGas", // 5
-    "MismatchGasPrice", // 6
+    "TooLowGasPrice", // 6
   ]
 
   const abortedLogs = executeTx.logs.filter(e => e.event === "Aborted")

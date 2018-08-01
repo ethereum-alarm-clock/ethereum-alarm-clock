@@ -28,7 +28,7 @@
     "dependencies": {
         "@optionality.io/clone-factory": "0.1.6",
         "ethereumjs-util": "^5.1.2",
-        "nconf": "^0.8.4",
+        "nconf": "^0.10.0",
         "solc": "^0.4.21",
         "solium": "^1.1.6",
         "web3": "^1.0.0-beta.18",
@@ -36,14 +36,14 @@
     },
     "devDependencies": {
         "@digix/tempo": "^0.2.0",
-        "bignumber.js": "^4.1.0",
+        "bignumber.js": "^7.2.1",
         "chai": "^4.1.2",
         "chai-as-promised": "^7.1.1",
         "coveralls": "^3.0.0",
-        "eslint": "^4.16.0",
-        "eslint-config-airbnb-base": "^12.1.0",
+        "eslint": "^5.2.0",
+        "eslint-config-airbnb-base": "^13.0.0",
         "eslint-plugin-import": "^2.8.0",
-        "solidity-coverage": "^0.4.15"
+        "solidity-coverage": "^0.5.5"
     },
     "pre-commit": [
         "clean",

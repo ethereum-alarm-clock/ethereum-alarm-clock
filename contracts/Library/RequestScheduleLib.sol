@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/zeppelin/SafeMath.sol";
 
@@ -175,7 +175,7 @@ library RequestScheduleLib {
     }
 
     /*
-     *  Helper: Returns boolean if we are before the freeze period.
+     *  Helper: Returns boolean if we are before the claim window.
      */
     function isBeforeClaimWindow(ExecutionWindow storage self)
         internal view returns (bool)

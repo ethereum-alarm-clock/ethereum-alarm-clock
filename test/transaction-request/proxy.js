@@ -7,10 +7,11 @@ const { expect } = require("chai")
 const SimpleToken = artifacts.require("./SimpleToken.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
-const config = require("../../config")
-const ethUtil = require("ethereumjs-util")
-const { RequestData, wasAborted } = require("../dataHelpers.js")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
+
+const ethUtil = require("ethereumjs-util")
+const config = require("../../config")
+const { RequestData, wasAborted } = require("../dataHelpers.js")
 const simpleTokenAbi = require("./SimpleToken.json").abi
 
 contract("TransactionRequestCore proxy function", (accounts) => {
@@ -55,8 +56,9 @@ contract("TransactionRequestCore proxy function", (accounts) => {
 
     const requestData = await RequestData.from(txRequest)
 
-    const duringExecutionWindow =
-      (requestData.schedule.windowStart + requestData.schedule.windowSize) - 2
+    const duringExecutionWindow = (
+      requestData.schedule.windowStart + requestData.schedule.windowSize
+    ) - 2
 
     await waitUntilBlock(0, duringExecutionWindow)
 
@@ -65,8 +67,9 @@ contract("TransactionRequestCore proxy function", (accounts) => {
       .proxy(accounts[7], testData32)
       .should.be.rejectedWith("VM Exception while processing transaction: revert")
 
-    const afterExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 1
+    const afterExecutionWindow = (
+      requestData.schedule.windowStart + requestData.schedule.windowSize
+    ) + 1
 
     await waitUntilBlock(0, afterExecutionWindow)
 
@@ -129,8 +132,9 @@ contract("TransactionRequestCore proxy function", (accounts) => {
     const balance = (await tokenContract.balanceOf(txRequest.address)).toNumber()
     expect(balance).to.equal(12345 * 30) // callValue * rate
 
-    const afterExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 2
+    const afterExecutionWindow = (
+      requestData.schedule.windowStart + requestData.schedule.windowSize
+    ) + 2
 
     await waitUntilBlock(0, afterExecutionWindow)
 

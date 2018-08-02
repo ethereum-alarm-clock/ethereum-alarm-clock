@@ -8,10 +8,11 @@ const { expect } = require("chai")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, wasAborted } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("claim deposit", async (accounts) => {
   let txRecorder
@@ -66,10 +67,9 @@ contract("claim deposit", async (accounts) => {
   it("tests claim deposit CAN be refunded if after execution window and was not executed", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -94,8 +94,7 @@ contract("claim deposit", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.false
 
     // Now we wait until after the execution period to cancel.
-    const cancelAt =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 10
+    const cancelAt = requestData.schedule.windowStart + requestData.schedule.windowSize + 10
 
     await waitUntilBlock(0, cancelAt)
 
@@ -116,10 +115,9 @@ contract("claim deposit", async (accounts) => {
   it("tests claim deposit CAN be refunded if after execution window and was not executed", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -144,8 +142,7 @@ contract("claim deposit", async (accounts) => {
     expect(requestData.meta.isCancelled).to.be.false
 
     // Now we wait until after the execution period to cancel.
-    const refundAt =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 10
+    const refundAt = requestData.schedule.windowStart + requestData.schedule.windowSize + 10
 
     await waitUntilBlock(0, refundAt)
 
@@ -175,10 +172,9 @@ contract("claim deposit", async (accounts) => {
   it("tests claim deposit CANNOT be refunded if executed", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -201,8 +197,7 @@ contract("claim deposit", async (accounts) => {
     expect(parseInt(balBeforeClaim, 10)).to.be.above(parseInt(balAfterClaim, 10))
 
     // Now we execute from a different account
-    const executeAt =
-      requestData.schedule.windowStart + requestData.schedule.reservedWindowSize
+    const executeAt = requestData.schedule.windowStart + requestData.schedule.reservedWindowSize
 
     await waitUntilBlock(0, executeAt)
 
@@ -238,10 +233,9 @@ contract("claim deposit", async (accounts) => {
   it("tests claim deposit CANNOT be refunded if before or during execution window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above(await config.web3.eth.getBlockNumber())
 

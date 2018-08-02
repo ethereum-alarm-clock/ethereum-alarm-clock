@@ -4,17 +4,17 @@ require("chai")
 
 const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
 const TimestampScheduler = artifacts.require("./TimestampScheduler.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
-// / Brings in config.web3 (v1.0.0)
+const ethUtil = require("ethereumjs-util")
+
+// Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, computeEndowment } = require("../dataHelpers.js")
-
-const ethUtil = require("ethereumjs-util")
 
 contract("Timestamp scheduling", (accounts) => {
   const MINUTE = 60 // seconds

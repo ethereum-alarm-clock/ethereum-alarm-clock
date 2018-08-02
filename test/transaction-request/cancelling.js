@@ -7,13 +7,14 @@ const { expect } = require("chai")
 // Contracts
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const {
   RequestData,
   parseRequestData,
 } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Cancelling", async (accounts) => {
   const Owner = accounts[0]
@@ -69,8 +70,7 @@ contract("Cancelling", async (accounts) => {
   it("tests CAN cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 3
+    const cancelAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 3
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -92,11 +92,10 @@ contract("Cancelling", async (accounts) => {
   it("tests non-owner CANNOT cancel before the claim window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize -
-      3
+    const cancelAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
+      - 3
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -129,8 +128,7 @@ contract("Cancelling", async (accounts) => {
   it("tests CAN cancel during claim window when unclaimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
+    const cancelAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -150,8 +148,7 @@ contract("Cancelling", async (accounts) => {
   it("tests CANNOT be cancelled if claimed and before the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
+    const cancelAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
     const claimAt = cancelAt - 5
 
     await waitUntilBlock(0, claimAt)
@@ -182,8 +179,7 @@ contract("Cancelling", async (accounts) => {
   it("tests CANNOT cancel during the freeze window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod
+    const cancelAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -229,8 +225,7 @@ contract("Cancelling", async (accounts) => {
 
     const executeAt = requestData.schedule.windowStart
     const cancelFirst = requestData.schedule.windowStart + 10
-    const cancelSecond =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 5
+    const cancelSecond = requestData.schedule.windowStart + requestData.schedule.windowSize + 5
 
     expect(executeAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -279,10 +274,8 @@ contract("Cancelling", async (accounts) => {
   it("tests CANNOT cancel if already cancelled", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const cancelFirst =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
-    const cancelSecond =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 10
+    const cancelFirst = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 20
+    const cancelSecond = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 10
 
     expect(cancelFirst).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -313,8 +306,7 @@ contract("Cancelling", async (accounts) => {
   it("tests cancellable if call is missed", async () => {
     const requestData = await parseRequestData(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart + requestData.schedule.windowSize + 10
+    const cancelAt = requestData.schedule.windowStart + requestData.schedule.windowSize + 10
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 
@@ -333,8 +325,7 @@ contract("Cancelling", async (accounts) => {
   it("tests accounting for pre-execution cancellation", async () => {
     const requestData = await parseRequestData(txRequest)
 
-    const cancelAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 3
+    const cancelAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 3
 
     expect(cancelAt).to.be.above(await config.web3.eth.getBlockNumber())
 

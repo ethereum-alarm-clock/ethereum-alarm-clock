@@ -4,8 +4,9 @@ require("chai")
 
 const { expect } = require("chai")
 
-const config = require("../../config")
 const { waitUntilBlock } = require("@digix/tempo")(web3)
+
+const config = require("../../config")
 
 const BlockScheduler = artifacts.require("./BlockScheduler.sol")
 const RequestFactory = artifacts.require("./RequestFactory.sol")

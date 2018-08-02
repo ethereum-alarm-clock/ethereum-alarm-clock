@@ -10,8 +10,8 @@ const RequestLib = artifacts.require("./RequestLib.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 // Brings in config.web3 (v1.0.0)
-const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
+const config = require("../../config")
 const { parseRequestData, calculateBlockBucket } = require("../dataHelpers.js")
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"

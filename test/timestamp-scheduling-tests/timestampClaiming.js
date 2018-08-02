@@ -8,10 +8,11 @@ const { expect } = require("chai")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Brings in config.web3
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const NULL_ADDR = "0x0000000000000000000000000000000000000000"
 
@@ -73,17 +74,16 @@ contract("Timestamp claiming", async (accounts) => {
   it("cannot claim before first claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
     await waitUntilBlock(
-      firstClaimStamp -
-        (await config.web3.eth.getBlock("latest")).timestamp -
-        3, // because these tests take a bit to run we need a 3 second buffer
+      firstClaimStamp
+        - (await config.web3.eth.getBlock("latest")).timestamp
+        - 3, // because these tests take a bit to run we need a 3 second buffer
       1
     )
 
@@ -101,10 +101,9 @@ contract("Timestamp claiming", async (accounts) => {
   it("can claim at the first claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -126,8 +125,7 @@ contract("Timestamp claiming", async (accounts) => {
   it("can claim at the last claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const lastClaimStamp =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod
+    const lastClaimStamp = requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
     expect(lastClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -150,8 +148,7 @@ contract("Timestamp claiming", async (accounts) => {
   it("can not claim after the last claim stamp", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const lastClaimStamp =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod
+    const lastClaimStamp = requestData.schedule.windowStart - requestData.schedule.freezePeriod
 
     expect(lastClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -172,10 +169,9 @@ contract("Timestamp claiming", async (accounts) => {
   it("should execute a claimed timestamp request", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -195,8 +191,8 @@ contract("Timestamp claiming", async (accounts) => {
     expect(requestData.claimData.claimedBy).to.equal(accounts[1])
 
     await waitUntilBlock(
-      requestData.schedule.windowStart -
-        (await config.web3.eth.getBlock("latest")).timestamp,
+      requestData.schedule.windowStart
+        - (await config.web3.eth.getBlock("latest")).timestamp,
       0
     )
 
@@ -216,10 +212,9 @@ contract("Timestamp claiming", async (accounts) => {
   it("should execute a claimed call after reserve window", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -239,8 +234,8 @@ contract("Timestamp claiming", async (accounts) => {
     expect(requestData.claimData.claimedBy).to.equal(accounts[1])
 
     const currentTimestamp = (await config.web3.eth.getBlock("latest")).timestamp
-    await waitUntilBlock((requestData.schedule.windowStart - currentTimestamp) +
-      requestData.schedule.reservedWindowSize, 1)
+    await waitUntilBlock((requestData.schedule.windowStart - currentTimestamp)
+      + requestData.schedule.reservedWindowSize, 1)
 
     await txRequest.execute({
       from: accounts[1],
@@ -256,11 +251,10 @@ contract("Timestamp claiming", async (accounts) => {
   it("tests claim timestamp to determine the payment modifier", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      (requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize) +
-      Math.floor((requestData.schedule.claimWindowSize * 2) / 3)
+    const claimAt = (requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize)
+      + Math.floor((requestData.schedule.claimWindowSize * 2) / 3)
 
     expect(requestData.claimData.paymentModifier).to.equal(0)
 
@@ -288,10 +282,9 @@ contract("Timestamp claiming", async (accounts) => {
   it("CANNOT claim if already claimed", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -330,10 +323,9 @@ contract("Timestamp claiming", async (accounts) => {
   it("CANNOT claim if supplied with insufficient claim deposit", async () => {
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(firstClaimStamp).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 

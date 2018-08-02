@@ -8,10 +8,11 @@ const { expect } = require("chai")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Test already executed", async (accounts) => {
   it("rejects execution if already executed", async () => {

@@ -7,9 +7,10 @@ const { expect } = require("chai")
 // Contracts
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 const { parseRequestData } = require("../dataHelpers.js")
 
 contract("Exceptions", async (accounts) => {

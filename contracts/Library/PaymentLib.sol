@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/zeppelin/SafeMath.sol";
 
@@ -132,8 +132,8 @@ library PaymentLib {
 
     /*
      * Validation: ensure that the request endowment is sufficient to cover.
-     * - bounty * maxMultiplier
-     * - fee * maxMultiplier
+     * - bounty
+     * - fee
      * - gasReimbursment
      * - callValue
      */

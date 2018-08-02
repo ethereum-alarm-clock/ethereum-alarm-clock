@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/Interface/SchedulerInterface.sol";
 
@@ -15,7 +15,7 @@ contract DelayedPayment {
     uint value;
     uint twentyGwei = 20000000000 wei;
 
-    function DelayedPayment(
+    constructor(
         address _scheduler,
         uint    _numBlocks,
         address _recipient,

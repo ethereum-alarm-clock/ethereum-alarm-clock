@@ -9,10 +9,11 @@ const RequestLib = artifacts.require("./RequestLib.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Tests execution gas requirements", async (accounts) => {
   const gasPrice = config.web3.utils.toWei("34", "gwei")
@@ -75,12 +76,10 @@ contract("Tests execution gas requirements", async (accounts) => {
 
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
-    const minCallGas =
-      requestData.txData.callGas +
-      (await requestLib.EXECUTION_GAS_OVERHEAD()).toNumber()
+    const minCallGas = requestData.txData.callGas
+      + (await requestLib.EXECUTION_GAS_OVERHEAD()).toNumber()
 
-    const tooLowCallGas =
-      minCallGas - (await requestLib.PRE_EXECUTION_GAS()).toNumber()
+    const tooLowCallGas = minCallGas - (await requestLib.PRE_EXECUTION_GAS()).toNumber()
 
     const executeTx = await txRequest.execute({
       gas: tooLowCallGas,
@@ -102,9 +101,8 @@ contract("Tests execution gas requirements", async (accounts) => {
 
     await waitUntilBlock(0, requestData.schedule.windowStart)
 
-    const minCallGas =
-      requestData.txData.callGas +
-      (await requestLib.EXECUTION_GAS_OVERHEAD()).toNumber()
+    const minCallGas = requestData.txData.callGas
+      + (await requestLib.EXECUTION_GAS_OVERHEAD()).toNumber()
 
     const executeTx = await txRequest.execute({
       gas: minCallGas,

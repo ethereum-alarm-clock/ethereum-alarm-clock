@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 contract RequestFactoryInterface {
     event RequestCreated(address request, address indexed owner, int indexed bucket, uint[12] params);

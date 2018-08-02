@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/Interface/RequestFactoryInterface.sol";
 import "contracts/TransactionRequestCore.sol";
@@ -19,7 +19,7 @@ contract RequestFactory is RequestFactoryInterface, CloneFactory {
     uint constant public BLOCKS_BUCKET_SIZE = 240; //~1h
     uint constant public TIMESTAMP_BUCKET_SIZE = 3600; //1h
 
-    function RequestFactory(
+    constructor(
         address _transactionRequestCore
     ) 
         public 

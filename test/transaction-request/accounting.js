@@ -8,10 +8,11 @@ const { expect } = require("chai")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const { toBN } = config.web3.utils
 
@@ -93,8 +94,8 @@ contract("Test accounting", async (accounts) => {
     const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     await waitUntilBlock(
-      requestData.schedule.windowStart -
-        (await config.web3.eth.getBlock("latest")).timestamp,
+      requestData.schedule.windowStart
+        - (await config.web3.eth.getBlock("latest")).timestamp,
       1
     )
 
@@ -170,10 +171,9 @@ contract("Test accounting", async (accounts) => {
 
     const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -207,8 +207,8 @@ contract("Test accounting", async (accounts) => {
     expect(requestData.claimData.claimedBy).to.equal(accounts[1])
 
     await waitUntilBlock(
-      requestData.schedule.windowStart -
-        (await config.web3.eth.getBlock("latest")).timestamp,
+      requestData.schedule.windowStart
+        - (await config.web3.eth.getBlock("latest")).timestamp,
       1
     )
 
@@ -229,10 +229,9 @@ contract("Test accounting", async (accounts) => {
     const executeGasUsed = executeTx.receipt.gasUsed
     const executeGasCost = executeGasUsed * gasPrice
 
-    const expectedBounty =
-      parseInt(claimDeposit, 10) +
-      executeGasCost +
-      Math.floor((requestData.claimData.paymentModifier * requestData.paymentData.bounty) / 100)
+    const expectedBounty = parseInt(claimDeposit, 10)
+      + executeGasCost
+      + Math.floor((requestData.claimData.paymentModifier * requestData.paymentData.bounty) / 100)
 
     expect(bountyAmt).to.be.at.least(expectedBounty)
 
@@ -241,8 +240,7 @@ contract("Test accounting", async (accounts) => {
     const diff = toBN(afterBountyBal)
       .sub(toBN(beforeBountyBal))
       .toNumber()
-    const expectedDiff =
-      bountyAmt - claimDeposit - executeGasCost - claimGasCost
+    const expectedDiff = bountyAmt - claimDeposit - executeGasCost - claimGasCost
     if (diff === expectedDiff) expect(diff).to.equal(expectedDiff)
     // else console.log(diff, expectedDiff)
   })
@@ -286,10 +284,9 @@ contract("Test accounting", async (accounts) => {
 
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const claimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
     expect(claimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -351,11 +348,10 @@ contract("Test accounting", async (accounts) => {
 
     const requestData = await RequestData.from(txRequest)
 
-    const tryClaimAt =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize -
-      200
+    const tryClaimAt = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
+      - 200
 
     expect(tryClaimAt).to.be.above((await config.web3.eth.getBlock("latest")).timestamp)
 
@@ -431,8 +427,8 @@ contract("Test accounting", async (accounts) => {
     const beforeBountyBal = await config.web3.eth.getBalance(accounts[1])
 
     await waitUntilBlock(
-      requestData.schedule.windowStart -
-        (await config.web3.eth.getBlock("latest")).timestamp,
+      requestData.schedule.windowStart
+        - (await config.web3.eth.getBlock("latest")).timestamp,
       1
     )
 

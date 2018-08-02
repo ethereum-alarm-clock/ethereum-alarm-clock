@@ -11,11 +11,11 @@ const RequestFactory = artifacts.require("./RequestFactory.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const ethUtil = require("ethereumjs-util")
+
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, computeEndowment } = require("../dataHelpers.js")
-
-const ethUtil = require("ethereumjs-util")
 
 contract("Block scheduling", (accounts) => {
   const Owner = accounts[0]

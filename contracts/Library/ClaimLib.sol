@@ -1,9 +1,6 @@
-pragma solidity ^0.4.21;
-
-import "contracts/zeppelin/SafeMath.sol";
+pragma solidity 0.4.24;
 
 library ClaimLib {
-    using SafeMath for uint;
 
     struct ClaimData {
         address claimedBy;          // The address that has claimed the txRequest.
@@ -27,6 +24,7 @@ library ClaimLib {
         self.claimedBy = msg.sender;
         self.claimDeposit = msg.value;
         self.paymentModifier = _paymentModifier;
+        return true;
     }
 
     /*

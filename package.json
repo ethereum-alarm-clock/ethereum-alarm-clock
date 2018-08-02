@@ -19,31 +19,38 @@
         "type": "git",
         "url": "git+https://github.com/chronologic/ethereum-alarm-clock.git"
     },
-    "author": "",
-    "license": "ISC",
+    "author": "Piper Merriam",
+    "contributors": [
+        "Lsaether",
+        "Piotr Kosinski",
+        "Daniel Kmak",
+        "Joseph Bagaric",
+        "Adibas03"
+    ],
+    "license": "MIT",
     "bugs": {
         "url": "https://github.com/chronologic/ethereum-alarm-clock/issues"
     },
     "homepage": "https://github.com/chronologic/ethereum-alarm-clock#readme",
     "dependencies": {
         "@optionality.io/clone-factory": "0.1.6",
-        "ethereumjs-util": "^5.1.2",
-        "nconf": "^0.10.0",
-        "solc": "^0.4.21",
-        "solium": "^1.1.6",
-        "web3": "^1.0.0-beta.18",
-        "websocket": "^1.0.26"
+        "ethereumjs-util": "5.2.0",
+        "nconf": "0.8.5",
+        "solc": "0.4.24",
+        "solium": "1.1.8",
+        "web3": "1.0.0-beta.35",
+        "websocket": "1.0.26"
     },
     "devDependencies": {
-        "@digix/tempo": "^0.2.0",
-        "bignumber.js": "^7.2.1",
-        "chai": "^4.1.2",
-        "chai-as-promised": "^7.1.1",
-        "coveralls": "^3.0.0",
-        "eslint": "^5.2.0",
-        "eslint-config-airbnb-base": "^13.0.0",
-        "eslint-plugin-import": "^2.8.0",
-        "solidity-coverage": "^0.5.5"
+        "@digix/tempo": "0.2.0",
+        "bignumber.js": "4.1.0",
+        "chai": "4.1.2",
+        "chai-as-promised": "7.1.1",
+        "coveralls": "3.0.2",
+        "eslint": "5.2.0",
+        "eslint-config-airbnb-base": "13.0.0",
+        "eslint-plugin-import": "2.13.0",
+        "solidity-coverage": "0.5.5"
     },
     "pre-commit": [
         "clean",

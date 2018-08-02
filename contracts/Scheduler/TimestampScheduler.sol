@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/Library/RequestScheduleLib.sol";
 import "contracts/Scheduler/BaseScheduler.sol";
@@ -13,13 +13,13 @@ contract TimestampScheduler is BaseScheduler {
      * @dev Constructor
      * @param _factoryAddress Address of the RequestFactory which creates requests for this scheduler.
      */
-    function TimestampScheduler(address _factoryAddress, address _feeRecipient) public {
+    constructor(address _factoryAddress, address _feeRecipient) public {
         require(_factoryAddress != 0x0);
 
         // Default temporal unit is timestamp.
         temporalUnit = RequestScheduleLib.TemporalUnit.Timestamp;
 
-        // Sets the factoryAddress variable found in SchedulerInterface contract.
+        // Sets the factoryAddress variable found in BaseScheduler contract.
         factoryAddress = _factoryAddress;
 
         // Sets the fee recipient for these schedulers.

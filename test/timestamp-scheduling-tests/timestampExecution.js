@@ -8,6 +8,8 @@ const { expect } = require("chai")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
 const config = require("../../config")
 const {
@@ -16,7 +18,6 @@ const {
   parseAbortData,
   wasAborted,
 } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
@@ -76,13 +77,12 @@ contract("Timestamp execution", async (accounts) => {
 
     const requestData = await RequestData.from(txRequest)
 
-    const firstClaimStamp =
-      requestData.schedule.windowStart -
-      requestData.schedule.freezePeriod -
-      requestData.schedule.claimWindowSize
+    const firstClaimStamp = requestData.schedule.windowStart
+      - requestData.schedule.freezePeriod
+      - requestData.schedule.claimWindowSize
 
-    const secondsToWait = firstClaimStamp -
-      (await config.web3.eth.getBlock("latest")).timestamp
+    const secondsToWait = firstClaimStamp
+      - (await config.web3.eth.getBlock("latest")).timestamp
 
     await waitUntilBlock(
       secondsToWait,
@@ -135,10 +135,8 @@ contract("Timestamp execution", async (accounts) => {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    const endExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize
-    const secsToWait =
-      endExecutionWindow - (await config.web3.eth.getBlock("latest")).timestamp
+    const endExecutionWindow = requestData.schedule.windowStart + requestData.schedule.windowSize
+    const secsToWait = endExecutionWindow - (await config.web3.eth.getBlock("latest")).timestamp
 
     await waitUntilBlock(secsToWait + 1, 1)
 
@@ -167,9 +165,8 @@ contract("Timestamp execution", async (accounts) => {
     expect(requestData.meta.wasCalled).to.be.false
 
     const startExecutionWindow = requestData.schedule.windowStart
-    const secsToWait =
-      startExecutionWindow -
-      (await config.web3.eth.getBlock("latest")).timestamp
+    const secsToWait = startExecutionWindow
+      - (await config.web3.eth.getBlock("latest")).timestamp
     // console.log(secsToWait)
     await waitUntilBlock(secsToWait, 1)
 
@@ -201,10 +198,8 @@ contract("Timestamp execution", async (accounts) => {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    const endExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize
-    const secsToWait =
-      endExecutionWindow - (await config.web3.eth.getBlock("latest")).timestamp
+    const endExecutionWindow = requestData.schedule.windowStart + requestData.schedule.windowSize
+    const secsToWait = endExecutionWindow - (await config.web3.eth.getBlock("latest")).timestamp
     await waitUntilBlock(secsToWait - 1, 1)
 
     const balBeforeExecute = await config.web3.eth.getBalance(accounts[5])

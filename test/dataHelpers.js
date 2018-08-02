@@ -189,11 +189,11 @@ class RequestData {
 
   calcEndowment() {
     return (
-      this.paymentData.bounty +
-            (this.paymentData.fee * 2) +
-            (this.txData.callGas * this.txData.gasPrice) +
-            (180000 * this.txData.gasPrice) +
-            this.txData.callValue
+      this.paymentData.bounty
+            + (this.paymentData.fee * 2)
+            + (this.txData.callGas * this.txData.gasPrice)
+            + (180000 * this.txData.gasPrice)
+            + this.txData.callValue
     )
   }
 }

@@ -12,11 +12,11 @@ const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
 const ethUtil = require("ethereumjs-util")
+const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Schedule to execution flow", (accounts) => {
   const gasPrice = config.web3.utils.toWei("33", "gwei")

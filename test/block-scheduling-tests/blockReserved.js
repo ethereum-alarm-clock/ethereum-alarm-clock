@@ -8,10 +8,11 @@ const { expect } = require("chai")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Block reserved window", (accounts) => {
   // 1
@@ -53,8 +54,7 @@ contract("Block reserved window", (accounts) => {
 
     const requestData = await RequestData.from(txRequest)
 
-    const claimAt =
-      requestData.schedule.windowStart - requestData.schedule.freezePeriod - 10
+    const claimAt = requestData.schedule.windowStart - requestData.schedule.freezePeriod - 10
     await waitUntilBlock(0, claimAt)
 
     const claimTx = await txRequest.claim({

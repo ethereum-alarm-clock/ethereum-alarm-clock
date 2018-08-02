@@ -4,21 +4,22 @@ require("chai")
 
 const { expect } = require("chai")
 
-// / Contracts
+// Contracts
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 
-// / Brings in config.web3 (v1.0.0)
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
+// Brings in config.web3 (v1.0.0)
 const config = require("../../config")
 const { RequestData, parseAbortData, wasAborted } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 const MINUTE = 60 // seconds
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
 contract("Timestamp reserved window", async (accounts) => {
-  // / 1
+  // 1
   it("should reject execution if claimed by another", async () => {
     const txRecorder = await TransactionRecorder.new()
     expect(txRecorder.address).to.exist
@@ -82,9 +83,8 @@ contract("Timestamp reserved window", async (accounts) => {
 
     expect(requestData.claimData.claimedBy).to.equal(accounts[8])
 
-    const secs =
-      requestData.schedule.windowStart -
-      (await config.web3.eth.getBlock("latest")).timestamp
+    const secs = requestData.schedule.windowStart
+      - (await config.web3.eth.getBlock("latest")).timestamp
     await waitUntilBlock(secs, 0)
 
     expect(await txRecorder.wasCalled()).to.be.false

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 import "contracts/Library/ClaimLib.sol";
 import "contracts/Library/ExecutionLib.sol";
@@ -411,7 +411,7 @@ library RequestLib {
     uint public constant CANCEL_EXTRA_GAS = 85000; // Check accuracy
 
     function getEXECUTION_GAS_OVERHEAD()
-        public view returns (uint)
+        public pure returns (uint)
     {
         return EXECUTION_GAS_OVERHEAD;
     }
@@ -535,10 +535,9 @@ library RequestLib {
         internal returns (bool claimed)
     {
         require(isClaimable(self));
-
-        self.claimData.claim(self.schedule.computePaymentModifier());
+        
         emit Claimed();
-        claimed = true;
+        return self.claimData.claim(self.schedule.computePaymentModifier());
     }
 
     /*

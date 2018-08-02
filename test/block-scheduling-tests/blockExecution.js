@@ -8,15 +8,16 @@ const { expect } = require("chai")
 const TransactionRequestCore = artifacts.require("./TransactionRequestCore.sol")
 const TransactionRecorder = artifacts.require("./TransactionRecorder.sol")
 
+const { waitUntilBlock } = require("@digix/tempo")(web3)
+
 // Bring in config.web3 (v1.0.0)
-const config = require("../../config")
 const ethUtil = require("ethereumjs-util")
+const config = require("../../config")
 const {
   parseRequestData,
   parseAbortData,
   wasAborted,
 } = require("../dataHelpers.js")
-const { waitUntilBlock } = require("@digix/tempo")(web3)
 
 contract("Block execution", async (accounts) => {
   const Owner = accounts[0]
@@ -111,8 +112,7 @@ contract("Block execution", async (accounts) => {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    const endExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize
+    const endExecutionWindow = requestData.schedule.windowStart + requestData.schedule.windowSize
     await waitUntilBlock(0, endExecutionWindow + 1)
 
     expect(await config.web3.eth.getBlockNumber()).to.be.above(endExecutionWindow)
@@ -169,8 +169,7 @@ contract("Block execution", async (accounts) => {
 
     expect(requestData.meta.wasCalled).to.be.false
 
-    const endExecutionWindow =
-      requestData.schedule.windowStart + requestData.schedule.windowSize
+    const endExecutionWindow = requestData.schedule.windowStart + requestData.schedule.windowSize
     await waitUntilBlock(0, endExecutionWindow - 1)
     // Note: we go to one block before the endExecutionWindow
     // because the next transaction will be mined in the next

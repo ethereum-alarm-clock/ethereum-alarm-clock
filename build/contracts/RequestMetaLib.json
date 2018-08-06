@@ -1,0 +1,398 @@
+{
+  "contractName": "RequestMetaLib",
+  "abi": [],
+  "bytecode": "0x604c602c600b82828239805160001a60731460008114601c57601e565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205ba16d55d758ec0366c0495a72b5122c1437c2a3b1aa9ba94df063a9d2d3346b0029",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205ba16d55d758ec0366c0495a72b5122c1437c2a3b1aa9ba94df063a9d2d3346b0029",
+  "sourceMap": "133:516:4:-;;132:2:-1;166:7;155:9;146:7;137:37;252:7;246:14;243:1;238:23;232:4;229:33;270:1;265:20;;;;222:63;;265:20;274:9;222:63;;298:9;295:1;288:20;328:4;319:7;311:22;352:7;343;336:24",
+  "deployedSourceMap": "133:516:4:-;;;;;;;;",
+  "source": "pragma solidity 0.4.24;\n\n/**\n * @title RequestMetaLib\n * @dev Small library holding all the metadata about a TransactionRequest.\n */\nlibrary RequestMetaLib {\n\n    struct RequestMeta {\n        address owner;              /// The address that created this request.\n\n        address createdBy;          /// The address of the RequestFactory which created this request.\n\n        bool isCancelled;           /// Was the TransactionRequest cancelled?\n        \n        bool wasCalled;             /// Was the TransactionRequest called?\n\n        bool wasSuccessful;         /// Was the return value from the TransactionRequest execution successful?\n    }\n\n}\n",
+  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+  "ast": {
+    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+    "exportedSymbols": {
+      "RequestMetaLib": [
+        464
+      ]
+    },
+    "id": 465,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 452,
+        "literals": [
+          "solidity",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:4"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": "@title RequestMetaLib\n@dev Small library holding all the metadata about a TransactionRequest.",
+        "fullyImplemented": true,
+        "id": 464,
+        "linearizedBaseContracts": [
+          464
+        ],
+        "name": "RequestMetaLib",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "RequestMetaLib.RequestMeta",
+            "id": 463,
+            "members": [
+              {
+                "constant": false,
+                "id": 454,
+                "name": "owner",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "192:13:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 453,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "192:7:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 456,
+                "name": "createdBy",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "272:17:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 455,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "272:7:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 458,
+                "name": "isCancelled",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "375:16:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 457,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "375:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 460,
+                "name": "wasCalled",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "462:14:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 459,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "462:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 462,
+                "name": "wasSuccessful",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "538:18:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 461,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "538:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "RequestMeta",
+            "nodeType": "StructDefinition",
+            "scope": 464,
+            "src": "163:483:4",
+            "visibility": "public"
+          }
+        ],
+        "scope": 465,
+        "src": "133:516:4"
+      }
+    ],
+    "src": "0:650:4"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+    "exportedSymbols": {
+      "RequestMetaLib": [
+        464
+      ]
+    },
+    "id": 465,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 452,
+        "literals": [
+          "solidity",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:4"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": "@title RequestMetaLib\n@dev Small library holding all the metadata about a TransactionRequest.",
+        "fullyImplemented": true,
+        "id": 464,
+        "linearizedBaseContracts": [
+          464
+        ],
+        "name": "RequestMetaLib",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "RequestMetaLib.RequestMeta",
+            "id": 463,
+            "members": [
+              {
+                "constant": false,
+                "id": 454,
+                "name": "owner",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "192:13:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 453,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "192:7:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 456,
+                "name": "createdBy",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "272:17:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 455,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "272:7:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 458,
+                "name": "isCancelled",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "375:16:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 457,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "375:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 460,
+                "name": "wasCalled",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "462:14:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 459,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "462:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 462,
+                "name": "wasSuccessful",
+                "nodeType": "VariableDeclaration",
+                "scope": 463,
+                "src": "538:18:4",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 461,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "538:4:4",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "RequestMeta",
+            "nodeType": "StructDefinition",
+            "scope": 464,
+            "src": "163:483:4",
+            "visibility": "public"
+          }
+        ],
+        "scope": 465,
+        "src": "133:516:4"
+      }
+    ],
+    "src": "0:650:4"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.24+commit.e67f0147.Emscripten.clang"
+  },
+  "networks": {
+    "3": {
+      "events": {},
+      "links": {},
+      "address": "0xb8b10e68ed40c9f4a67207263678a3393d222f4e",
+      "transactionHash": "0x70f14448ec1287da00b68e1bac3ef6dcec59cb6c316c5d19b857f1b965d96410"
+    },
+    "4": {
+      "events": {},
+      "links": {},
+      "address": "0xd6dda7944198cf9a9fb7fb8aeb471a2e82b5b2e4",
+      "transactionHash": "0x5d278e8a247d093467152a5289fa2d7261d4447af3ba0e50f18b11b21628a39c"
+    },
+    "42": {
+      "events": {},
+      "links": {},
+      "address": "0x937a9cbfc84c1ce2a057b8b9bbb3ea96e7be62b0",
+      "transactionHash": "0xac8c96c9adafde7bff2627e0a690ac5375f6875bdcd3317120a9bb936590d46e"
+    }
+  },
+  "schemaVersion": "2.0.1",
+  "updatedAt": "2018-08-06T13:59:53.181Z"
+}

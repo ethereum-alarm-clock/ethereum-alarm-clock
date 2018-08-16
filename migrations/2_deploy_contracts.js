@@ -75,7 +75,7 @@ NOW DEPLOYING THE ETHEREUM ALARM CLOCK CONTRACTS...\n`)
       deployer.link(PaymentLib, RequestFactory)
       deployer.link(RequestLib, RequestFactory)
       deployer.link(SafeMath, RequestFactory)
-      return deployer.deploy(RequestFactory, TransactionRequestCore.address, { gas: 1500000 })
+      return deployer.deploy(RequestFactory, TransactionRequestCore.address, { gas: 1900000 })
     })
     .then(() => {
       deployer.link(RequestScheduleLib, BaseScheduler)

@@ -2,7 +2,7 @@ require("chai")
   .use(require("chai-as-promised"))
   .should()
 
-const { expect } = require("chai")
+const { assert, expect } = require("chai")
 
 // Contracts
 const RequestFactory = artifacts.require("./RequestFactory.sol")
@@ -271,5 +271,38 @@ contract("Request factory", async (accounts) => {
 
     requestData = await parseRequestData(txRequest)
     expect(requestData.txData.toAddress).to.equal(accounts[2])
+  })
+
+  it("should not allow the deployment of new requests when paused", async () => {
+    await requestFactory.pause();
+    const isPaused = await requestFactory.paused();
+    assert(isPaused, "RequestFactory should be paused now.");
+
+    const windowStart = await getWindowStart()
+    const { paramsForValidation, isValid } = await validate({ properties: { windowStart } })
+
+    isValid.forEach(bool => expect(bool).to.be.true)
+
+    const params = paramsForValidation
+    params.push(transactionRequest.gasPrice)
+    params.push(transactionRequest.requiredDeposit)
+
+    // Create a request with the same args we validated
+    let res;
+    try {
+      res = await requestFactory.createRequest(
+        [
+          accounts[0],
+          accounts[1], // fee recipient
+          accounts[2], // to
+        ],
+        params,
+        transactionRequest.testCallData
+      )
+    } catch (e) {
+      const wasReverted = e.toString().indexOf("VM Exception while processing transaction: revert");
+      assert(wasReverted !== -1);
+    }
+    expect(res).to.be.undefined;
   })
 })

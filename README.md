@@ -62,9 +62,9 @@ Please see the [`cli`](https://github.com/ethereum-alarm-clock/cli) repository f
 
 As we approach mainnet the EAC contracts are deployed on Ropsten, Rinkeby and Kovan.
 
-Deployed version is [`1.0.0-beta.5`](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/releases/tag/1.0.0-beta.5)
+Deployed version is [`1.0.0-beta.6`](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/releases/tag/1.0.0-beta.6)
 
-You can find the address for each network in the [networks](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/tree/master/networks/1.0.0-beta.5) folder. 
+You can find the address for each network in the [networks](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/tree/master/networks/1.0.0-beta.6) folder. 
 
 ## Thanks and support
 [<img src="https://s3.amazonaws.com/chronologic.network/ChronoLogic_logo.svg" width="128px">](https://github.com/chronologic)

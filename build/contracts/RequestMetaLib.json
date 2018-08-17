@@ -1,14 +1,14 @@
 {
   "contractName": "RequestMetaLib",
   "abi": [],
-  "bytecode": "0x604c602c600b82828239805160001a60731460008114601c57601e565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205ba16d55d758ec0366c0495a72b5122c1437c2a3b1aa9ba94df063a9d2d3346b0029",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205ba16d55d758ec0366c0495a72b5122c1437c2a3b1aa9ba94df063a9d2d3346b0029",
+  "bytecode": "0x604c602c600b82828239805160001a60731460008114601c57601e565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600080fd00a165627a7a7230582056b3d404da2aabc54e740ba26e54a549a01a6ef1f58ce4a6120d459e3a8a36940029",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fd00a165627a7a7230582056b3d404da2aabc54e740ba26e54a549a01a6ef1f58ce4a6120d459e3a8a36940029",
   "sourceMap": "133:516:4:-;;132:2:-1;166:7;155:9;146:7;137:37;252:7;246:14;243:1;238:23;232:4;229:33;270:1;265:20;;;;222:63;;265:20;274:9;222:63;;298:9;295:1;288:20;328:4;319:7;311:22;352:7;343;336:24",
   "deployedSourceMap": "133:516:4:-;;;;;;;;",
   "source": "pragma solidity 0.4.24;\n\n/**\n * @title RequestMetaLib\n * @dev Small library holding all the metadata about a TransactionRequest.\n */\nlibrary RequestMetaLib {\n\n    struct RequestMeta {\n        address owner;              /// The address that created this request.\n\n        address createdBy;          /// The address of the RequestFactory which created this request.\n\n        bool isCancelled;           /// Was the TransactionRequest cancelled?\n        \n        bool wasCalled;             /// Was the TransactionRequest called?\n\n        bool wasSuccessful;         /// Was the return value from the TransactionRequest execution successful?\n    }\n\n}\n",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
     "exportedSymbols": {
       "RequestMetaLib": [
         464
@@ -189,7 +189,7 @@
     "src": "0:650:4"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/RequestMetaLib.sol",
     "exportedSymbols": {
       "RequestMetaLib": [
         464
@@ -377,22 +377,22 @@
     "3": {
       "events": {},
       "links": {},
-      "address": "0xb8b10e68ed40c9f4a67207263678a3393d222f4e",
-      "transactionHash": "0x70f14448ec1287da00b68e1bac3ef6dcec59cb6c316c5d19b857f1b965d96410"
+      "address": "0x5c6f0101c1da5529942112162b6db8af5013ecfe",
+      "transactionHash": "0x4f9233da602edb8429542bd3d950a45ddc267aea36f0258ebbffdf795d8caab3"
     },
     "4": {
       "events": {},
       "links": {},
-      "address": "0xd6dda7944198cf9a9fb7fb8aeb471a2e82b5b2e4",
-      "transactionHash": "0x5d278e8a247d093467152a5289fa2d7261d4447af3ba0e50f18b11b21628a39c"
+      "address": "0x74e3412a7f95b810cb86dfb380ff084471b70821",
+      "transactionHash": "0x7ad45b2c7d834799109a0b0f895701693bd26c9dd7786d1ec821dc847ea9e85c"
     },
     "42": {
       "events": {},
       "links": {},
-      "address": "0x937a9cbfc84c1ce2a057b8b9bbb3ea96e7be62b0",
-      "transactionHash": "0xac8c96c9adafde7bff2627e0a690ac5375f6875bdcd3317120a9bb936590d46e"
+      "address": "0xccba4b0187191a040bd9f9e4d00f1dbe49c68aad",
+      "transactionHash": "0xc8bbf86814138f4ee219174048cf78089cff7e5338ba6acdd1e00b9e1a121470"
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:59:53.181Z"
+  "updatedAt": "2018-08-17T14:26:01.002Z"
 }

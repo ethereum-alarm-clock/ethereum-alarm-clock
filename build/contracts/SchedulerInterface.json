@@ -69,9 +69,9 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity 0.4.24;\n\n/**\n * @title SchedulerInterface\n * @dev The base contract that the higher contracts: BaseScheduler, BlockScheduler and TimestampScheduler all inherit from.\n */\ncontract SchedulerInterface {\n    function schedule(address _toAddress, bytes _callData, uint[8] _uintArgs)\n        public payable returns (address);\n    function computeEndowment(uint _bounty, uint _fee, uint _callGas, uint _callValue, uint _gasPrice)\n        public view returns (uint);\n}\n",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
     "exportedSymbols": {
       "SchedulerInterface": [
         99
@@ -460,7 +460,7 @@
     "src": "0:477:1"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/SchedulerInterface.sol",
     "exportedSymbols": {
       "SchedulerInterface": [
         99
@@ -854,5 +854,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:26:43.442Z"
+  "updatedAt": "2018-08-17T12:39:57.963Z"
 }

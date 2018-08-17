@@ -134,9 +134,9 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity 0.4.24;\n\ncontract RequestFactoryInterface {\n    event RequestCreated(address request, address indexed owner, int indexed bucket, uint[12] params);\n\n    function createRequest(address[3] addressArgs, uint[12] uintArgs, bytes callData) public payable returns (address);\n    function createValidatedRequest(address[3] addressArgs, uint[12] uintArgs, bytes callData) public payable returns (address);\n    function validateRequestParams(address[3] addressArgs, uint[12] uintArgs, uint endowment) public view returns (bool[6]);\n    function isKnownRequest(address _address) public view returns (bool);\n}\n",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
     "exportedSymbols": {
       "RequestFactoryInterface": [
         68
@@ -1003,7 +1003,7 @@
     "src": "0:614:0"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/RequestFactoryInterface.sol",
     "exportedSymbols": {
       "RequestFactoryInterface": [
         68
@@ -1875,5 +1875,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:26:43.443Z"
+  "updatedAt": "2018-08-17T12:39:57.963Z"
 }

@@ -187,9 +187,9 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity 0.4.24;\n\ncontract TransactionRequestInterface {\n    \n    // Primary actions\n    function execute() public returns (bool);\n    function cancel() public returns (bool);\n    function claim() public payable returns (bool);\n\n    // Proxy function\n    function proxy(address recipient, bytes callData) public payable returns (bool);\n\n    // Data accessors\n    function requestData() public view returns (address[6], bool[3], uint[15], uint8[1]);\n    function callData() public view returns (bytes);\n\n    // Pull mechanisms for payments.\n    function refundClaimDeposit() public returns (bool);\n    function sendFee() public returns (bool);\n    function sendBounty() public returns (bool);\n    function sendOwnerEther() public returns (bool);\n    function sendOwnerEther(address recipient) public returns (bool);\n}\n",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
     "exportedSymbols": {
       "TransactionRequestInterface": [
         177
@@ -1111,7 +1111,7 @@
     "src": "0:824:2"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Interface/TransactionRequestInterface.sol",
     "exportedSymbols": {
       "TransactionRequestInterface": [
         177
@@ -2038,5 +2038,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:26:43.443Z"
+  "updatedAt": "2018-08-17T12:39:57.964Z"
 }

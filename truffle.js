@@ -14,9 +14,8 @@ module.exports = {
     },
     kovan: {
       gas: 4700000,
-      gasPrice: 10000000000, // 10 gwei
-      host: "localhost",
-      port: 8545,
+      gasPrice: 1000000000, // 1 gwei
+      provider: () => new HDWalletProvider(mnemonic, "https://kovan.infura.io"),
       network_id: "42"
     },
     ropsten: {

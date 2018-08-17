@@ -64,14 +64,14 @@
       "type": "function"
     }
   ],
-  "bytecode": "0x608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506102f8806100606000396000f300608060405260043610610062576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630900f01014610067578063445df0ac146100aa5780638da5cb5b146100d5578063fdacd5761461012c575b600080fd5b34801561007357600080fd5b506100a8600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610159565b005b3480156100b657600080fd5b506100bf610241565b6040518082815260200191505060405180910390f35b3480156100e157600080fd5b506100ea610247565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561013857600080fd5b506101576004803603810190808035906020019092919050505061026c565b005b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561023d578190508073ffffffffffffffffffffffffffffffffffffffff1663fdacd5766001546040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561022457600080fd5b505af1158015610238573d6000803e3d6000fd5b505050505b5050565b60015481565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614156102c957806001819055505b505600a165627a7a723058203f6d34b56397bf90037fd1f48c42b9b745fcc77feb0983c674e9dbdcdcce7d500029",
-  "deployedBytecode": "0x608060405260043610610062576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630900f01014610067578063445df0ac146100aa5780638da5cb5b146100d5578063fdacd5761461012c575b600080fd5b34801561007357600080fd5b506100a8600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610159565b005b3480156100b657600080fd5b506100bf610241565b6040518082815260200191505060405180910390f35b3480156100e157600080fd5b506100ea610247565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561013857600080fd5b506101576004803603810190808035906020019092919050505061026c565b005b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561023d578190508073ffffffffffffffffffffffffffffffffffffffff1663fdacd5766001546040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561022457600080fd5b505af1158015610238573d6000803e3d6000fd5b505050505b5050565b60015481565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614156102c957806001819055505b505600a165627a7a723058203f6d34b56397bf90037fd1f48c42b9b745fcc77feb0983c674e9dbdcdcce7d500029",
+  "bytecode": "0x608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506102f8806100606000396000f300608060405260043610610062576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630900f01014610067578063445df0ac146100aa5780638da5cb5b146100d5578063fdacd5761461012c575b600080fd5b34801561007357600080fd5b506100a8600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610159565b005b3480156100b657600080fd5b506100bf610241565b6040518082815260200191505060405180910390f35b3480156100e157600080fd5b506100ea610247565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561013857600080fd5b506101576004803603810190808035906020019092919050505061026c565b005b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561023d578190508073ffffffffffffffffffffffffffffffffffffffff1663fdacd5766001546040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561022457600080fd5b505af1158015610238573d6000803e3d6000fd5b505050505b5050565b60015481565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614156102c957806001819055505b505600a165627a7a72305820677606d9198b011a5beeb03f1fbd6a8b6d6369659846adf13774ff9a3c1411b00029",
+  "deployedBytecode": "0x608060405260043610610062576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630900f01014610067578063445df0ac146100aa5780638da5cb5b146100d5578063fdacd5761461012c575b600080fd5b34801561007357600080fd5b506100a8600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610159565b005b3480156100b657600080fd5b506100bf610241565b6040518082815260200191505060405180910390f35b3480156100e157600080fd5b506100ea610247565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561013857600080fd5b506101576004803603810190808035906020019092919050505061026c565b005b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561023d578190508073ffffffffffffffffffffffffffffffffffffffff1663fdacd5766001546040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561022457600080fd5b505af1158015610238573d6000803e3d6000fd5b505050505b5050565b60015481565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614156102c957806001819055505b505600a165627a7a72305820677606d9198b011a5beeb03f1fbd6a8b6d6369659846adf13774ff9a3c1411b00029",
   "sourceMap": "80:556:12:-;;;271:65;8:9:-1;5:2;;;30:1;27;20:12;5:2;271:65:12;319:10;311:5;;:18;;;;;;;;;;;;;;;;;;80:556;;;;;;",
   "deployedSourceMap": "80:556:12:-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;458:176;;8:9:-1;5:2;;;30:1;27;20:12;5:2;458:176:12;;;;;;;;;;;;;;;;;;;;;;;;;;;;133:36;;8:9:-1;5:2;;;30:1;27;20:12;5:2;133:36:12;;;;;;;;;;;;;;;;;;;;;;;106:20;;8:9:-1;5:2;;;30:1;27;20:12;5:2;106:20:12;;;;;;;;;;;;;;;;;;;;;;;;;;;342:110;;8:9:-1;5:2;;;30:1;27;20:12;5:2;342:110:12;;;;;;;;;;;;;;;;;;;;;;;;;;458:176;525:19;226:5;;;;;;;;;;;212:19;;:10;:19;;;208:51;;;558:11;525:45;;580:8;:21;;;602:24;;580:47;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;580:47:12;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;580:47:12;;;;208:51;458:176;;:::o;133:36::-;;;;:::o;106:20::-;;;;;;;;;;;;;:::o;342:110::-;226:5;;;;;;;;;;;212:19;;:10;:19;;;208:51;;;436:9;409:24;:36;;;;208:51;342:110;:::o",
   "source": "pragma solidity 0.4.24;\n\n/// Truffle-specific contract (Not a part of the EAC)\n\ncontract Migrations {\n    address public owner;\n\n    uint public last_completed_migration;\n\n    modifier restricted() {\n        if (msg.sender == owner) {\n            _;\n        }\n    }\n\n    function Migrations()  public {\n        owner = msg.sender;\n    }\n\n    function setCompleted(uint completed) restricted  public {\n        last_completed_migration = completed;\n    }\n\n    function upgrade(address new_address) restricted  public {\n        Migrations upgraded = Migrations(new_address);\n        upgraded.setCompleted(last_completed_migration);\n    }\n}\n",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Migrations.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Migrations.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Migrations.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Migrations.sol",
     "exportedSymbols": {
       "Migrations": [
         2645
@@ -181,7 +181,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 7410,
+                        "referencedDeclaration": 7561,
                         "src": "212:3:12",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -292,7 +292,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 7410,
+                        "referencedDeclaration": 7561,
                         "src": "319:3:12",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -727,7 +727,7 @@
     "src": "0:637:12"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Migrations.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Migrations.sol",
     "exportedSymbols": {
       "Migrations": [
         2645
@@ -837,7 +837,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 7410,
+                        "referencedDeclaration": 7561,
                         "src": "212:3:12",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -948,7 +948,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 7410,
+                        "referencedDeclaration": 7561,
                         "src": "319:3:12",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -1390,22 +1390,22 @@
     "3": {
       "events": {},
       "links": {},
-      "address": "0x87f6e63b1e39fc5a6059563ac6fdffbeaef28803",
-      "transactionHash": "0x31d23548b0d10d0f41bca5df3cb1868f308bf756def86ba0bcbaad57200d655e"
+      "address": "0xc8c405fede09a9cda5b6ba6b0214070e26311d5e",
+      "transactionHash": "0xf267e4ff8aa8e734e126861dc1e717fa7795419489ea1423dc5ac51aafa92757"
     },
     "4": {
       "events": {},
       "links": {},
-      "address": "0x87f6e63b1e39fc5a6059563ac6fdffbeaef28803",
-      "transactionHash": "0x31d23548b0d10d0f41bca5df3cb1868f308bf756def86ba0bcbaad57200d655e"
+      "address": "0x20e24880b2f9da6c18ea238ac01b4c86de988532",
+      "transactionHash": "0x9739eff9869eda16f71770507e3d5b84daab51f9e98b1494f0090f4d2f2e9254"
     },
     "42": {
       "events": {},
       "links": {},
-      "address": "0x80194d3ac836f8c6e601f2e5bb34e4b793f54999",
-      "transactionHash": "0x8aed0fd9fbccd30059b44c7761070c78fb05950b4360d270b67ac9ddfde9243f"
+      "address": "0x87f6e63b1e39fc5a6059563ac6fdffbeaef28803",
+      "transactionHash": "0x2c198a29659a3d41fa6442d4f3dceb9906878e1db8a9a99e06c4e15c96188215"
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:59:53.196Z"
+  "updatedAt": "2018-08-17T14:26:01.012Z"
 }

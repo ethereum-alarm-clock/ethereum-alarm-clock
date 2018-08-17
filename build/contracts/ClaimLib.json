@@ -1,14 +1,14 @@
 {
   "contractName": "ClaimLib",
   "abi": [],
-  "bytecode": "0x604c602c600b82828239805160001a60731460008114601c57601e565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205668db21d6dc7a00de674a660264d4ea12504339ecc4b4980c8dc2e2040ded490029",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fd00a165627a7a723058205668db21d6dc7a00de674a660264d4ea12504339ecc4b4980c8dc2e2040ded490029",
+  "bytecode": "0x604c602c600b82828239805160001a60731460008114601c57601e565bfe5b5030600052607381538281f30073000000000000000000000000000000000000000030146080604052600080fd00a165627a7a7230582086c8d0c10b51942532efe0976ce6347cc31bf710f796ff471e1d633904b327750029",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fd00a165627a7a7230582086c8d0c10b51942532efe0976ce6347cc31bf710f796ff471e1d633904b327750029",
   "sourceMap": "25:1756:0:-;;132:2:-1;166:7;155:9;146:7;137:37;252:7;246:14;243:1;238:23;232:4;229:33;270:1;265:20;;;;222:63;;265:20;274:9;222:63;;298:9;295:1;288:20;328:4;319:7;311:22;352:7;343;336:24",
   "deployedSourceMap": "25:1756:0:-;;;;;;;;",
   "source": "pragma solidity 0.4.24;\n\nlibrary ClaimLib {\n\n    struct ClaimData {\n        address claimedBy;          // The address that has claimed the txRequest.\n        uint claimDeposit;          // The deposit amount that was put down by the claimer.\n        uint requiredDeposit;       // The required deposit to claim the txRequest.\n        uint8 paymentModifier;      // An integer constrained between 0-100 that will be applied to the\n                                    // request payment as a percentage.\n    }\n\n    /*\n     * @dev Mark the request as being claimed.\n     * @param self The ClaimData that is being accessed.\n     * @param paymentModifier The payment modifier.\n     */\n    function claim(\n        ClaimData storage self, \n        uint8 _paymentModifier\n    ) \n        internal returns (bool)\n    {\n        self.claimedBy = msg.sender;\n        self.claimDeposit = msg.value;\n        self.paymentModifier = _paymentModifier;\n        return true;\n    }\n\n    /*\n     * Helper: returns whether this request is claimed.\n     */\n    function isClaimed(ClaimData storage self) \n        internal view returns (bool)\n    {\n        return self.claimedBy != 0x0;\n    }\n\n\n    /*\n     * @dev Refund the claim deposit to claimer.\n     * @param self The Request.ClaimData\n     * Called in RequestLib's `cancel()` and `refundClaimDeposit()`\n     */\n    function refundDeposit(ClaimData storage self) \n        internal returns (bool)\n    {\n        // Check that the claim deposit is non-zero.\n        if (self.claimDeposit > 0) {\n            uint depositAmount;\n            depositAmount = self.claimDeposit;\n            self.claimDeposit = 0;\n            /* solium-disable security/no-send */\n            return self.claimedBy.send(depositAmount);\n        }\n        return true;\n    }\n}",
-  "sourcePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
+  "sourcePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
   "ast": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
     "exportedSymbols": {
       "ClaimLib": [
         92
@@ -1130,7 +1130,7 @@
     "src": "0:1781:0"
   },
   "legacyAST": {
-    "absolutePath": "/home/logan/Work/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
+    "absolutePath": "/home/volt/workspaces/ethereum-alarm-clock/ethereum-alarm-clock/contracts/Library/ClaimLib.sol",
     "exportedSymbols": {
       "ClaimLib": [
         92
@@ -2259,22 +2259,22 @@
     "3": {
       "events": {},
       "links": {},
-      "address": "0xd353de278595af3e96d3db7cd5526caec7d276c4",
-      "transactionHash": "0x3c885a66a0eb53e6cb3a00fb285bba142ae3dfd2f7d6142439dfc0f76e9dc11a"
+      "address": "0x44b28e47fe781eabf8095a2a21449a82a635745b",
+      "transactionHash": "0x7b44f15d8e25a7b90f53578f276384fa8803f38d343672b1074c5fa3880d903a"
     },
     "4": {
       "events": {},
       "links": {},
-      "address": "0x003d2a453e974c32c39357637e3409e1fc7be0fb",
-      "transactionHash": "0xa14a321e2257e2ff489b9fb77884b380fd3e25dd7df3b85931fd053131edaaa8"
+      "address": "0x32b9095160b00a641b9dbe0ba3c2de83b052b484",
+      "transactionHash": "0x7b92dfcd368341e0e3934fdb7a7882f3f5b6942c376ea878df3dfcb87be3495d"
     },
     "42": {
       "events": {},
       "links": {},
-      "address": "0x51a4e0895cc64ecf8da2eb80440904f86131e219",
-      "transactionHash": "0x3e9e1323d43aa66c8f103988fafacef5d8168257302e2af44131a9fcd52490ff"
+      "address": "0x91b74fe18472815b39bd1719f6416e7a3d13b669",
+      "transactionHash": "0x6de1bbb84c5973104a46c9a5703d0cbac14fd91ebbaac1816e9df58bf5e557f1"
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-06T13:59:53.159Z"
+  "updatedAt": "2018-08-17T14:26:00.970Z"
 }

@@ -1,6 +1,6 @@
 {
     "name": "@ethereum-alarm-clock/contracts",
-    "version": "1.0.0-rc.1",
+    "version": "1.0.0-rc.2",
     "description": "Service to schedule Ethereum transactions that will be executed in the future.",
     "main": "index.js",
     "directories": {

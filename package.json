@@ -56,7 +56,7 @@
         "eslint": "5.2.0",
         "eslint-config-airbnb-base": "13.0.0",
         "eslint-plugin-import": "2.13.0",
-        "solidity-coverage": "0.5.7"
+        "solidity-coverage": "0.5.8"
     },
     "pre-commit": [
         "clean",

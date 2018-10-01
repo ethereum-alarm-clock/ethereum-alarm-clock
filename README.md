@@ -34,7 +34,7 @@ We are in progress of migrating the documentation to the [Wiki](https://github.c
 
 ## Deployment
 
-Deployed version is [`1.0.0-rc.2`](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/releases/tag/1.0.0-rc.2)
+Deployed version is [`1.0.0-rc.2`](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/releases/tag/v1.0.0-rc.2)
 
 You can find the address for each network in the [networks](https://github.com/ethereum-alarm-clock/ethereum-alarm-clock/tree/master/networks/) folder. 
 

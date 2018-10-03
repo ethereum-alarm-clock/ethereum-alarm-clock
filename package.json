@@ -33,7 +33,7 @@
     },
     "homepage": "https://github.com/chronologic/ethereum-alarm-clock#readme",
     "dependencies": {
-        "@optionality.io/clone-factory": "0.1.6",
+        "@optionality.io/clone-factory": "0.1.7",
         "nconf": "0.8.5",
         "openzeppelin-solidity": "1.12.0",
         "truffle-hdwallet-provider": "0.0.6",

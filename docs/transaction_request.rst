@@ -52,12 +52,12 @@ to the following errors.
 * ``6 => MismatchGasPrice``
 
 
-.. method:: TransactionRequest.Executed(uint payment, uint donation, uint measuredGasConsumption)
+.. method:: TransactionRequest.Executed(uint payment, uint fee, uint measuredGasConsumption)
 
 
 When a request is successfully executed this event is logged.  The ``payment``
-is the total payment amount that was awarded for execution.  The ``donation``
-is the amount that was awarded to the ``donationBenefactor``.  The
+is the total payment amount that was awarded for execution.  The ``fee``
+is the amount that was awarded to the ``feeRecipient``.  The
 ``measuredGasConsumption`` is the amount of gas that was reimbursed which
 should always be slightly greater than the actual gas consumption.
 
@@ -68,7 +68,7 @@ Data Model
 The data for the transaction request is split into 5 main sections.
 
 * **Transaction Data**: Information specific to the execution of the transaction.
-* **Payment Data**: Information related to the payment and donation associated
+* **Payment Data**: Information related to the payment and fee associated
   with this request.
 * **Claim Data**: Information about the claim status for this request.
 * **Schedule Data**: Information about when this request should be executed.
@@ -100,7 +100,7 @@ These arrays then map to the following data fields on the request.
     * ``addressValues[0] => claimData.claimedBy``
     * ``addressValues[1] => meta.createdBy``
     * ``addressValues[2] => meta.owner``
-    * ``addressValues[3] => paymentData.donationBenefactor``
+    * ``addressValues[3] => paymentData.feeRecipient``
     * ``addressValues[4] => paymentData.paymentBenefactor``
     * ``addressValues[5] => txnData.toAddress``
 
@@ -112,8 +112,8 @@ These arrays then map to the following data fields on the request.
 * Unsigned 256 bit Integers (``uint`` aka ``uint256``)
     * ``uintValues[0]  => claimData.claimDeposit``
     * ``uintValues[1]  => paymentData.anchorGasPrice``
-    * ``uintValues[2]  => paymentData.donation``
-    * ``uintValues[3]  => paymentData.donationOwed``
+    * ``uintValues[2]  => paymentData.fee``
+    * ``uintValues[3]  => paymentData.feeOwed``
     * ``uintValues[4]  => paymentData.payment``
     * ``uintValues[5]  => paymentData.paymentOwed``
     * ``uintValues[6]  => schedule.claimWindowSize``
@@ -169,7 +169,7 @@ fields.
 Payment Data
 ^^^^^^^^^^^^
 
-Information surrounding the payment and donation for this request.
+Information surrounding the payment and fee for this request.
 
 
 .. attribute:: uint anchorGasPrice
@@ -200,23 +200,23 @@ Information surrounding the payment and donation for this request.
     and retrievable via the ``sendPayment()`` function.
 
 
-.. attribute:: uint donation
+.. attribute:: uint fee
 
-    The amount of ether, in wei, that will be sent to the `donationBenefactor`
+    The amount of ether, in wei, that will be sent to the `feeRecipient`
     upon execution.
 
 
-.. attribute:: address donationBenefactor
+.. attribute:: address feeRecipient
 
-    The address that the donation will be sent to.
+    The address that the fee will be sent to.
 
 
-.. attribute:: uint donationOwed
+.. attribute:: uint feeOwed
 
-    The amount of ether in wei that is owed to the ``donationBenefactor``. In
+    The amount of ether in wei that is owed to the ``feeRecipient``. In
     most situations this will be zero at the end of execution, however, in the
-    event that sending the donation fails the donation amount will be stored here
-    and retrievable via the ``sendDonation()`` function.
+    event that sending the fee fails the fee amount will be stored here
+    and retrievable via the ``sendFee()`` function.
 
 
 Claim Data
@@ -450,13 +450,13 @@ This function will send the ``paymentOwed`` value to the
 passed.
 
 
-Retrieving the Donation
+Retrieving the Fee
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: TransactionRequest.sendDonation()
+.. method:: TransactionRequest.sendFee()
 
-This function will send the ``donationOwed`` value to the
-``donationBenefactor``.  This is only callable after the execution window has
+This function will send the ``feeOwed`` value to the
+``feeRecipient``.  This is only callable after the execution window has
 passed.
 
 
@@ -464,7 +464,7 @@ Return any extra Ether
 ^^^^^^^^^^^^^^^^^^^^^^
 
 This function will send any exta ether in the contract that is not owed as a
-donation or payment and that is not part of the claim deposit back to the
+fee or payment and that is not part of the claim deposit back to the
 ``owner`` of the request.  This is only callable if one of the following
 conditions is met.
 

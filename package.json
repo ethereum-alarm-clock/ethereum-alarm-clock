@@ -13,7 +13,8 @@
         "lint": "./node_modules/eslint/bin/eslint.js .",
         "lint-fix": "./node_modules/eslint/bin/eslint.js . --fix",
         "solium": "./node_modules/solium/bin/solium.js -d contracts --fix",
-        "clean": "truffle networks --clean"
+        "clean": "truffle networks --clean",
+        "migrate-reset": "truffle migrate --reset"
     },
     "repository": {
         "type": "git",

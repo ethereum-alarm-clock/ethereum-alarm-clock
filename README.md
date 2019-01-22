@@ -49,7 +49,7 @@ Please ensure you are using node version _at least_ 8.0.0 and have truffle and g
 ```
 nvm use lts/carbon
 npm i
-npm i -g truffle@4.1.5 
+npm i -g truffle@4.1.14 
 npm i -g ganache-cli
 ```
 

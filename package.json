@@ -37,7 +37,7 @@
         "@optionality.io/clone-factory": "0.1.6",
         "nconf": "0.8.5",
         "openzeppelin-solidity": "1.12.0",
-        "truffle-hdwallet-provider": "0.0.6",
+        "truffle-hdwallet-provider": "1.0.7",
         "web3": "1.0.0-beta.35"
     },
     "devDependencies": {

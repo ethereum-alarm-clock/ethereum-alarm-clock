@@ -55,7 +55,7 @@
         "ethereumjs-util": "5.2.0",
         "solc": "0.4.25",
         "solium": "1.1.8",
-        "solidity-coverage": "0.5.11",
+        "solidity-coverage": "0.6.1",
         "truffle": "^4.1.13",
         "websocket": "1.0.26"
     },

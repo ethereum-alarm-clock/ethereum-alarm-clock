@@ -38,7 +38,7 @@
         "nconf": "0.8.5",
         "openzeppelin-solidity": "1.12.0",
         "truffle-hdwallet-provider": "0.0.6",
-        "web3": "1.0.0-beta.35"
+        "web3": "1.2.3"
     },
     "devDependencies": {
         "@digix/tempo": "0.2.0",

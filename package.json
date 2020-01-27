@@ -53,7 +53,7 @@
         "eslint-plugin-import": "2.13.0",
         "ethereumjs-abi": "^0.6.5",
         "ethereumjs-util": "5.2.0",
-        "solc": "0.4.25",
+        "solc": "0.6.2",
         "solium": "1.1.8",
         "solidity-coverage": "0.5.11",
         "truffle": "^4.1.13",

@@ -43,7 +43,7 @@
     "devDependencies": {
         "@digix/tempo": "0.2.0",
         "bignumber.js": "4.1.0",
-        "bn.js": "^4.11.8",
+        "bn.js": "^5.1.2",
         "chai": "4.1.2",
         "chai-as-promised": "7.1.1",
         "coveralls": "3.0.2",

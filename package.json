@@ -52,7 +52,7 @@
         "eslint-config-airbnb-base": "13.0.0",
         "eslint-plugin-import": "2.13.0",
         "ethereumjs-abi": "^0.6.5",
-        "ethereumjs-util": "5.2.0",
+        "ethereumjs-util": "7.0.2",
         "solc": "0.4.25",
         "solium": "1.1.8",
         "solidity-coverage": "0.5.11",
